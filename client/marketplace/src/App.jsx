@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Navigation from './components/Navigation'
-import Home  from './views/Home'
+import Carrito from './components/Carrito'
+import { Home } from './views/Home'
 import ProductDetail from './views/ProductDetail'
 import Login from './views/Login'
 import AdminPanel from './views/AdminPanel'
@@ -14,41 +15,65 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
+  
   const [favorites, setFavorites] = useState([])
   const [user, setUser] = useState(null)
   
-  // NUEVO: Estado para controlar el modal global de avisos
+  // Estado para el modal global
   const [modalMessage, setModalMessage] = useState('')
 
-  // NUEVO: Lógica de protección para favoritos
+  // ESTADOS DEL CARRITO
+  const [cart, setCart] = useState([])
+  const [isCartOpen, setIsCartOpen] = useState(false)
+
+  // LOGICA DEL CARRITO
+  const addToCart = (product, qty) => {
+    if (!user) {
+      setModalMessage("Para comprar, debes iniciar sesión primero.")
+      return
+    }
+    if (user.role === 'admin' || user.role === 'despachante') {
+      setModalMessage(`Tu rol de ${user.role} no te permite realizar compras.`)
+      return
+    }
+
+    setCart(prev => {
+      const exist = prev.find(item => item.id === product.id)
+      if (exist) {
+        return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + qty } : item)
+      }
+      return [...prev, { ...product, qty }]
+    })
+    setIsCartOpen(true)
+  }
+
+  const removeFromCart = (id) => setCart(cart.filter(item => item.id !== id))
+  const clearCart = () => setCart([])
+  const cartCount = cart.reduce((acc, item) => acc + item.qty, 0)
+
+  // FAVORITOS
   const toggleFavorite = (productId) => {
-    // Si no hay usuario logueado, mostramos el cartel y cortamos la función
     if (!user) {
       setModalMessage("Para agregar productos a tu Lista de Deseos, debes iniciar sesión primero.")
       return
     }
-
     if (favorites.includes(productId)) {
       setFavorites(favorites.filter(id => id !== productId))
     } else {
       setFavorites([...favorites, productId])
     }
   }
-
   const clearFavorites = () => setFavorites([])
 
   return (
     <div className="app-container">
       <Navigation 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        selectedSubcategory={selectedSubcategory}
-        setSelectedSubcategory={setSelectedSubcategory}
+        searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
+        selectedSubcategory={selectedSubcategory} setSelectedSubcategory={setSelectedSubcategory}
         favoritesCount={favorites.length}
-        user={user}
-        setUser={setUser}
+        user={user} setUser={setUser}
+        cartCount={cartCount} openCart={() => setIsCartOpen(true)}
       />
 
       <main className="main-content">
@@ -59,7 +84,7 @@ function App() {
               ? <Navigate to="/despachante" /> 
               : <Home searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} />
           } />
-          <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} />} />
+          <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
           
           <Route path="/admin" element={<AdminPanel />} />
@@ -67,19 +92,25 @@ function App() {
           <Route path="/vendedor" element={<VendedorPanel />} />
           <Route path="/perfil" element={<MisDatos user={user} />} />
           
-          <Route path="/favoritos" element={
-            <Favoritos favorites={favorites} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} />
-          } />
+          <Route path="/favoritos" element={<Favoritos favorites={favorites} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} />} />
         </Routes>
       </main>
 
-      {/* NUEVO: Modal Global que se dibuja por encima de todo si hay un mensaje */}
+      <Carrito 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+        cart={cart} 
+        removeFromCart={removeFromCart} 
+        clearCart={clearCart} 
+      />
+
+      {/* MODAL GLOBAL (Estilo apaisado, rojo y con cruz) */}
       {modalMessage && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <i className="fa-solid fa-circle-exclamation modal-icon"></i>
-            <p>{modalMessage}</p>
-            <button className="modal-btn" onClick={() => setModalMessage('')}>
+        <div className="modal-overlay" style={{ zIndex: 11000 }}>
+          <div className="modal-content-wide">
+            <i className="fa-solid fa-circle-xmark modal-icon-red"></i>
+            <p className="modal-text-wide">{modalMessage}</p>
+            <button className="modal-btn-red" onClick={() => setModalMessage('')}>
               Entendido
             </button>
           </div>

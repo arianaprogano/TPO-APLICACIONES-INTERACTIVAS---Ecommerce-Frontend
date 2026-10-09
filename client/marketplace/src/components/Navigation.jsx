@@ -8,19 +8,16 @@ function Navigation({
   selectedCategory, setSelectedCategory,
   selectedSubcategory, setSelectedSubcategory,
   favoritesCount,
-  user,
-  setUser
+  user, setUser,
+  cartCount, openCart
 }) {
   const navigate = useNavigate()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   
-  // Estados para el Modal de Publicación
   const [isPublishOpen, setIsPublishOpen] = useState(false)
   const [publishError, setPublishError] = useState('')
-  const [publishForm, setPublishForm] = useState({
-    title: '', category: 'Maquinaria', subcategory: 'Tractor', condition: 'Nuevo', price: '', stock: '', description: ''
-  })
+  const [publishForm, setPublishForm] = useState({ title: '', category: 'Maquinaria', subcategory: 'Tractor', condition: 'Nuevo', price: '', stock: '', description: '' })
 
   const handleCategoryClick = (cat) => {
     if (selectedCategory === cat) {
@@ -46,7 +43,6 @@ function Navigation({
   }
 
   const handlePublishSubmit = () => {
-    // CAMBIO: Nuevo mensaje de error
     if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description) {
       setPublishError('No se puede publicar un producto con los campos vacíos.')
       return
@@ -57,20 +53,14 @@ function Navigation({
     alert("¡Producto publicado con éxito!")
   }
 
-  const subcategoriesMap = {
-    'Maquinaria': ['Tractor', 'Cosechadora'],
-    'Insumos': ['Semillas', 'Fertilizantes']
-  }
-
+  const subcategoriesMap = { 'Maquinaria': ['Tractor', 'Cosechadora'], 'Insumos': ['Semillas', 'Fertilizantes'] }
   const canPublish = user && user.role === 'vendedor'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
-
-  const notifications = user ? [{ id: 1, text: "Bienvenido de nuevo.", time: "Hace 1 min", unread: true }] : [];
+  const notifications = user ? [{ id: 1, text: "Bienvenido de nuevo a AgroMarket.", time: "Hace 1 min", unread: true }] : [];
 
   return (
     <>
       <header className="header-main">
-        {/* ... (Todo el header sigue exactamente igual, no tocamos nada de la navegación) ... */}
         <div className="header-top">
           <Link to={user?.role === 'despachante' ? '/despachante' : '/home'} className="header-logo" onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedSubcategory(''); }}>
             <img src={logoImg} alt="AgroMarket Logo" className="logo-img" />
@@ -117,7 +107,13 @@ function Navigation({
               </div>
             )}
 
-            {canShop && <button className="action-btn btn-cart" title="Carrito"><i className="fa-solid fa-cart-shopping"></i></button>}
+            {/* BOTÓN CARRITO ACTUALIZADO */}
+            {canShop && (
+              <button className="action-btn btn-cart" title="Carrito" onClick={openCart}>
+                <i className="fa-solid fa-cart-shopping"></i>
+                {cartCount > 0 && <span className="badge-counter">{cartCount}</span>}
+              </button>
+            )}
 
             {user ? (
               <div className="user-menu-container">
@@ -167,73 +163,39 @@ function Navigation({
             </div>
           </div>
         )}
+
+        {user?.role !== 'despachante' && selectedCategory && subcategoriesMap[selectedCategory] && (
+          <div className="header-subcategories-bar">
+            <div className="subcategories-container">
+              <div className="subcat-label"><i className="fa-solid fa-angle-right"></i> {selectedCategory.toUpperCase()}:</div>
+              {subcategoriesMap[selectedCategory].map(sub => (
+                <button key={sub} className={`subcat-pill ${selectedSubcategory === sub ? 'active-pill' : ''}`} onClick={() => setSelectedSubcategory(selectedSubcategory === sub ? '' : sub)}>{sub}</button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* MODAL DE PUBLICAR PRODUCTO */}
       {isPublishOpen && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
           <div className="publish-modal-content">
             <div className="publish-modal-header">
-              <div className="modal-title-with-icon">
-                <i className="fa-solid fa-box-open" style={{ color: '#16a34a' }}></i> Publicar Producto
-              </div>
+              <div className="modal-title-with-icon"><i className="fa-solid fa-box-open" style={{ color: '#16a34a' }}></i> Publicar Producto</div>
               <button className="close-modal-btn" onClick={() => { setIsPublishOpen(false); setPublishError(''); }}><i className="fa-solid fa-xmark"></i></button>
             </div>
-            
             <div className="publish-modal-body">
               {publishError && <div style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>{publishError}</div>}
-              
-              <div className="form-group full-width">
-                <label>TÍTULO</label>
-                <input type="text" value={publishForm.title} onChange={e => setPublishForm({...publishForm, title: e.target.value})} />
-              </div>
-
+              <div className="form-group full-width"><label>TÍTULO</label><input type="text" value={publishForm.title} onChange={e => setPublishForm({...publishForm, title: e.target.value})} /></div>
               <div className="publish-modal-grid">
-                <div className="form-group">
-                  <label>CATEGORÍA</label>
-                  <select value={publishForm.category} onChange={e => setPublishForm({...publishForm, category: e.target.value})}>
-                    <option>Maquinaria</option>
-                    <option>Insumos</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>SUBCATEGORÍA</label>
-                  <select value={publishForm.subcategory} onChange={e => setPublishForm({...publishForm, subcategory: e.target.value})}>
-                    <option>Tractor</option>
-                    <option>Cosechadora</option>
-                    <option>Semillas</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>CONDICIÓN</label>
-                  <select value={publishForm.condition} onChange={e => setPublishForm({...publishForm, condition: e.target.value})}>
-                    <option>Nuevo</option>
-                    <option>Usado</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>PRECIO (U$S)</label>
-                  <input type="number" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} />
-                </div>
+                <div className="form-group"><label>CATEGORÍA</label><select value={publishForm.category} onChange={e => setPublishForm({...publishForm, category: e.target.value})}><option>Maquinaria</option><option>Insumos</option></select></div>
+                <div className="form-group"><label>SUBCATEGORÍA</label><select value={publishForm.subcategory} onChange={e => setPublishForm({...publishForm, subcategory: e.target.value})}><option>Tractor</option><option>Cosechadora</option><option>Semillas</option></select></div>
+                <div className="form-group"><label>CONDICIÓN</label><select value={publishForm.condition} onChange={e => setPublishForm({...publishForm, condition: e.target.value})}><option>Nuevo</option><option>Usado</option></select></div>
+                <div className="form-group"><label>PRECIO (U$S)</label><input type="number" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} /></div>
               </div>
-
-              <div className="form-group full-width">
-                <label>STOCK</label>
-                <input type="number" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} />
-              </div>
-
-              <div className="form-group full-width">
-                <label>SUBIR IMÁGENES (LOCAL)</label>
-                {/* CAMBIO: Se agregó "multiple" para permitir varias fotos */}
-                <input type="file" multiple className="custom-file-input" />
-              </div>
-
-              <div className="form-group full-width">
-                <label>DESCRIPCIÓN</label>
-                <textarea rows="4" value={publishForm.description} onChange={e => setPublishForm({...publishForm, description: e.target.value})}></textarea>
-              </div>
+              <div className="form-group full-width"><label>STOCK</label><input type="number" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} /></div>
+              <div className="form-group full-width"><label>SUBIR IMÁGENES (LOCAL)</label><input type="file" multiple className="custom-file-input" /></div>
+              <div className="form-group full-width"><label>DESCRIPCIÓN</label><textarea rows="4" value={publishForm.description} onChange={e => setPublishForm({...publishForm, description: e.target.value})}></textarea></div>
             </div>
-
             <div className="publish-modal-footer">
               <button className="btn-cancelar" onClick={() => { setIsPublishOpen(false); setPublishError(''); }}>Cancelar</button>
               <button className="btn-guardar" onClick={handlePublishSubmit}>Guardar</button>

@@ -195,3 +195,43 @@
   align-items: center;
   gap: 8px;
 }
+
+.subcat-badge {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px;
+  margin-right: 8px;
+  transition: color 0.2s;
+}
+
+.btn-icon-edit:hover {
+  color: #2563eb;
+}
+
+.btn-icon-delete {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px;
+  transition: color 0.2s;
+}
+
+.btn-icon-delete:hover {
+  color: #dc2626;
+}

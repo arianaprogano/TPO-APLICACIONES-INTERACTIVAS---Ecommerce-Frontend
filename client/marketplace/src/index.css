@@ -1,16 +1,28 @@
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #fef4a5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #fefce8; /* Fondo amarillento característico de AgroMarket */
   color: #1f2937;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- MODALES GLOBALES UNIFICADOS (Estilo ancho, rojo y con cruz) --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -21,17 +33,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999; /* Z-index altísimo para tapar el header y todo lo demás */
+  z-index: 11000; 
 }
 
-.modal-content {
+.modal-content-wide {
   background-color: white;
-  padding: 32px;
-  border-radius: 12px;
-  max-width: 400px;
+  padding: 40px 32px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 440px; 
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  animation: modalIn 0.2s ease-out; /* Pequeña animación de entrada */
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+  animation: modalIn 0.2s ease-out;
 }
 
 @keyframes modalIn {
@@ -39,31 +52,93 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
-.modal-icon {
-  font-size: 40px;
-  color: #f97316; /* Naranja AgroMarket */
+/* Círculo rojo con cruz blanca idéntico al de referencia */
+.error-icon-circle-wrapper, .modal-icon-red {
+  width: 70px;
+  height: 70px;
+  background-color: #e53e3e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  color: white;
+  font-size: 32px;
+  box-shadow: 0 4px 10px rgba(229, 62, 62, 0.4);
+}
+
+.modal-icon-red {
+  background: none;
+  box-shadow: none;
+  font-size: 55px;
+  color: #e53e3e;
+  margin-bottom: 20px;
+}
+
+.modal-title-wide {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
   margin-bottom: 16px;
 }
 
-.modal-content p {
-  font-size: 16px;
-  color: #1f2937;
-  font-weight: 600;
-  margin-bottom: 24px;
+.modal-text-wide {
+  font-size: 15px;
+  color: #4b5563;
+  font-weight: 500;
+  margin-bottom: 30px;
   line-height: 1.5;
 }
 
-.modal-btn {
-  background-color: #16a34a; /* Verde AgroMarket */
+.modal-btn-red {
+  background-color: #e53e3e;
   color: white;
   border: none;
-  padding: 10px 24px;
-  border-radius: 6px;
-  font-weight: bold;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  width: 100%;
   cursor: pointer;
   transition: background-color 0.2s;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
 }
 
-.modal-btn:hover {
+.modal-btn-red:hover {
+  background-color: #c53030;
+}
+
+/* --- MODAL DE ÉXITO (Tick verde) --- */
+.success-icon-circle-wrapper {
+  width: 70px;
+  height: 70px;
+  background-color: #16a34a; /* Verde AgroMarket */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  color: white;
+  font-size: 32px;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.4);
+}
+
+.modal-btn-green {
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.modal-btn-green:hover {
   background-color: #15803d;
 }
