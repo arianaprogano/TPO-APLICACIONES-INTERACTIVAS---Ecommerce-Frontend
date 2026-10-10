@@ -10,12 +10,17 @@ function AdminPanel() {
   // Estados para la Gestión de Categorías
   const [isCatModalOpen, setIsCatModalOpen] = useState(false)
   const [catForm, setCatForm] = useState({ id: null, name: '', subcategories: '' })
+  const [busquedaCategoria, setBusquedaCategoria] = useState('')
 
   // Datos simulados de categorías
-  const mockCategories = [
+const [categorias, setCategorias] = useState([
     { id: 1, name: 'Maquinaria', subcategories: 'Tractor, Cosechadora' },
     { id: 2, name: 'Insumos', subcategories: 'Semillas, Fertilizantes' }
-  ]
+  ]);
+
+  const categoriasFiltradas = categorias.filter(cat => 
+    cat.name.toLowerCase().includes(busquedaCategoria.toLowerCase())
+  )
 
   const openNewCategoryModal = () => {
     setCatForm({ id: null, name: '', subcategories: '' })
@@ -27,10 +32,28 @@ function AdminPanel() {
     setIsCatModalOpen(true)
   }
 
-  const handleSaveCategory = () => {
-    // Aquí a futuro se enviaría al Backend
-    setIsCatModalOpen(false)
-    alert(catForm.id ? "¡Categoría editada con éxito!" : "¡Categoría creada con éxito!")
+const handleSaveCategory = () => {
+    // Evitar guardar si el nombre está vacío
+    if (catForm.name.trim() === '') return;
+
+    if (catForm.id) {
+      // Si ya tiene ID, significa que estamos EDITANDO una existente
+      const categoriasActualizadas = categorias.map(c => 
+        c.id === catForm.id ? catForm : c
+      );
+      setCategorias(categoriasActualizadas);
+    } else {
+      // Si NO tiene ID, estamos CREANDO una nueva
+      // Generamos un ID nuevo sumando 1 al ID más alto que exista
+      const nuevoId = categorias.length > 0 ? Math.max(...categorias.map(c => c.id)) + 1 : 1;
+      const nuevaCategoria = { ...catForm, id: nuevoId };
+      
+      // Agregamos la nueva categoría al estado
+      setCategorias([...categorias, nuevaCategoria]);
+    }
+
+    // Cerramos el modal
+    setIsCatModalOpen(false);
   }
 
   return (
@@ -125,7 +148,7 @@ function AdminPanel() {
             <div className="users-toolbar">
               <div className="search-bar">
                 <i className="fa-solid fa-search"></i>
-                <input type="text" placeholder="Buscar categoría..." />
+                <input type="text" placeholder="Buscar categoría..." value={busquedaCategoria} onChange={(e) => setBusquedaCategoria(e.target.value)} />
               </div>
               <button className="btn-new-user" onClick={openNewCategoryModal}>
                 <i className="fa-solid fa-folder-plus"></i> NUEVA CATEGORÍA
@@ -142,7 +165,7 @@ function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {mockCategories.map(cat => (
+                {categoriasFiltradas.map(cat => (
                   <tr key={cat.id}>
                     <td><strong className="text-gray-500">#{cat.id}</strong></td>
                     <td><strong>{cat.name}</strong></td>
@@ -254,7 +277,7 @@ function AdminPanel() {
               </div>
               
               <div className="form-group full-width" style={{ marginTop: '8px' }}>
-                <label>SUBCATEGORÍAS (Separadas por coma)</label>
+                <label>SUBCATEGORÍAS</label>
                 <textarea 
                   rows="3" 
                   placeholder="Ej. Palas, Rastrillos, Mangueras" 
