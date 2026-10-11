@@ -7,7 +7,6 @@ function MisDatos({ user }) {
     username: '', email: '', firstName: '', lastName: '', address: ''
   })
 
-  // Carga los datos cuando el usuario entra
   useEffect(() => {
     if (user) {
       const nameParts = user.username.split(' ');
@@ -25,23 +24,35 @@ function MisDatos({ user }) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSave = () => {
+  const handleSave = (e) => {
+    e.preventDefault()
     setIsEditing(false)
-    // Aquí a futuro se enviaría la data al Backend
+    // A futuro se enviaría la data al Backend
   }
 
   return (
-    <div className="perfil-container">
-      <div className="perfil-header-top">
+
+    <form className="perfil-container" onSubmit={handleSave}>
+      
+      <header className="perfil-header-top">
         <h2 className="perfil-title">Mis Datos Personales</h2>
         {isEditing ? (
-          <button className="btn-guardar-datos" onClick={handleSave}>GUARDAR DATOS</button>
+          <button type="submit" className="btn-guardar-datos">GUARDAR DATOS</button>
         ) : (
-          <button className="btn-editar-datos" onClick={() => setIsEditing(true)}>EDITAR DATOS</button>
+          <button 
+            type="button" 
+            className="btn-editar-datos" 
+            onClick={(e) => {
+              e.preventDefault(); // Evitamos que por error intente guardar al tocar "Editar"
+              setIsEditing(true);
+            }}
+          >
+            EDITAR DATOS
+          </button>
         )}
-      </div>
+      </header>
 
-      <div className="perfil-card">
+      <section className="perfil-card">
         <div className="perfil-grid">
           <div className="form-group">
             <label>NOMBRE DE USUARIO</label>
@@ -68,8 +79,9 @@ function MisDatos({ user }) {
           <label>DIRECCIÓN DE ENVÍO / FACTURACIÓN</label>
           <input type="text" name="address" value={formData.address} onChange={handleChange} readOnly={!isEditing} className={!isEditing ? 'input-readonly' : ''} />
         </div>
-      </div>
-    </div>
+      </section>
+
+    </form>
   )
 }
 

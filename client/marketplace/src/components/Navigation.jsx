@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImg from '../assets/logo.png' 
+import PublishProductForm from './PublishProductForm'
 import './Navigation.css'
 
 function Navigation({ 
@@ -14,10 +15,7 @@ function Navigation({
   const navigate = useNavigate()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
-  
   const [isPublishOpen, setIsPublishOpen] = useState(false)
-  const [publishError, setPublishError] = useState('')
-  const [publishForm, setPublishForm] = useState({ title: '', category: 'Maquinaria', subcategory: 'Tractor', condition: 'Nuevo', price: '', stock: '', description: '' })
 
   const handleCategoryClick = (cat) => {
     if (selectedCategory === cat) {
@@ -42,17 +40,6 @@ function Navigation({
     setIsNotifOpen(false)
   }
 
-  const handlePublishSubmit = () => {
-    if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description) {
-      setPublishError('No se puede publicar un producto con los campos vacíos.')
-      return
-    }
-    setPublishError('')
-    setIsPublishOpen(false)
-    setPublishForm({ title: '', category: 'Maquinaria', subcategory: 'Tractor', condition: 'Nuevo', price: '', stock: '', description: '' })
-    alert("¡Producto publicado con éxito!")
-  }
-
   const subcategoriesMap = { 'Maquinaria': ['Tractor', 'Cosechadora'], 'Insumos': ['Semillas', 'Fertilizantes'] }
   const canPublish = user && user.role === 'vendedor'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
@@ -68,13 +55,13 @@ function Navigation({
           </Link>
 
           {user?.role !== 'despachante' && (
-            <div className="header-search">
+            <form className="header-search" onSubmit={(e) => e.preventDefault()}>
               <input type="text" placeholder="Buscar maquinaria, tractor, insumos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               <i className="fa-solid fa-search"></i>
-            </div>
+            </form>
           )}
 
-          <div className="header-actions">
+          <nav className="header-actions">
             {canShop && (
               <button className="action-btn btn-heart" title="Lista de Deseos" onClick={() => navigate('/favoritos')}>
                 <i className="fa-regular fa-heart"></i>
@@ -86,28 +73,27 @@ function Navigation({
               <div className="notif-menu-container">
                 <button className="action-btn btn-bell" onClick={() => { setIsNotifOpen(!isNotifOpen); setIsDropdownOpen(false); }}>
                   <i className="fa-regular fa-bell"></i>
-                  {notifications.some(n => n.unread) && <span className="badge-counter notif-badge">!</span>}
+                  {notifications.some(n => n.unread) && <span className="badge-counter notif-badge">1</span>}
                 </button>
 
                 {isNotifOpen && (
-                  <div className="notif-dropdown">
-                    <div className="notif-header">
+                  <aside className="notif-dropdown">
+                    <header className="notif-header">
                       <h4>Notificaciones</h4><span className="mark-read">Marcar leídas</span>
-                    </div>
+                    </header>
                     <div className="notif-list">
                       {notifications.map(notif => (
-                        <div key={notif.id} className={`notif-item ${notif.unread ? 'unread' : ''}`}>
+                        <article key={notif.id} className={`notif-item ${notif.unread ? 'unread' : ''}`}>
                           <div className="notif-icon"><i className="fa-solid fa-circle-info"></i></div>
                           <div className="notif-content"><p>{notif.text}</p><span>{notif.time}</span></div>
-                        </div>
+                        </article>
                       ))}
                     </div>
-                  </div>
+                  </aside>
                 )}
               </div>
             )}
 
-            {/* BOTÓN CARRITO ACTUALIZADO */}
             {canShop && (
               <button className="action-btn btn-cart" title="Carrito" onClick={openCart}>
                 <i className="fa-solid fa-cart-shopping"></i>
@@ -123,11 +109,11 @@ function Navigation({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="user-dropdown">
-                    <div className="dropdown-header">
+                  <aside className="user-dropdown">
+                    <header className="dropdown-header">
                       <span className="dropdown-email">{user.username.toLowerCase().replace(/ /g, '')}@test.com</span>
                       <span className="dropdown-role">{user.role.toUpperCase()}</span>
-                    </div>
+                    </header>
                     <ul className="dropdown-list">
                       <li><button onClick={() => handleNavigation('/perfil')}><i className="fa-regular fa-id-badge"></i> Mis Datos</button></li>
                       {user.role === 'admin' && <li><button onClick={() => handleNavigation('/admin')}><i className="fa-solid fa-gear"></i> Gestión General</button></li>}
@@ -140,17 +126,17 @@ function Navigation({
                       )}
                       <li className="logout-item"><button onClick={handleLogout}><i className="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button></li>
                     </ul>
-                  </div>
+                  </aside>
                 )}
               </div>
             ) : (
               <button className="action-login-btn" onClick={() => navigate('/login')}><i className="fa-regular fa-user"></i> <span>Ingresar</span></button>
             )}
-          </div>
+          </nav>
         </div>
 
         {user?.role !== 'despachante' && (
-          <div className="header-categories-bar">
+          <nav className="header-categories-bar">
             <div className="categories-container">
               <div className="categories-list">
                 <span className="categories-badge">Categorías</span>
@@ -161,46 +147,24 @@ function Navigation({
                 {canPublish && <button className="btn-publish" onClick={() => setIsPublishOpen(true)}><i className="fa-solid fa-plus"></i> Publicar Producto</button>}
               </div>
             </div>
-          </div>
+          </nav>
         )}
 
         {user?.role !== 'despachante' && selectedCategory && subcategoriesMap[selectedCategory] && (
-          <div className="header-subcategories-bar">
+          <nav className="header-subcategories-bar">
             <div className="subcategories-container">
               <div className="subcat-label"><i className="fa-solid fa-angle-right"></i> {selectedCategory.toUpperCase()}:</div>
               {subcategoriesMap[selectedCategory].map(sub => (
                 <button key={sub} className={`subcat-pill ${selectedSubcategory === sub ? 'active-pill' : ''}`} onClick={() => setSelectedSubcategory(selectedSubcategory === sub ? '' : sub)}>{sub}</button>
               ))}
             </div>
-          </div>
+          </nav>
         )}
       </header>
 
       {isPublishOpen && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="publish-modal-content">
-            <div className="publish-modal-header">
-              <div className="modal-title-with-icon"><i className="fa-solid fa-box-open" style={{ color: '#16a34a' }}></i> Publicar Producto</div>
-              <button className="close-modal-btn" onClick={() => { setIsPublishOpen(false); setPublishError(''); }}><i className="fa-solid fa-xmark"></i></button>
-            </div>
-            <div className="publish-modal-body">
-              {publishError && <div style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>{publishError}</div>}
-              <div className="form-group full-width"><label>TÍTULO</label><input type="text" value={publishForm.title} onChange={e => setPublishForm({...publishForm, title: e.target.value})} /></div>
-              <div className="publish-modal-grid">
-                <div className="form-group"><label>CATEGORÍA</label><select value={publishForm.category} onChange={e => setPublishForm({...publishForm, category: e.target.value})}><option>Maquinaria</option><option>Insumos</option></select></div>
-                <div className="form-group"><label>SUBCATEGORÍA</label><select value={publishForm.subcategory} onChange={e => setPublishForm({...publishForm, subcategory: e.target.value})}><option>Tractor</option><option>Cosechadora</option><option>Semillas</option></select></div>
-                <div className="form-group"><label>CONDICIÓN</label><select value={publishForm.condition} onChange={e => setPublishForm({...publishForm, condition: e.target.value})}><option>Nuevo</option><option>Usado</option></select></div>
-                <div className="form-group"><label>PRECIO (U$S)</label><input type="number" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} /></div>
-              </div>
-              <div className="form-group full-width"><label>STOCK</label><input type="number" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} /></div>
-              <div className="form-group full-width"><label>SUBIR IMÁGENES (LOCAL)</label><input type="file" multiple className="custom-file-input" /></div>
-              <div className="form-group full-width"><label>DESCRIPCIÓN</label><textarea rows="4" value={publishForm.description} onChange={e => setPublishForm({...publishForm, description: e.target.value})}></textarea></div>
-            </div>
-            <div className="publish-modal-footer">
-              <button className="btn-cancelar" onClick={() => { setIsPublishOpen(false); setPublishError(''); }}>Cancelar</button>
-              <button className="btn-guardar" onClick={handlePublishSubmit}>Guardar</button>
-            </div>
-          </div>
+          <PublishProductForm onClose={() => setIsPublishOpen(false)} />
         </div>
       )}
     </>

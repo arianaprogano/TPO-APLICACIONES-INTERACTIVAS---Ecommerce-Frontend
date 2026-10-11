@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import './AdminPanel.css'
+import UserForm from '../components/UserForm'
+import CategoryForm from '../components/CategoryForm'
+import './PanelStyles.css'
 
 function AdminPanel() {
   const [activeTab, setActiveTab] = useState('ordenes')
@@ -9,11 +11,11 @@ function AdminPanel() {
   
   // Estados para la Gestión de Categorías
   const [isCatModalOpen, setIsCatModalOpen] = useState(false)
-  const [catForm, setCatForm] = useState({ id: null, name: '', subcategories: '' })
   const [busquedaCategoria, setBusquedaCategoria] = useState('')
+  const [editingCategory, setEditingCategory] = useState(null) // Guardamos qué categoría estamos editando
 
   // Datos simulados de categorías
-const [categorias, setCategorias] = useState([
+  const [categorias, setCategorias] = useState([
     { id: 1, name: 'Maquinaria', subcategories: 'Tractor, Cosechadora' },
     { id: 2, name: 'Insumos', subcategories: 'Semillas, Fertilizantes' }
   ]);
@@ -23,65 +25,46 @@ const [categorias, setCategorias] = useState([
   )
 
   const openNewCategoryModal = () => {
-    setCatForm({ id: null, name: '', subcategories: '' })
+    setEditingCategory({ id: null, name: '', subcategories: '' })
     setIsCatModalOpen(true)
   }
 
   const openEditCategoryModal = (cat) => {
-    setCatForm(cat)
+    setEditingCategory(cat)
     setIsCatModalOpen(true)
   }
 
-const handleSaveCategory = () => {
-    // Evitar guardar si el nombre está vacío
-    if (catForm.name.trim() === '') return;
-
+  // Esta función se la pasamos al CategoryForm para que la ejecute al dar "Guardar"
+  const handleSaveCategory = (catForm) => {
     if (catForm.id) {
-      // Si ya tiene ID, significa que estamos EDITANDO una existente
-      const categoriasActualizadas = categorias.map(c => 
-        c.id === catForm.id ? catForm : c
-      );
+      const categoriasActualizadas = categorias.map(c => c.id === catForm.id ? catForm : c);
       setCategorias(categoriasActualizadas);
     } else {
-      // Si NO tiene ID, estamos CREANDO una nueva
-      // Generamos un ID nuevo sumando 1 al ID más alto que exista
       const nuevoId = categorias.length > 0 ? Math.max(...categorias.map(c => c.id)) + 1 : 1;
       const nuevaCategoria = { ...catForm, id: nuevoId };
-      
-      // Agregamos la nueva categoría al estado
       setCategorias([...categorias, nuevaCategoria]);
     }
-
-    // Cerramos el modal
     setIsCatModalOpen(false);
   }
 
   return (
     <div className="panel-container">
-      <div className="panel-tabs">
+      <nav className="panel-tabs">
         <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Gestión de Órdenes</button>
         <button className={activeTab === 'productos' ? 'active' : ''} onClick={() => setActiveTab('productos')}>Productos Pendientes</button>
         <button className={activeTab === 'usuarios' ? 'active' : ''} onClick={() => setActiveTab('usuarios')}>Gestión de Usuarios</button>
         <button className={activeTab === 'categorias' ? 'active' : ''} onClick={() => setActiveTab('categorias')}>Gestión de Categorías</button>
-      </div>
+      </nav>
 
-      <div className="panel-content">
+      <main className="panel-content">
         
-        {/* --- TABLA DE ÓRDENES --- */}
         {activeTab === 'ordenes' && (
           <table className="panel-table">
             <thead>
-              <tr>
-                <th>ID</th>
-                <th>TOTAL</th>
-                <th>ESTADO</th>
-                <th className="text-right">ACCIÓN</th>
-              </tr>
+              <tr><th>ID</th><th>TOTAL</th><th>ESTADO</th><th className="text-right">ACCIÓN</th></tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan="4" className="empty-state">No hay órdenes</td>
-              </tr>
+              <tr><td colSpan="4" className="empty-state">No hay órdenes</td></tr>
             </tbody>
           </table>
         )}
@@ -89,41 +72,29 @@ const handleSaveCategory = () => {
         {activeTab === 'productos' && (
           <table className="panel-table">
             <thead>
-              <tr>
-                <th>PRODUCTO</th>
-                <th>PRECIO</th>
-                <th className="text-right">ACCIÓN</th>
-              </tr>
+              <tr><th>PRODUCTO</th><th>PRECIO</th><th className="text-right">ACCIÓN</th></tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan="3" className="empty-state">No hay productos pendientes</td>
-              </tr>
+              <tr><td colSpan="3" className="empty-state">No hay productos pendientes</td></tr>
             </tbody>
           </table>
         )}
 
         {activeTab === 'usuarios' && (
-          <div className="users-section">
-            <div className="users-toolbar">
+          <section className="users-section">
+            <header className="users-toolbar">
               <div className="search-bar">
                 <i className="fa-solid fa-search"></i>
-                <input type="text" placeholder="Buscar por email, usuario, nombre o rol..." />
+                <input type="text" placeholder="Buscar por email, usuario o rol..." />
               </div>
               <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
                 <i className="fa-solid fa-user-plus"></i> NUEVO USUARIO
               </button>
-            </div>
+            </header>
             
             <table className="panel-table">
               <thead>
-                <tr>
-                  <th>USUARIO / EMAIL</th>
-                  <th>NOMBRE COMPLETO</th>
-                  <th>ROL</th>
-                  <th>DIRECCIÓN</th>
-                  <th className="text-right">ACCIÓN</th>
-                </tr>
+                <tr><th>USUARIO / EMAIL</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>DIRECCIÓN</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
                 <tr>
@@ -140,12 +111,12 @@ const handleSaveCategory = () => {
                 </tr>
               </tbody>
             </table>
-          </div>
+          </section>
         )}
 
         {activeTab === 'categorias' && (
-          <div className="users-section">
-            <div className="users-toolbar">
+          <section className="users-section">
+            <header className="users-toolbar">
               <div className="search-bar">
                 <i className="fa-solid fa-search"></i>
                 <input type="text" placeholder="Buscar categoría..." value={busquedaCategoria} onChange={(e) => setBusquedaCategoria(e.target.value)} />
@@ -153,16 +124,11 @@ const handleSaveCategory = () => {
               <button className="btn-new-user" onClick={openNewCategoryModal}>
                 <i className="fa-solid fa-folder-plus"></i> NUEVA CATEGORÍA
               </button>
-            </div>
+            </header>
             
             <table className="panel-table">
               <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>NOMBRE DE LA CATEGORÍA</th>
-                  <th>SUBCATEGORÍAS</th>
-                  <th className="text-right">ACCIÓN</th>
-                </tr>
+                <tr><th>ID</th><th>NOMBRE DE LA CATEGORÍA</th><th>SUBCATEGORÍAS</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
                 {categoriasFiltradas.map(cat => (
@@ -170,7 +136,6 @@ const handleSaveCategory = () => {
                     <td><strong className="text-gray-500">#{cat.id}</strong></td>
                     <td><strong>{cat.name}</strong></td>
                     <td>
-                  
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         {cat.subcategories.split(',').map((sub, index) => (
                           <span key={index} className="subcat-badge">{sub.trim()}</span>
@@ -178,124 +143,35 @@ const handleSaveCategory = () => {
                       </div>
                     </td>
                     <td className="text-right">
-                      <button onClick={() => openEditCategoryModal(cat)} className="btn-icon-edit" title="Editar">
-                        <i className="fa-solid fa-pen"></i>
-                      </button>
-                      <button className="btn-icon-delete" title="Eliminar">
-                        <i className="fa-solid fa-trash"></i>
-                      </button>
+                      <button onClick={() => openEditCategoryModal(cat)} className="btn-icon-edit" title="Editar"><i className="fa-solid fa-pen"></i></button>
+                      <button className="btn-icon-delete" title="Eliminar"><i className="fa-solid fa-trash"></i></button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </section>
         )}
-      </div>
+      </main>
 
+      {/* --- RENDERIZADO DE LOS COMPONENTES EXTERNOS --- */}
+      
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="user-modal-content">
-            <div className="user-modal-header">
-              <div className="modal-title-with-icon">
-                <i className="fa-solid fa-user-plus"></i> Registrar Nuevo Usuario
-              </div>
-              <button className="close-modal-btn" onClick={() => setIsModalOpen(false)}><i className="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div className="user-modal-body">
-              <div className="form-group full-width">
-                <label>CORREO ELECTRÓNICO *</label>
-                <input type="email" placeholder="ejemplo@test.com" />
-              </div>
-              
-              <div className="user-modal-grid">
-                <div className="form-group">
-                  <label>USUARIO *</label>
-                  <input type="text" placeholder="usuario1" />
-                </div>
-                <div className="form-group">
-                  <label>ROL *</label>
-                  <select>
-                    <option>Vendedor</option>
-                    <option>Despachante</option>
-                    <option>Administrador</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group full-width">
-                <label>CONTRASEÑA</label>
-                <input type="password" placeholder="Contraseña" />
-              </div>
-
-              <div className="user-modal-grid">
-                <div className="form-group">
-                  <label>NOMBRE</label>
-                  <input type="text" placeholder="Nombre" />
-                </div>
-                <div className="form-group">
-                  <label>APELLIDO</label>
-                  <input type="text" placeholder="Apellido" />
-                </div>
-              </div>
-
-              <div className="form-group full-width">
-                <label>DIRECCIÓN</label>
-                <input type="text" placeholder="Calle 123, Provincia" />
-              </div>
-            </div>
-
-            <div className="user-modal-footer">
-              <button className="btn-cancelar" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-              <button className="btn-guardar"><i className="fa-solid fa-check"></i> Guardar Usuario</button>
-            </div>
-          </div>
+          <UserForm 
+            onClose={() => setIsModalOpen(false)} 
+            onSave={() => setIsModalOpen(false)} 
+          />
         </div>
       )}
 
       {isCatModalOpen && (
         <div className="modal-overlay">
-          <div className="user-modal-content" style={{ maxWidth: '400px' }}>
-            <div className="user-modal-header">
-              <div className="modal-title-with-icon">
-                <i className="fa-solid fa-folder-tree" style={{ color: '#16a34a' }}></i> 
-                {catForm.id ? 'Editar Categoría' : 'Nueva Categoría'}
-              </div>
-              <button className="close-modal-btn" onClick={() => setIsCatModalOpen(false)}><i className="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div className="user-modal-body">
-              <div className="form-group full-width">
-                <label>NOMBRE DE LA CATEGORÍA *</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej. Herramientas" 
-                  value={catForm.name}
-                  onChange={(e) => setCatForm({...catForm, name: e.target.value})}
-                />
-              </div>
-              
-              <div className="form-group full-width" style={{ marginTop: '8px' }}>
-                <label>SUBCATEGORÍAS</label>
-                <textarea 
-                  rows="3" 
-                  placeholder="Ej. Palas, Rastrillos, Mangueras" 
-                  value={catForm.subcategories}
-                  onChange={(e) => setCatForm({...catForm, subcategories: e.target.value})}
-                  style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }}
-                ></textarea>
-                <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>Escribe las subcategorías separadas por comas (,).</p>
-              </div>
-            </div>
-
-            <div className="user-modal-footer">
-              <button className="btn-cancelar" onClick={() => setIsCatModalOpen(false)}>Cancelar</button>
-              <button className="btn-guardar" onClick={handleSaveCategory}>
-                <i className="fa-solid fa-check"></i> Guardar
-              </button>
-            </div>
-          </div>
+          <CategoryForm 
+            onClose={() => setIsCatModalOpen(false)} 
+            onSave={handleSaveCategory} 
+            initialData={editingCategory} 
+          />
         </div>
       )}
     </div>

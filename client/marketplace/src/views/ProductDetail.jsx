@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import './ProductDetail.css'
 
-// Mismos datos
 const initialData = [
   { id: 1, sellerId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3 },
   { id: 2, sellerId: 10, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50 },
   { id: 3, sellerId: 11, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1 }
 ];
 
-// 1. AÑADIMOS addToCart COMO PROP
 export default function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -32,7 +30,6 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
     setQuantity(newQ)
   }
 
-  // 2. CONECTAMOS EL BOTÓN DIRECTAMENTE
   const handleAddToCartClick = () => {
     addToCart(product, quantity)
   }
@@ -41,33 +38,42 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
 
   return (
     <div className="product-detail-container">
-      <button className="back-btn" onClick={() => navigate(-1)}>
-        <i className="fa-solid fa-arrow-left"></i> Volver al listado
-      </button>
+      <nav style={{ marginBottom: '20px' }}>
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          <i className="fa-solid fa-arrow-left"></i> Volver al listado
+        </button>
+      </nav>
 
-      <div className="product-detail-card">
+      <article className="product-detail-card">
         
-        {/* IZQUIERDA: IMAGEN */}
         <div className="product-detail-left">
-          <div className="product-detail-image-wrapper">
+          <figure className="product-detail-image-wrapper" style={{ margin: 0 }}>
             <img src={product.image} alt={product.title} className="product-detail-image" />
-          </div>
+          </figure>
 
-          <div className="product-reviews-section">
+          <section className="product-description-section" style={{ marginTop: '30px' }}>
+            <h3 className="reviews-title" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '10px', marginBottom: '16px' }}>
+              Descripción del producto
+            </h3>
+            <p style={{ color: '#4b5563', lineHeight: '1.6', fontSize: '15px', whiteSpace: 'pre-wrap' }}>
+              {product.body}
+            </p>
+          </section>
+
+          <section className="product-reviews-section" style={{ marginTop: '40px' }}>
             <h3 className="reviews-title">Opiniones de los usuarios</h3>
-            <div className="review-card">
+            <article className="review-card">
               <div className="review-stars">
                 <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
               </div>
               <p className="review-text">Excelente producto, tal cual la descripción. El envío fue rapidísimo.</p>
               <span className="review-author">Juan P. - Hace 2 semanas</span>
-            </div>
-          </div>
+            </article>
+          </section>
         </div>
 
-        {/* DERECHA: INFO Y COMPRA */}
         <div className="product-detail-info">
-          <div className="pd-header-row">
+          <header className="pd-header-row">
             <div className="pd-tags">
               <span className="pd-condition">{product.condition}</span>
               <span className="pd-breadcrumb">{product.category} &gt; {product.subcategory || 'General'}</span>
@@ -77,7 +83,7 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
               <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
               {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
             </button>
-          </div>
+          </header>
 
           <h1 className="product-title">{product.title}</h1>
           
@@ -96,14 +102,14 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
             )}
           </div>
 
-          <div className="payment-box">
+          <section className="payment-box">
             <h4 className="payment-title">Medios de pago y financiación</h4>
             <ul className="payment-list">
               <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito.</li>
-              <li><i class="fa-solid fa-check"></i> 6 cuotas sin interés bancarias.</li>
+              <li><i className="fa-solid fa-check"></i> 6 cuotas sin interés bancarias.</li>
               <li><i className="fa-solid fa-check"></i> Descuento por transferencia bancaria.</li>
             </ul>
-          </div>
+          </section>
 
           {product.stock > 0 ? (
             <div className="product-actions-row">
@@ -123,13 +129,9 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
               </button>
             </div>
           )}
-
-          <div className="product-description-bottom">
-            {product.body}
-          </div>
+          
         </div>
-
-      </div>
+      </article>
     </div>
   )
 }

@@ -4,8 +4,6 @@ import './Carrito.css'
 export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCart }) {
   const [shippingMethod, setShippingMethod] = useState('envio')
   const [showEmptyError, setShowEmptyError] = useState(false)
-  
-  // NUEVO: Estado para mostrar el modal de éxito en lugar del alert()
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
@@ -16,8 +14,6 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
       setShowEmptyError(true)
       return
     }
-    
-    // Mostramos nuestro modal de éxito personalizado
     setShowSuccessModal(true)
   }
 
@@ -31,20 +27,21 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
     <>
       <div className={`cart-drawer-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}></div>
       
-      <div className={`cart-drawer ${isOpen ? 'open' : ''}`}>
-        <div className="cart-header">
+      <aside className={`cart-drawer ${isOpen ? 'open' : ''}`}>
+        
+        <header className="cart-header">
           <div className="cart-title">
             <i className="fa-solid fa-basket-shopping"></i> Carrito
           </div>
           <button className="cart-close" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
-        </div>
+        </header>
 
-        <div className="cart-items">
+        <section className="cart-items">
           {cart.length === 0 ? (
             <div className="empty-cart-msg">Tu carrito está vacío.</div>
           ) : (
             cart.map((item, index) => (
-              <div className="cart-item" key={index}>
+              <article className="cart-item" key={index}>
                 <div className="cart-item-info">
                   <div className="cart-item-title">{item.title}</div>
                   <div className="cart-item-price">{formatMoney(item.price)} x {item.qty}</div>
@@ -52,14 +49,14 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
                 <button className="cart-item-remove" onClick={() => removeFromCart(item.id)}>
                   <i className="fa-solid fa-trash-can"></i>
                 </button>
-              </div>
+              </article>
             ))
           )}
-        </div>
+        </section>
 
-        <div className="cart-footer">
-          <div className="shipping-section">
-            <label className="shipping-title">MÉTODO DE ENTREGA</label>
+        <footer className="cart-footer">
+          <fieldset className="shipping-section" style={{ border: 'none', padding: 0, margin: '0 0 24px 0' }}>
+            <legend className="shipping-title">MÉTODO DE ENTREGA</legend>
             <label className="shipping-option">
               <input type="radio" name="shipping" checked={shippingMethod === 'envio'} onChange={() => setShippingMethod('envio')} />
               <span>Envío a domicilio</span>
@@ -68,7 +65,7 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
               <input type="radio" name="shipping" checked={shippingMethod === 'acordar'} onChange={() => setShippingMethod('acordar')} />
               <span>Acordar con vendedor</span>
             </label>
-          </div>
+          </fieldset>
 
           <div className="cart-total-row">
             <span className="cart-total-label">TOTAL:</span>
@@ -78,10 +75,9 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
           <button className="btn-confirm-purchase" onClick={handleCheckout}>
             CONFIRMAR COMPRA
           </button>
-        </div>
-      </div>
+        </footer>
+      </aside>
 
-      {/* MODAL DE ERROR (Carrito Vacío) */}
       {showEmptyError && (
         <div className="modal-overlay" style={{ zIndex: 11000 }}>
           <div className="modal-content-wide">
@@ -97,7 +93,6 @@ export default function Carrito({ isOpen, onClose, cart, removeFromCart, clearCa
         </div>
       )}
 
-      {/* MODAL DE ÉXITO (Compra Confirmada con Tick Verde) */}
       {showSuccessModal && (
         <div className="modal-overlay" style={{ zIndex: 11000 }}>
           <div className="modal-content-wide">

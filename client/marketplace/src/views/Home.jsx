@@ -28,14 +28,15 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
   return (
     <div className="home-container">
       <div className="home-layout">
+        
         <aside className="sidebar-filtros">
           <h3 className="filtros-titulo">Filtros</h3>
           
-          <div className="filtro-grupo">
-            <div className="filtro-header" onClick={() => setOpenCondition(!openCondition)}>
+          <section className="filtro-grupo">
+            <header className="filtro-header" onClick={() => setOpenCondition(!openCondition)}>
               <h4>Condición</h4>
               <i className={`fa-solid fa-chevron-down ${openCondition ? 'rotado' : ''}`}></i>
-            </div>
+            </header>
             
             {openCondition && (
               <div className="filtro-opciones">
@@ -49,13 +50,13 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
                 </label>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="filtro-grupo">
-            <div className="filtro-header" onClick={() => setOpenLocation(!openLocation)}>
+          <section className="filtro-grupo">
+            <header className="filtro-header" onClick={() => setOpenLocation(!openLocation)}>
               <h4>Ubicación</h4>
               <i className={`fa-solid fa-chevron-down ${openLocation ? 'rotado' : ''}`}></i>
-            </div>
+            </header>
             
             {openLocation && (
               <div className="filtro-opciones">
@@ -73,10 +74,10 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
                 </label>
               </div>
             )}
-          </div>
+          </section>
         </aside>
 
-        <div className="main-productos">
+        <main className="main-productos">
           <PostList 
             searchTerm={searchTerm} 
             selectedCategory={selectedCategory} 
@@ -86,7 +87,7 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
             favorites={favorites}
             toggleFavorite={toggleFavorite}
           />
-        </div>
+        </main>
       </div>
     </div>
   )
