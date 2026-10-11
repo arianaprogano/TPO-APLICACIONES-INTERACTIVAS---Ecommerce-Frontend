@@ -5,9 +5,19 @@ import './Home.css'
 export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
-
+  const [openEnvio, setOpenEnvio] = useState(true)
+  const [openOfertas, setOpenOfertas] = useState(true)
   const [conditions, setConditions] = useState([])
   const [locations, setLocations] = useState([])
+  const [soloConEnvio, setSoloConEnvio] = useState(false)
+  const [soloOfertas, setSoloOfertas] = useState(false)
+
+  const limpiarFiltros = () => {
+    setConditions([])
+    setLocations([])
+    setSoloConEnvio(false)
+    setSoloOfertas(false)
+  }
 
   const handleConditionChange = (cond) => {
     if (conditions.includes(cond)) {
@@ -30,7 +40,29 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
       <div className="home-layout">
         
         <aside className="sidebar-filtros">
-          <h3 className="filtros-titulo">Filtros</h3>
+        
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 className="filtros-titulo" style={{ margin: 0 }}>Filtros</h3>
+            
+            <button 
+              onClick={limpiarFiltros}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#16a34a', 
+                fontSize: '13px', 
+                fontWeight: 'bold', 
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#f0fdf4'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+            >
+              Limpiar
+            </button>
+          </div>
           
           <section className="filtro-grupo">
             <header className="filtro-header" onClick={() => setOpenCondition(!openCondition)}>
@@ -75,6 +107,38 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
               </div>
             )}
           </section>
+          
+          <section className="filtro-grupo">
+            <header className="filtro-header" onClick={() => setOpenEnvio(!openEnvio)}>
+              <h4>Envío</h4>
+              <i className={`fa-solid fa-chevron-down ${openEnvio ? 'rotado' : ''}`}></i>
+            </header>
+            
+            {openEnvio && (
+              <div className="filtro-opciones">
+                <label>
+                  <input type="checkbox" checked={soloConEnvio} onChange={() => setSoloConEnvio(!soloConEnvio)} /> 
+                  Con envío disponible
+                </label>
+              </div>
+            )}
+          </section>
+
+          <section className="filtro-grupo">
+            <header className="filtro-header" onClick={() => setOpenOfertas(!openOfertas)}>
+              <h4>Ofertas</h4>
+              <i className={`fa-solid fa-chevron-down ${openOfertas ? 'rotado' : ''}`}></i>
+            </header>
+            
+            {openOfertas && (
+              <div className="filtro-opciones">
+                <label>
+                  <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(!soloOfertas)} /> 
+                  Solo productos en oferta
+                </label>
+              </div>
+            )}
+          </section>
         </aside>
 
         <main className="main-productos">
@@ -86,6 +150,8 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
             locations={locations}
             favorites={favorites}
             toggleFavorite={toggleFavorite}
+            soloConEnvio={soloConEnvio}
+            soloOfertas={soloOfertas}
           />
         </main>
       </div>

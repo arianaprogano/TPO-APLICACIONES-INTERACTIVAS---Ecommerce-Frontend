@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react'
 import PostCard from './PostCard'
 import './PostList.css'
 
-function PostList({ searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite }) {
+function PostList({ searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite, soloConEnvio, soloOfertas }) {
   const [posts, setPosts] = useState([])
 
-  // Agregamos rating, sales y stock a los datos de prueba
   const initialData = [
     {
       id: 1,
@@ -19,7 +18,9 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10",
       rating: 4.8,
       sales: 4,
-      stock: 3
+      stock: 3,
+      conEnvio: false, // Sin envío
+      enOferta: false  // Sin oferta
     },
     {
       id: 2,
@@ -33,7 +34,11 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10",
       rating: 4.9,
       sales: 450,
-      stock: 50
+      stock: 50,
+      conEnvio: true, // Con envío
+      enOferta: true, // En oferta
+      porcentajeDescuento: 15,
+      precioOriginal: 75 
     },
     {
       id: 3,
@@ -47,7 +52,11 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10",
       rating: 4.5,
       sales: 2,
-      stock: 1
+      stock: 1,
+      conEnvio: true, // Con envío
+      enOferta: true, // En oferta
+      porcentajeDescuento: 20,
+      precioOriginal: 150000 
     }
   ]
 
@@ -66,6 +75,14 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       post.body.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  }
+  
+  // NUEVO: Lógica de filtrado por envío y oferta
+  if (soloConEnvio) {
+    filteredPosts = filteredPosts.filter(post => post.conEnvio === true);
+  }
+  if (soloOfertas) {
+    filteredPosts = filteredPosts.filter(post => post.enOferta === true);
   }
 
   return (
@@ -87,6 +104,10 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
             stock={post.stock}   
             isFavorite={favorites.includes(post.id)}
             onToggleFavorite={toggleFavorite}
+            conEnvio={post.conEnvio}
+            enOferta={post.enOferta}
+            porcentajeDescuento={post.porcentajeDescuento}
+            precioOriginal={post.precioOriginal}
           />
         ))
       ) : (
