@@ -4,14 +4,18 @@ import './ProductDetail.css'
 
 const initialData = [
   { 
-    id: 1, sellerId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3,
+    id: 1, vendedorId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3,
     reviews: [
-      { id: 101, autor: "Carlos M.", estrellas: 5, texto: "Una máquina increíble, superó mis expectativas.", fecha: "Hace 1 mes" },
-      { id: 102, autor: "Jorge L.", estrellas: 4, texto: "Muy buen estado general, solo un detalle en la pintura.", fecha: "Hace 3 meses" }
+      { id: 101, autor: "Carlos M.", estrellas: 5, texto: "Una máquina increíble, superó mis expectativas.", fecha: "Hace 1 mes" }
     ]
   },
-  { id: 2, sellerId: 10, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50 },
-  { id: 3, sellerId: 11, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1 }
+  { 
+    id: 2, vendedorId: 11, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50 
+  },
+  
+  { 
+    id: 3, vendedorId: 10, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1 
+  }
 ];
 
 function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
@@ -28,6 +32,9 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
   if (!product) return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando producto...</div>
 
   const isFavorite = favorites.includes(product.id)
+  
+  const idDelDueño = product.vendedorId || product.sellerId;
+  const esMiProducto = user && product && String(user.id) === String(idDelDueño);
   
   const handleQuantityChange = (delta) => {
     let newQ = quantity + delta
@@ -61,8 +68,14 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
       <article className="product-detail-card">
         
         <div className="product-detail-left">
-          <figure className="product-detail-image-wrapper" style={{ margin: 0 }}>
+          <figure className="product-detail-image-wrapper" style={{ margin: 0, position: 'relative' }}>
             <img src={product.image} alt={product.title} className="product-detail-image" />
+            
+            {esMiProducto && (
+              <div style={{ position: 'absolute', bottom: '16px', left: '16px', backgroundColor: '#8b5cf6', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                MI PRODUCTO
+              </div>
+            )}
           </figure>
 
           <section className="product-description-section" style={{ marginTop: '30px' }}>
@@ -132,6 +145,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
             </ul>
           </section>
 
+          {/* BOTÓN NORMAL PARA QUE CAIGAN EN LA TRAMPA */}
           {product.stock > 0 ? (
             <div className="product-actions-row">
               <div className="qty-selector">
@@ -144,8 +158,8 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
               </button>
             </div>
           ) : (
-            <div className="product-actions-row">
-              <button disabled style={{ flex: 1, backgroundColor: '#d1d5db', color: '#6b7280', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+             <div className="product-actions-row">
+              <button disabled style={{ flex: 1, backgroundColor: '#d1d5db', color: '#6b7280', border: 'none', borderRadius: '6px', fontWeight: 'bold', padding: '12px' }}>
                 SIN STOCK
               </button>
             </div>

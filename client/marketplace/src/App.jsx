@@ -11,6 +11,8 @@ import VendedorPanel from './views/VendedorPanel'
 import MisDatos from './views/MisDatos'
 import Favoritos from './views/Favoritos'
 import MisCompras from './views/MisCompras'
+import './App.css'
+import './Excepciones.css' 
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,6 +35,13 @@ function App() {
     if (user.role === 'admin' || user.role === 'despachante') {
       setModalMessage(`Tu rol de ${user.role} no te permite realizar compras.`)
       return
+    }
+    
+    const idDelDueño = product.vendedorId || product.sellerId;
+    
+    if (user.id == idDelDueño) {
+      setModalMessage("No puedes comprar tu propio producto!");
+      return;
     }
 
     setCart(prev => {
@@ -90,7 +99,6 @@ function App() {
           <Route path="/perfil" element={<MisDatos user={user} />} />
           
           <Route path="/favoritos" element={<Favoritos favorites={favorites} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} />} />
-          
           <Route path="/mis-compras" element={<MisCompras user={user} setModalMessage={setModalMessage} />} />
         </Routes>
       </main>
@@ -104,13 +112,21 @@ function App() {
       />
 
       {modalMessage && (
-        <div className="modal-overlay" style={{ zIndex: 11000 }}>
-          <div className="modal-content-wide">
-            <i className="fa-solid fa-circle-xmark modal-icon-red"></i>
-            <p className="modal-text-wide">{modalMessage}</p>
-            <button className="modal-btn-red" onClick={() => setModalMessage('')}>
-              Entendido
+        <div className="error-overlay">
+          <div className="error-modal">
+            
+            <div className="error-icon-box">
+              <i className="fa-solid fa-xmark"></i>
+            </div>
+
+            <h2 className="error-title">Error</h2>
+
+            <p className="error-text">{modalMessage}</p>
+
+            <button className="error-btn" onClick={() => setModalMessage('')}>
+              Aceptar
             </button>
+            
           </div>
         </div>
       )}

@@ -1,0 +1,73 @@
+.error-overlay {
+  z-index: 11000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.error-modal {
+  background-color: #ffffff;
+  padding: 40px 40px;
+  border-radius: 20px;
+  text-align: center;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  box-sizing: border-box;
+}
+
+.error-icon-box {
+  width: 75px;
+  height: 75px;
+  background-color: #ef4444; 
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 24px auto;
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+.error-icon-box i {
+  font-size: 38px;
+  color: white;
+}
+
+.error-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.error-text {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 30px 0;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.error-btn {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  width: 100%;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+
+.error-btn:hover {
+  opacity: 0.9;
+}
