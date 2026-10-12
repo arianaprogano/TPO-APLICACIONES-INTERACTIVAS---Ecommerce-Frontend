@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoImg from '../assets/logo.png' 
 import PublishProductForm from './PublishProductForm'
 import './Navigation.css'
+
 
 function Navigation({ 
   searchTerm, setSearchTerm, 
@@ -43,7 +44,28 @@ function Navigation({
   const subcategoriesMap = { 'Maquinaria': ['Tractor', 'Cosechadora'], 'Insumos': ['Semillas', 'Fertilizantes'] }
   const canPublish = user && user.role === 'vendedor'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
-  const notifications = user ? [{ id: 1, text: "Bienvenido de nuevo a AgroMarket.", time: "Hace 1 min", unread: true }] : [];
+  const [notifications, setNotifications] = useState([]);
+  useEffect(() => {
+    // Cada vez que la variable 'user' cambie, React ejecutará esto:
+    if (user) {
+      // Si alguien inició sesión, le creamos su notificación de bienvenida nueva y sin leer
+      setNotifications([
+        { id: 1, text: `Bienvenido de nuevo a AgroMarket, ${user.username}.`, time: "Recién", unread: true }
+      ]);
+    } else {
+      // Si cerraron sesión, limpiamos la memoria
+      setNotifications([]);
+    }
+  }, [user]); // El [user] al final es lo que le dice a React que "escuche" los cambios en esta variable
+  
+  const handleMarcarLeidas = () => {
+  // Cambia el estado de todas las notificaciones a "leídas" (false) para borrar el número 1
+  const actualizadas = notifications.map(notif => ({ ...notif, unread: false }));
+  setNotifications(actualizadas);
+  
+  // Cierra el pop-up de notificaciones
+  setIsNotifOpen(false);
+  };
 
   return (
     <>
@@ -79,7 +101,7 @@ function Navigation({
                 {isNotifOpen && (
                   <aside className="notif-dropdown">
                     <header className="notif-header">
-                      <h4>Notificaciones</h4><span className="mark-read">Marcar leídas</span>
+                      <h4>Notificaciones</h4><span className="mark-read" onClick={handleMarcarLeidas} style={{ cursor: 'pointer' }}>Marcar leídas</span>
                     </header>
                     <div className="notif-list">
                       {notifications.map(notif => (

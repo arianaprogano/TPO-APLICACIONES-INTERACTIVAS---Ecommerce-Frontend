@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import PostCard from './PostCard'
 import './PostList.css'
 
-function PostList({ searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite, soloConEnvio, soloOfertas }) {
+function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite, soloConEnvio, soloOfertas }) {
   const [posts, setPosts] = useState([])
 
   const initialData = [
@@ -20,7 +20,8 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       sales: 4,
       stock: 3,
       conEnvio: false, // Sin envío
-      enOferta: false  // Sin oferta
+      enOferta: false,  // Sin oferta
+      vendedorId: 10
     },
     {
       id: 2,
@@ -38,7 +39,8 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       conEnvio: true, // Con envío
       enOferta: true, // En oferta
       porcentajeDescuento: 15,
-      precioOriginal: 75 
+      precioOriginal: 75,
+      vendedorId: 11 
     },
     {
       id: 3,
@@ -56,7 +58,8 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       conEnvio: true, // Con envío
       enOferta: true, // En oferta
       porcentajeDescuento: 20,
-      precioOriginal: 150000 
+      precioOriginal: 150000,
+      vendedorId: 10 
     }
   ]
 
@@ -90,6 +93,7 @@ function PostList({ searchTerm, selectedCategory, selectedSubcategory, condition
       {filteredPosts.length > 0 ? (
         filteredPosts.map((post) => (
           <PostCard
+            esMiProducto={user && user.id === post.vendedorId}
             key={post.id}
             id={post.id}
             title={post.title}

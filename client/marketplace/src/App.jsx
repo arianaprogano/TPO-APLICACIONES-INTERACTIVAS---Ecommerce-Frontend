@@ -82,7 +82,7 @@ function App() {
           <Route path="/home" element={
             user?.role === 'despachante' 
               ? <Navigate to="/despachante" /> 
-              : <Home searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} />
+              : <Home user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} />
           } />
           <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} />} />
           <Route path="/login" element={<Login setUser={setUser} />} />

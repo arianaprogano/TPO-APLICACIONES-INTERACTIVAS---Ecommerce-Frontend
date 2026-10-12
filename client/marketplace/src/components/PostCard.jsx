@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom' 
 import './PostCard.css'
 
-function PostCard({ id, title, price, image, subcategory, condition, rating, sales, stock, isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal }) {
+function PostCard({ id, title, price, image, subcategory, condition, rating, sales, stock, isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal, esMiProducto }) {
   const navigate = useNavigate(); 
 
   const formatMoney = (amount) =>
@@ -28,6 +28,12 @@ function PostCard({ id, title, price, image, subcategory, condition, rating, sal
 
       <div className="card-image-wrapper">
         <img src={image || 'https://placehold.co/400'} alt={title} className="card-image" />
+
+        {esMiProducto && (
+          <div className="badge-mi-producto">
+            <i className="fa-solid fa-store"></i> Mi Producto
+          </div>
+        )}
       </div>
 
       <div className="card-content">

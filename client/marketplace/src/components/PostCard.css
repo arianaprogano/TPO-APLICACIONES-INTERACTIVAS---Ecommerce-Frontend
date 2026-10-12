@@ -49,6 +49,7 @@
   width: 100%;
   background-color: #f9fafb;
   overflow: hidden;
+  position: relative;
 }
 
 .card-image {
@@ -136,14 +137,16 @@
 
 .badge-oferta-flotante {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: #ef4444; /* Rojo llamativo */
+  top: 22px;
+  left: -32px;
+  width: 130px;
+  background-color: #EA0F0F;
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 0;
+  text-align: center;
+  transform: rotate(-45deg);
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
@@ -175,4 +178,21 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.badge-mi-producto {
+  position: absolute;
+  bottom: 10px; /* Lo separa un poco del borde inferior de la foto */
+  left: 10px;   /* Lo separa un poco del borde izquierdo de la foto */
+  background-color: #7c3aed; /* Violeta principal */
+  color: #ffffff; /* Texto blanco */
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

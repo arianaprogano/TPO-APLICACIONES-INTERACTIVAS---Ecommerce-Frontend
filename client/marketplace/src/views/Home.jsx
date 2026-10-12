@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import PostList from '../components/PostList'
 import './Home.css'
 
-export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
+export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
   const [openEnvio, setOpenEnvio] = useState(true)
@@ -142,7 +142,8 @@ export const Home = ({ searchTerm, selectedCategory, selectedSubcategory, favori
         </aside>
 
         <main className="main-productos">
-          <PostList 
+          <PostList
+            user={user} 
             searchTerm={searchTerm} 
             selectedCategory={selectedCategory} 
             selectedSubcategory={selectedSubcategory}
