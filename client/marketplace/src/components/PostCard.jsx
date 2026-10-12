@@ -2,7 +2,11 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom' 
 import './PostCard.css'
 
-function PostCard({ id, title, price, image, subcategory, condition, rating, sales, stock, isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal, esMiProducto }) {
+function PostCard({ 
+  id, title, price, image, subcategory, condition, rating, sales, stock, 
+  isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal,
+  esMiProducto
+}) {
   const navigate = useNavigate(); 
 
   const formatMoney = (amount) =>
@@ -10,6 +14,7 @@ function PostCard({ id, title, price, image, subcategory, condition, rating, sal
 
   return (
     <div className="card-item" onClick={() => navigate(`/product/${id}`)}>
+      {/* Botón de favoritos siempre arriba a la derecha */}
       <button 
         className={`card-heart-btn ${isFavorite ? 'active' : ''}`}
         onClick={(e) => { 
@@ -20,18 +25,21 @@ function PostCard({ id, title, price, image, subcategory, condition, rating, sal
         <i className={`${isFavorite ? 'fa-solid' : 'fa-regular'} fa-heart`}></i>
       </button>
 
+      {/* Cartelito de Oferta Flotante (Arriba a la izquierda) */}
       {enOferta && (
         <div className="badge-oferta-flotante">
           {porcentajeDescuento}% OFF
         </div>
       )}
 
-      <div className="card-image-wrapper">
+      {/* CONTENEDOR DE LA IMAGEN (Con el cartel violeta adentro) */}
+      <div className="card-image-wrapper" style={{ position: 'relative' }}>
         <img src={image || 'https://placehold.co/400'} alt={title} className="card-image" />
-
+        
+        {/* EL CARTELITO VIOLETA DE "MI PRODUCTO" (Abajo a la izquierda de la foto) */}
         {esMiProducto && (
-          <div className="badge-mi-producto">
-            <i className="fa-solid fa-store"></i> Mi Producto
+          <div className="badge-mi-producto-foto">
+            Mi Producto
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import PostCard from './PostCard'
 import './PostList.css'
 
-function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite, soloConEnvio, soloOfertas }) {
+function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, conditions, locations, favorites, toggleFavorite, soloConEnvio, soloSinEnvio, soloOfertas }) {
   const [posts, setPosts] = useState([])
 
   const initialData = [
@@ -80,10 +80,14 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
     );
   }
   
-  // NUEVO: Lógica de filtrado por envío y oferta
   if (soloConEnvio) {
     filteredPosts = filteredPosts.filter(post => post.conEnvio === true);
   }
+  
+  if (soloSinEnvio) {
+    filteredPosts = filteredPosts.filter(post => post.conEnvio === false);
+  }
+
   if (soloOfertas) {
     filteredPosts = filteredPosts.filter(post => post.enOferta === true);
   }
@@ -93,7 +97,6 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
       {filteredPosts.length > 0 ? (
         filteredPosts.map((post) => (
           <PostCard
-            esMiProducto={user && user.id === post.vendedorId}
             key={post.id}
             id={post.id}
             title={post.title}
@@ -112,6 +115,7 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
             enOferta={post.enOferta}
             porcentajeDescuento={post.porcentajeDescuento}
             precioOriginal={post.precioOriginal}
+            esMiProducto={user && user.id === post.vendedorId}
           />
         ))
       ) : (
@@ -123,4 +127,4 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
   )
 }
 
-export default PostList
+export default PostList;

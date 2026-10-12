@@ -2,20 +2,24 @@ import React, { useState } from 'react'
 import PostList from '../components/PostList'
 import './Home.css'
 
+// 1. ¡ACÁ AGREGAMOS 'user' PARA QUE LO RECIBA!
 export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
   const [openEnvio, setOpenEnvio] = useState(true)
   const [openOfertas, setOpenOfertas] = useState(true)
+
   const [conditions, setConditions] = useState([])
   const [locations, setLocations] = useState([])
   const [soloConEnvio, setSoloConEnvio] = useState(false)
+  const [soloSinEnvio, setSoloSinEnvio] = useState(false) 
   const [soloOfertas, setSoloOfertas] = useState(false)
 
   const limpiarFiltros = () => {
     setConditions([])
     setLocations([])
     setSoloConEnvio(false)
+    setSoloSinEnvio(false) 
     setSoloOfertas(false)
   }
 
@@ -35,12 +39,22 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
     }
   }
 
+  const handleFiltroEnvio = (tipo) => {
+    if (tipo === 'conEnvio') {
+      setSoloConEnvio(!soloConEnvio)
+      if (!soloConEnvio) setSoloSinEnvio(false) 
+    } else if (tipo === 'sinEnvio') {
+      setSoloSinEnvio(!soloSinEnvio)
+      if (!soloSinEnvio) setSoloConEnvio(false) 
+    }
+  }
+
   return (
     <div className="home-container">
       <div className="home-layout">
         
         <aside className="sidebar-filtros">
-        
+          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 className="filtros-titulo" style={{ margin: 0 }}>Filtros</h3>
             
@@ -117,8 +131,20 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
             {openEnvio && (
               <div className="filtro-opciones">
                 <label>
-                  <input type="checkbox" checked={soloConEnvio} onChange={() => setSoloConEnvio(!soloConEnvio)} /> 
+                  <input 
+                    type="checkbox" 
+                    checked={soloConEnvio} 
+                    onChange={() => handleFiltroEnvio('conEnvio')} 
+                  /> 
                   Con envío disponible
+                </label>
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={soloSinEnvio} 
+                    onChange={() => handleFiltroEnvio('sinEnvio')} 
+                  /> 
+                  Unicamente retiro en persona
                 </label>
               </div>
             )}
@@ -142,8 +168,8 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
         </aside>
 
         <main className="main-productos">
-          <PostList
-            user={user} 
+          <PostList 
+            user={user}
             searchTerm={searchTerm} 
             selectedCategory={selectedCategory} 
             selectedSubcategory={selectedSubcategory}
@@ -152,6 +178,7 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
             favorites={favorites}
             toggleFavorite={toggleFavorite}
             soloConEnvio={soloConEnvio}
+            soloSinEnvio={soloSinEnvio} 
             soloOfertas={soloOfertas}
           />
         </main>
@@ -160,4 +187,4 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
   )
 }
 
-export default Home
+export default Home;

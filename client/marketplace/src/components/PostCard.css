@@ -140,7 +140,7 @@
   top: 22px;
   left: -32px;
   width: 130px;
-  background-color: #EA0F0F;
+  background-color: #f31b1b;
   color: white;
   font-size: 12px;
   font-weight: 800;
@@ -180,19 +180,24 @@
   gap: 4px;
 }
 
-.badge-mi-producto {
+.badge-mi-producto-foto {
   position: absolute;
-  bottom: 10px; /* Lo separa un poco del borde inferior de la foto */
-  left: 10px;   /* Lo separa un poco del borde izquierdo de la foto */
-  background-color: #7c3aed; /* Violeta principal */
-  color: #ffffff; /* Texto blanco */
+  bottom: 10px;
+  left: 10px;
+  background-color: #6c4abb; /* Violeta */
+  color: white;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 8px;
   border-radius: 4px;
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.card-image-wrapper {
+  position: relative;
+  height: 200px;
+  width: 100%;
+  background-color: #f9fafb;
+  overflow: hidden;
 }

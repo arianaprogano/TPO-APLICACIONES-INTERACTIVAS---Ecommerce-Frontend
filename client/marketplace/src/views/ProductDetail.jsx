@@ -3,12 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import './ProductDetail.css'
 
 const initialData = [
-  { id: 1, sellerId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3 },
+  { 
+    id: 1, sellerId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3,
+    reviews: [
+      { id: 101, autor: "Carlos M.", estrellas: 5, texto: "Una máquina increíble, superó mis expectativas.", fecha: "Hace 1 mes" },
+      { id: 102, autor: "Jorge L.", estrellas: 4, texto: "Muy buen estado general, solo un detalle en la pintura.", fecha: "Hace 3 meses" }
+    ]
+  },
   { id: 2, sellerId: 10, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50 },
   { id: 3, sellerId: 11, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1 }
 ];
 
-export default function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
+function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
@@ -36,6 +42,14 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
 
   const formatMoney = (amount) => 'U$S ' + new Intl.NumberFormat('en-US').format(amount)
 
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(<i key={i} className={i <= rating ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ color: i <= rating ? '#f97316' : '#d1d5db' }}></i>);
+    }
+    return stars;
+  }
+
   return (
     <div className="product-detail-container">
       <nav style={{ marginBottom: '20px' }}>
@@ -62,13 +76,20 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
 
           <section className="product-reviews-section" style={{ marginTop: '40px' }}>
             <h3 className="reviews-title">Opiniones de los usuarios</h3>
-            <article className="review-card">
-              <div className="review-stars">
-                <i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i><i className="fa-solid fa-star"></i>
-              </div>
-              <p className="review-text">Excelente producto, tal cual la descripción. El envío fue rapidísimo.</p>
-              <span className="review-author">Juan P. - Hace 2 semanas</span>
-            </article>
+            
+            {product.reviews && product.reviews.length > 0 ? (
+              product.reviews.map(review => (
+                <article key={review.id} className="review-card" style={{ marginBottom: '16px' }}>
+                  <div className="review-stars">
+                    {renderStars(review.estrellas)}
+                  </div>
+                  <p className="review-text">{review.texto}</p>
+                  <span className="review-author">{review.autor} - {review.fecha}</span>
+                </article>
+              ))
+            ) : (
+              <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Este producto aún no tiene opiniones. ¡Sé el primero en calificarlo luego de tu compra!</p>
+            )}
           </section>
         </div>
 
@@ -135,3 +156,5 @@ export default function ProductDetail({ favorites, toggleFavorite, user, addToCa
     </div>
   )
 }
+
+export default ProductDetail

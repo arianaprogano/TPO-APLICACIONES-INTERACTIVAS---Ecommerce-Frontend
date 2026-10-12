@@ -45,26 +45,21 @@ function Navigation({
   const canPublish = user && user.role === 'vendedor'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
   const [notifications, setNotifications] = useState([]);
+  
   useEffect(() => {
-    // Cada vez que la variable 'user' cambie, React ejecutará esto:
     if (user) {
-      // Si alguien inició sesión, le creamos su notificación de bienvenida nueva y sin leer
       setNotifications([
         { id: 1, text: `Bienvenido de nuevo a AgroMarket, ${user.username}.`, time: "Recién", unread: true }
       ]);
     } else {
-      // Si cerraron sesión, limpiamos la memoria
       setNotifications([]);
     }
-  }, [user]); // El [user] al final es lo que le dice a React que "escuche" los cambios en esta variable
+  }, [user]); 
   
   const handleMarcarLeidas = () => {
-  // Cambia el estado de todas las notificaciones a "leídas" (false) para borrar el número 1
-  const actualizadas = notifications.map(notif => ({ ...notif, unread: false }));
-  setNotifications(actualizadas);
-  
-  // Cierra el pop-up de notificaciones
-  setIsNotifOpen(false);
+    const actualizadas = notifications.map(notif => ({ ...notif, unread: false }));
+    setNotifications(actualizadas);
+    setIsNotifOpen(false);
   };
 
   return (
@@ -138,13 +133,15 @@ function Navigation({
                     </header>
                     <ul className="dropdown-list">
                       <li><button onClick={() => handleNavigation('/perfil')}><i className="fa-regular fa-id-badge"></i> Mis Datos</button></li>
+                      
+                      {canShop && (
+                        <li><button onClick={() => handleNavigation('/mis-compras')}><i className="fa-solid fa-bag-shopping"></i> Mis Compras</button></li>
+                      )}
+
                       {user.role === 'admin' && <li><button onClick={() => handleNavigation('/admin')}><i className="fa-solid fa-gear"></i> Gestión General</button></li>}
                       {user.role === 'despachante' && <li><button onClick={() => handleNavigation('/despachante')}><i className="fa-solid fa-truck-fast"></i> Gestión de Envíos</button></li>}
                       {user.role === 'vendedor' && (
-                        <>
-                          <li><button><i className="fa-solid fa-bag-shopping"></i> Mis Compras</button></li>
-                          <li><button onClick={() => handleNavigation('/vendedor')}><i className="fa-solid fa-tags"></i> Mis Publicaciones</button></li>
-                        </>
+                        <li><button onClick={() => handleNavigation('/vendedor')}><i className="fa-solid fa-tags"></i> Mis Publicaciones</button></li>
                       )}
                       <li className="logout-item"><button onClick={handleLogout}><i className="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button></li>
                     </ul>
