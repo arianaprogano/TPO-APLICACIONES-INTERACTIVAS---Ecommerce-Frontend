@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Navigation from './components/Navigation'
 import Carrito from './components/Carrito'
@@ -11,6 +11,7 @@ import VendedorPanel from './views/VendedorPanel'
 import MisDatos from './views/MisDatos'
 import Favoritos from './views/Favoritos'
 import MisCompras from './views/MisCompras'
+
 import './App.css'
 import './Excepciones.css' 
 
@@ -20,7 +21,21 @@ function App() {
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   
   const [favorites, setFavorites] = useState([])
-  const [user, setUser] = useState(null)
+  
+  // MAGIA NUEVA: Al arrancar, buscamos si ya había un usuario guardado en la memoria
+  const [user, setUser] = useState(() => {
+    const usuarioGuardado = localStorage.getItem('agroMarketUser')
+    return usuarioGuardado ? JSON.parse(usuarioGuardado) : null
+  })
+
+  // MAGIA NUEVA: Cada vez que 'user' cambia (al loguearse o desloguearse), lo guardamos en memoria
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('agroMarketUser', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('agroMarketUser')
+    }
+  }, [user])
   
   const [modalMessage, setModalMessage] = useState('')
 
@@ -32,7 +47,7 @@ function App() {
       setModalMessage("Para comprar, debes iniciar sesión primero.")
       return
     }
-    if (user.role === 'admin' || user.role === 'despachante') {
+    if (user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'despachante') {
       setModalMessage(`Tu rol de ${user.role} no te permite realizar compras.`)
       return
     }
@@ -40,7 +55,7 @@ function App() {
     const idDelDueño = product.vendedorId || product.sellerId;
     
     if (user.id == idDelDueño) {
-      setModalMessage("No puedes comprar tu propio producto!");
+      setModalMessage("No te puedes comprar tu propio producto.");
       return;
     }
 
@@ -85,21 +100,37 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/home" />} />
+          
           <Route path="/home" element={
-            user?.role === 'despachante' 
+            user?.role?.toLowerCase() === 'despachante' 
               ? <Navigate to="/despachante" /> 
               : <Home user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} />
           } />
+          
           <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
           
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/despachante" element={<DespachantePanel />} />
-          <Route path="/vendedor" element={<VendedorPanel />} />
-          <Route path="/perfil" element={<MisDatos user={user} />} />
+          <Route path="/admin" element={
+            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'admin' ? <AdminPanel /> : <Navigate to="/home" />
+          } />
           
-          <Route path="/favoritos" element={<Favoritos favorites={favorites} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} />} />
-          <Route path="/mis-compras" element={<MisCompras user={user} setModalMessage={setModalMessage} />} />
+          <Route path="/despachante" element={
+            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'despachante' ? <DespachantePanel /> : <Navigate to="/home" />
+          } />
+          
+          <Route path="/vendedor" element={
+            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'vendedor' ? <VendedorPanel /> : <Navigate to="/home" />
+          } />
+          
+          <Route path="/perfil" element={
+            user ? <MisDatos user={user} /> : <Navigate to="/login" />
+          } />
+          <Route path="/favoritos" element={
+            user ? <Favoritos favorites={favorites} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} /> : <Navigate to="/login" />
+          } />
+          <Route path="/mis-compras" element={
+            user ? <MisCompras user={user} setModalMessage={setModalMessage} /> : <Navigate to="/login" />
+          } />
         </Routes>
       </main>
 
@@ -111,22 +142,17 @@ function App() {
         clearCart={clearCart} 
       />
 
-      {modalMessage && (
+      {modalMessage && typeof modalMessage === 'string' && modalMessage.trim() !== '' && (
         <div className="error-overlay">
           <div className="error-modal">
-            
             <div className="error-icon-box">
               <i className="fa-solid fa-xmark"></i>
             </div>
-
             <h2 className="error-title">Error</h2>
-
             <p className="error-text">{modalMessage}</p>
-
             <button className="error-btn" onClick={() => setModalMessage('')}>
               Aceptar
             </button>
-            
           </div>
         </div>
       )}
