@@ -6,20 +6,35 @@ function PublishProductForm({ onClose }) {
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
+  const [selectedImages, setSelectedImages] = useState([])
   const [publishForm, setPublishForm] = useState({
-    title: '', category: 'Maquinaria', subcategory: 'Tractor', condition: 'Nuevo', price: '', stock: '', description: ''
+    title: '', category: '', subcategory: '', condition: '', price: '', stock: '', description: ''
   })
+  const handleImageChange = (e) => {
+    // Convertimos los archivos seleccionados a un arreglo y los sumamos a los que ya teníamos
+    const newFiles = Array.from(e.target.files);
+    setSelectedImages(prevImages => [...prevImages, ...newFiles]);
+    
+    // Reseteamos el input para que permita subir el mismo archivo dos veces si el usuario lo borró y se arrepintió
+    e.target.value = null; 
+  }
+
+  const handleRemoveImage = (indexToRemove) => {
+    // Filtramos el arreglo dejando todos menos el que queremos borrar
+    setSelectedImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault() 
 
-    // Validamos: si faltan datos, mostramos el modal de error con la cruz
-    if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description) {
+    // A. Sumamos selectedImages.length === 0 para que la foto sea obligatoria
+    if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description || 
+        !publishForm.category || !publishForm.subcategory || !publishForm.condition ||
+        selectedImages.length === 0) {
       setShowErrorModal(true)
       return
     }
     
-    // Si todo está bien, mostramos el modal de éxito con el tick verde
     setShowSuccessModal(true)
   }
 
@@ -52,23 +67,26 @@ function PublishProductForm({ onClose }) {
               <div className="form-group">
                 <label>CATEGORÍA</label>
                 <select value={publishForm.category} onChange={e => setPublishForm({...publishForm, category: e.target.value})}>
-                  <option>Maquinaria</option>
-                  <option>Insumos</option>
+                  <option value="" disabled>Seleccionar...</option>
+                  <option value="Maquinaria">Maquinaria</option>
+                  <option value="Insumos">Insumos</option>
                 </select>
               </div>
               <div className="form-group">
                 <label>SUBCATEGORÍA</label>
                 <select value={publishForm.subcategory} onChange={e => setPublishForm({...publishForm, subcategory: e.target.value})}>
-                  <option>Tractor</option>
-                  <option>Cosechadora</option>
-                  <option>Semillas</option>
+                  <option value="" disabled>Seleccionar...</option>
+                  <option value="Tractor">Tractor</option>
+                  <option value="Cosechadora">Cosechadora</option>
+                  <option value="Semillas">Semillas</option>
                 </select>
               </div>
               <div className="form-group">
                 <label>CONDICIÓN</label>
                 <select value={publishForm.condition} onChange={e => setPublishForm({...publishForm, condition: e.target.value})}>
-                  <option>Nuevo</option>
-                  <option>Usado</option>
+                  <option value="" disabled>Seleccionar...</option>
+                  <option value="Nuevo">Nuevo</option>
+                  <option value="Usado">Usado</option>
                 </select>
               </div>
               <div className="form-group">
@@ -82,9 +100,43 @@ function PublishProductForm({ onClose }) {
               <input type="number" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} />
             </div>
             
-            <div className="form-group full-width">
+            {/* NUEVA LÓGICA DE IMÁGENES CON CHIPS */}
+<div className="form-group full-width">
               <label>SUBIR IMÁGENES (LOCAL)</label>
-              <input type="file" multiple className="custom-file-input" />
+              
+              {/* Contenedor que simula ser el input para que los chips queden adentro */}
+              <div className="file-input-wrapper">
+                <input 
+                  type="file" 
+                  multiple 
+                  className="custom-file-input" 
+                  onChange={handleImageChange}
+                  accept="image/*" 
+                  title="" 
+                />
+                
+                {selectedImages.length > 0 && (
+                  <div className="image-chips-container">
+                    {selectedImages.map((file, index) => (
+                      <div key={index} className={`image-chip ${index === 0 ? 'main-image-chip' : ''}`}>
+                        
+                        {/* Indicador visual para la foto principal (la primera) */}
+                        {index === 0 && <span className="badge-principal">Principal</span>}
+                        
+                        <span className="image-chip-name">{file.name}</span>
+                        <button 
+                          type="button" 
+                          className="image-chip-delete" 
+                          onClick={() => handleRemoveImage(index)}
+                          title="Eliminar imagen"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="form-group full-width">
