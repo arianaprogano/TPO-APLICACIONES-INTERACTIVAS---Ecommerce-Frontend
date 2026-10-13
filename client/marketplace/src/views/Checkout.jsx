@@ -1,38 +1,64 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { crearOrden, nombreProvincia, PROVINCIAS } from '../api/ordenes'
 import './Checkout.css'
 
-function Checkout({ cart, clearCart, user }) {
+// El backend arma la orden con lo que hay en el carrito del usuario. Aca se
+// elige como se entrega y, si algo se despacha, a donde. Los productos que no
+// admiten envio se coordinan con el vendedor si o si.
+function Checkout({ cart, onCompraRealizada, user }) {
   const navigate = useNavigate()
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [coordinarTodo, setCoordinarTodo] = useState(false)
+  const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [ordenesCreadas, setOrdenesCreadas] = useState(null)
 
-  // Agrupamos por Vendedor Y por Tipo de Envío
+  // Mismo criterio que el backend: se despacha solo lo que admite envio y
+  // siempre que el comprador no haya pedido coordinar todo.
+  const seDespacha = (item) => item.conEnvio && !coordinarTodo
+
   const agruparPaquetes = () => {
-    const paquetesObj = {};
-    
-    cart.forEach(item => {
-      const vId = item.vendedorId || item.sellerId || 'Desconocido';
-      const tipo = item.conEnvio ? 'envio' : 'retiro';
-      const clave = `${vId}-${tipo}`;
-      
-      if (!paquetesObj[clave]) {
-        paquetesObj[clave] = {
-          vendedorId: vId,
-          tipo: tipo,
-          items: []
-        };
-      }
-      paquetesObj[clave].items.push(item);
-    });
-
-    return Object.values(paquetesObj);
+    const paquetes = []
+    const despacho = cart.filter(seDespacha)
+    const coordinar = cart.filter(item => !seDespacha(item))
+    if (despacho.length > 0) paquetes.push({ tipo: 'envio', items: despacho })
+    if (coordinar.length > 0) paquetes.push({ tipo: 'retiro', items: coordinar })
+    return paquetes
   }
 
-  const paquetes = agruparPaquetes();
+  const paquetes = agruparPaquetes()
+  const hayDespacho = paquetes.some(p => p.tipo === 'envio')
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
-  const formatMoney = (amount) => 'U$S ' + new Intl.NumberFormat('en-US').format(amount || 0)
+  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-  if (cart.length === 0 && !showSuccess) {
+  if (ordenesCreadas) {
+    return (
+      <div className="error-overlay">
+        <div className="error-modal">
+          <div className="error-icon-box" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+            <i className="fa-solid fa-check"></i>
+          </div>
+          <h2 className="error-title">¡Compra Exitosa!</h2>
+          <p className="error-text">
+            Se {ordenesCreadas.length === 1 ? 'generó 1 orden' : `generaron ${ordenesCreadas.length} órdenes`}, una por vendedor y forma de entrega.
+            Quedan pendientes de pago.
+          </p>
+          <ul className="checkout-ordenes-creadas">
+            {ordenesCreadas.map(orden => (
+              <li key={orden.id}>
+                <span>Orden #{orden.id} · {orden.vendedor?.nombreUsuario}</span>
+                <strong>{formatMoney(orden.total)}</strong>
+              </li>
+            ))}
+          </ul>
+          <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={() => navigate('/mis-compras')}>Ir a Mis Compras</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (cart.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px' }}>
         <i className="fa-solid fa-cart-arrow-down" style={{ fontSize: '48px', color: '#9ca3af', marginBottom: '16px' }}></i>
@@ -43,14 +69,25 @@ function Checkout({ cart, clearCart, user }) {
     )
   }
 
-  const handlePay = () => {
-    setShowSuccess(true)
-  }
-
-  const handleSuccessClose = () => {
-    setShowSuccess(false)
-    clearCart()
-    navigate('/mis-compras')
+  const handlePay = async () => {
+    setError('')
+    if (hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())) {
+      setError('Completá provincia, localidad y dirección para los productos que se envían.')
+      return
+    }
+    setEnviando(true)
+    try {
+      const ordenes = await crearOrden({
+        coordinarConVendedor: coordinarTodo,
+        ...(hayDespacho ? entrega : {}),
+      })
+      onCompraRealizada()
+      setOrdenesCreadas(ordenes)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -58,65 +95,74 @@ function Checkout({ cart, clearCart, user }) {
       <div className="checkout-left">
         <h2 className="checkout-section-title">Revisa tu compra</h2>
 
-        {/* RECORREMOS LOS PAQUETES DINÁMICAMENTE */}
+        <section className="paquete-card">
+          <h3 className="paquete-title" style={{ marginBottom: '12px' }}>¿Cómo querés recibirlo?</h3>
+          <label className="checkout-opcion">
+            <input type="radio" name="entrega" checked={!coordinarTodo} onChange={() => setCoordinarTodo(false)} />
+            <span>Envío a domicilio <small>(solo los productos que lo admiten; el resto se coordina)</small></span>
+          </label>
+          <label className="checkout-opcion">
+            <input type="radio" name="entrega" checked={coordinarTodo} onChange={() => setCoordinarTodo(true)} />
+            <span>Coordinar todo con el vendedor</span>
+          </label>
+
+          {hayDespacho && (
+            <div className="address-input-container">
+              <label htmlFor="provincia">PROVINCIA</label>
+              <select id="provincia" value={entrega.provinciaEntrega} onChange={e => setEntrega({ ...entrega, provinciaEntrega: e.target.value })}>
+                <option value="">Seleccionar...</option>
+                {PROVINCIAS.map(([clave, nombre]) => <option key={clave} value={clave}>{nombre}</option>)}
+              </select>
+
+              <label htmlFor="localidad">LOCALIDAD</label>
+              <input id="localidad" type="text" value={entrega.localidadEntrega} onChange={e => setEntrega({ ...entrega, localidadEntrega: e.target.value })} />
+
+              <label htmlFor="direccion">DIRECCIÓN</label>
+              <input id="direccion" type="text" placeholder="Calle y número" value={entrega.direccionEntrega} onChange={e => setEntrega({ ...entrega, direccionEntrega: e.target.value })} />
+            </div>
+          )}
+        </section>
+
         {paquetes.map((paquete, index) => {
-          const numPaquete = index + 1;
-          const esEnvio = paquete.tipo === 'envio';
+          const esEnvio = paquete.tipo === 'envio'
 
           return (
-            <article className="paquete-card" key={index} style={{ marginTop: index > 0 ? '24px' : '0' }}>
+            <article className="paquete-card" key={paquete.tipo}>
               <header className="paquete-header">
                 {esEnvio ? (
                   <div className="paquete-icon icon-envio"><i className="fa-solid fa-box"></i></div>
                 ) : (
-                  <div className="paquete-icon icon-acordar" style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
-                    <i className="fa-solid fa-shop"></i>
-                  </div>
+                  <div className="paquete-icon icon-acordar"><i className="fa-solid fa-handshake"></i></div>
                 )}
-                
+
                 <div>
-                  <h3 className="paquete-title">Paquete {numPaquete} <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'normal' }}>- Vendedor #{paquete.vendedorId}</span></h3>
-                  
+                  <h3 className="paquete-title">Paquete {index + 1}</h3>
                   {esEnvio ? (
-                    <>
-                      <p className="paquete-subtitle" style={{ color: '#3b82f6', fontWeight: 'bold', marginTop: '2px' }}>
-                        Envío a acordar con el vendedor
-                      </p>
-                      <p className="paquete-subtitle" style={{ fontSize: '12px', marginTop: '2px' }}>
-                        Coordinarás el flete o entrega con el dueño.
-                      </p>
-                    </>
+                    <p className="paquete-subtitle" style={{ color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
+                      Envío a domicilio
+                      {entrega.provinciaEntrega && ` · ${entrega.localidadEntrega || ''} ${nombreProvincia(entrega.provinciaEntrega)}`}
+                    </p>
                   ) : (
-                    <>
-                      <p className="paquete-subtitle" style={{ color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
-                        Retiro en el domicilio del vendedor
-                      </p>
-                      <p className="paquete-subtitle" style={{ fontSize: '12px', marginTop: '2px' }}>
-                        Deberás buscar estos productos directamente en la ubicación del vendedor.
-                      </p>
-                    </>
+                    <p className="paquete-subtitle" style={{ color: '#4b5563', fontWeight: 'bold', marginTop: '2px' }}>
+                      Entrega a coordinar con el vendedor
+                    </p>
                   )}
                 </div>
               </header>
-              
+
               <div className="paquete-items">
-                {paquete.items.map((item, i) => (
-                  <div className="checkout-item" key={i}>
+                {paquete.items.map(item => (
+                  <div className="checkout-item" key={item.idItem}>
                     <div>
                       <div className="checkout-item-title">{item.title}</div>
-                      <div className="checkout-item-qty">Cantidad: {item.qty}</div>
+                      <div className="checkout-item-qty">
+                        Cantidad: {item.qty}
+                        {!item.conEnvio && ' · No admite envío'}
+                      </div>
                     </div>
                     <div className="checkout-item-price">{formatMoney(item.price * item.qty)}</div>
                   </div>
                 ))}
-              </div>
-              
-              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: esEnvio ? '#eff6ff' : '#fef3c7', color: esEnvio ? '#1e3a8a' : '#92400e', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
-                {esEnvio ? (
-                  <><i className="fa-solid fa-circle-info"></i> Te enviaremos los datos de contacto tras confirmar el pago.</>
-                ) : (
-                  <><i className="fa-solid fa-location-dot"></i> Obtendrás la dirección exacta al finalizar la compra.</>
-                )}
               </div>
             </article>
           )
@@ -126,16 +172,15 @@ function Checkout({ cart, clearCart, user }) {
       <div className="checkout-right">
         <h3 className="checkout-section-title">Resumen</h3>
         <div className="summary-row">
-          <span>Productos ({cart.length})</span>
+          <span>Productos ({cart.reduce((acc, item) => acc + item.qty, 0)})</span>
           <span>{formatMoney(subtotal)}</span>
         </div>
-        
-        {/* Resumen dinámico de paquetes */}
+
         {paquetes.map((paquete, index) => (
-          <div className="summary-row" key={index}>
-            <span>{paquete.tipo === 'envio' ? 'Envío' : 'Retiro'} (Paq. {index + 1})</span>
-            <span style={{ color: paquete.tipo === 'envio' ? '#3b82f6' : '#16a34a', fontWeight: '600' }}>
-              {paquete.tipo === 'envio' ? 'A acordar' : 'En persona'}
+          <div className="summary-row" key={paquete.tipo}>
+            <span>{paquete.tipo === 'envio' ? 'Envío' : 'Entrega'} (Paq. {index + 1})</span>
+            <span style={{ color: paquete.tipo === 'envio' ? '#16a34a' : '#4b5563', fontWeight: '600' }}>
+              {paquete.tipo === 'envio' ? 'A domicilio' : 'A coordinar'}
             </span>
           </div>
         ))}
@@ -145,26 +190,13 @@ function Checkout({ cart, clearCart, user }) {
           <span>{formatMoney(subtotal)}</span>
         </div>
 
-        <button className="btn-pagar" onClick={handlePay}>
-          CONFIRMAR COMPRA
+        {error && <div className="checkout-error">{error}</div>}
+
+        <button className="btn-pagar" onClick={handlePay} disabled={enviando}>
+          {enviando ? 'PROCESANDO...' : 'CONFIRMAR COMPRA'}
         </button>
+        <p className="checkout-aviso">La orden queda pendiente de pago hasta que se acredite.</p>
       </div>
-
-      {showSuccess && (
-        <div className="modal-overlay" style={{ zIndex: 12000 }}>
-          <div className="modal-content-wide">
-            <div className="success-icon-circle-wrapper">
-              <i className="fa-solid fa-check"></i>
-            </div>
-            <h3 className="modal-title-wide">¡Compra Exitosa!</h3>
-            <p className="modal-text-wide">Tu orden ha sido procesada. Ya puedes contactar a los vendedores.</p>
-            <button type="button" className="modal-btn-green" onClick={handleSuccessClose}>
-              IR A MIS COMPRAS
-            </button>
-          </div>
-        </div>
-      )}
-
     </div>
   )
 }

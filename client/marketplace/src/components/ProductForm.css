@@ -132,3 +132,68 @@
   margin-right: 6px;
   text-transform: uppercase;
 }
+
+/* Compartido por Publicar y Editar producto */
+.publicar-error-campo {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
+}
+
+.publicar-nota {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.publicar-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.publicar-check input {
+  accent-color: var(--verde);
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.edit-fotos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.edit-foto {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.edit-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-foto .badge-principal {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+}
+
+.edit-foto .image-chip-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+  width: 22px;
+  height: 22px;
+  background-color: rgba(255, 255, 255, 0.9);
+}

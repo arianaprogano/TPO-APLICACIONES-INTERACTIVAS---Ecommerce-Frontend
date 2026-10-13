@@ -36,20 +36,20 @@
 }
 
 .card-heart-btn:hover {
-  color: #f97316;
+  color: var(--naranja);
   transform: scale(1.1);
 }
 
 .card-heart-btn.active {
-  color: #f97316; /* Naranja cuando está activo */
+  color: var(--naranja); /* Naranja cuando está activo */
 }
 
 .card-image-wrapper {
-  height: 200px;
+  position: relative;
+  height: 160px;
   width: 100%;
   background-color: #f9fafb;
   overflow: hidden;
-  position: relative;
 }
 
 .card-image {
@@ -61,6 +61,14 @@
 
 .card-item:hover .card-image {
   transform: scale(1.05);
+}
+
+.card-sin-foto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  font-size: 40px;
 }
 
 .card-content {
@@ -81,16 +89,7 @@
   font-size: 11px;
   font-weight: 700;
   color: #6b7280;
-}
-
-.badge-category {
-  font-size: 11px;
-  font-weight: 700;
-  color: #16a34a;
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  padding: 2px 6px;
-  border-radius: 4px;
+  text-transform: uppercase;
 }
 
 .card-title {
@@ -110,45 +109,16 @@
 }
 
 .card-rating i {
-  color: #f97316; /* Estrella naranja */
+  color: var(--naranja); /* Estrella naranja */
 }
 
 .rating-score {
-  color: #f97316;
+  color: var(--naranja);
   font-weight: 700;
 }
 
 .rating-sales {
   color: #6b7280;
-}
-
-.card-price {
-  font-size: 24px;
-  font-weight: 900;
-  color: #111827;
-  margin-top: auto;
-}
-
-.card-stock {
-  font-size: 11px;
-  color: #9ca3af;
-  margin-top: 2px;
-}
-
-.badge-oferta-flotante {
-  position: absolute;
-  top: 22px;
-  left: -32px;
-  width: 130px;
-  background-color: #f31b1b;
-  color: white;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 4px 0;
-  text-align: center;
-  transform: rotate(-45deg);
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .card-price-container {
@@ -164,6 +134,22 @@
   margin-bottom: 2px;
 }
 
+.card-price {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.card-location {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .card-footer-info {
   display: flex;
   justify-content: space-between;
@@ -171,20 +157,43 @@
   margin-top: 4px;
 }
 
+.card-stock {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
 .envio-gratis-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #16a34a;
+  color: var(--verde);
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Cinta roja en diagonal arriba a la izquierda */
+.badge-oferta-flotante {
+  position: absolute;
+  top: 22px;
+  left: -32px;
+  width: 130px;
+  background-color: var(--rojo-oferta);
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 0;
+  text-align: center;
+  transform: rotate(-45deg);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .badge-mi-producto-foto {
   position: absolute;
   bottom: 10px;
   left: 10px;
-  background-color: #6c4abb; /* Violeta */
+  background-color: var(--violeta);
   color: white;
   font-size: 11px;
   font-weight: 800;
@@ -192,14 +201,6 @@
   border-radius: 4px;
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.card-image-wrapper {
-  position: relative;
-  height: 200px;
-  width: 100%;
-  background-color: #f9fafb;
-  overflow: hidden;
 }
 
 .card-admin-delete-btn {
@@ -223,7 +224,6 @@
 
 .card-admin-delete-btn:hover {
   background-color: #dc2626;
-
 }
 
 .delete-modal-actions {
@@ -240,4 +240,15 @@
 
 .btn-cancel-delete:hover {
   background-color: #d1d5db !important;
+}
+
+.badge-destacado-card {
+  font-size: 10px;
+  font-weight: 800;
+  color: #c2410c;
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
 }

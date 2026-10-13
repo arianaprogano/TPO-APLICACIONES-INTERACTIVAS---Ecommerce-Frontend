@@ -1,0 +1,58 @@
+.product-row {
+  margin-top: 28px;
+}
+
+.product-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+.product-row-titulo {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.product-row-subtitulo {
+  font-size: 13px;
+  color: var(--texto-secundario);
+  margin-top: 2px;
+}
+
+.product-row-ver-todos {
+  background: none;
+  border: none;
+  color: var(--link);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.product-row-ver-todos i {
+  font-size: 11px;
+}
+
+.product-row-ver-todos:hover {
+  text-decoration: underline;
+}
+
+/* Una sola fila que se desliza de costado */
+.product-row-lista {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 217px;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+}
+
+.product-row-lista > * {
+  scroll-snap-align: start;
+}

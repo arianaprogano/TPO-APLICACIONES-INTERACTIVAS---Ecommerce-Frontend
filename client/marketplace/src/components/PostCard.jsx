@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom' 
 import { createPortal } from 'react-dom'
+import { darDeBajaProducto } from '../api/admin'
 import './PostCard.css'
 
 function PostCard({ 
-  id, title, price, image, subcategory, condition, rating, sales, stock, 
+  id, title, price, image, condition, anio, rating, sales, disponible, location, 
   isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal,
-  esMiProducto, esAdmin
+  esMiProducto, esAdmin, nivelDestacado
 }) {
   const navigate = useNavigate(); 
   
@@ -14,17 +15,23 @@ function PostCard({
   const [isDeleted, setIsDeleted] = useState(false)
 
   const formatMoney = (amount) =>
-    'U$S ' + new Intl.NumberFormat('en-US').format(amount || 0);
+    '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0);
 
   const handleDeleteAdmin = (e) => {
     e.stopPropagation(); 
     setShowConfirm(true); 
   }
 
-  const confirmDelete = (e) => {
+  // Baja logica en el backend: sale del catalogo y de los carritos.
+  const confirmDelete = async (e) => {
     e.stopPropagation();
     setShowConfirm(false);
-    setIsDeleted(true); 
+    try {
+      await darDeBajaProducto(id);
+      setIsDeleted(true);
+    } catch (err) {
+      window.alert(err.message);
+    }
   }
 
   const cancelDelete = (e) => {
@@ -66,7 +73,11 @@ function PostCard({
       )}
 
       <div className="card-image-wrapper" style={{ position: 'relative' }}>
-        <img src={image || 'https://placehold.co/400'} alt={title} className="card-image" />
+        {image ? (
+          <img src={image} alt={title} className="card-image" />
+        ) : (
+          <div className="card-image card-sin-foto"><i className="fa-regular fa-image"></i></div>
+        )}
         {esMiProducto && (
           <div className="badge-mi-producto-foto">
             Mi Producto
@@ -76,17 +87,21 @@ function PostCard({
 
       <div className="card-content">
         <div className="card-header-meta">
-          <span className="badge-condition">{condition.toUpperCase()}</span>
-          <span className="badge-category">{subcategory}</span>
+          <span className="badge-condition">{condition}{anio ? ` · ${anio}` : ''}</span>
+          {nivelDestacado && nivelDestacado !== 'NINGUNO' && (
+            <span className="badge-destacado-card"><i className="fa-solid fa-star"></i> Destacado</span>
+          )}
         </div>
 
         <h3 className="card-title">{title}</h3>
-        
-        <div className="card-rating">
-          <i className="fa-solid fa-star"></i>
-          <span className="rating-score">{rating}</span>
-          <span className="rating-sales">| {sales} vendidos</span>
-        </div>
+
+        {rating != null && (
+          <div className="card-rating">
+            <i className="fa-solid fa-star"></i>
+            <span className="rating-score">{rating.toFixed(1)}</span>
+            <span className="rating-sales">| {sales} vendidos</span>
+          </div>
+        )}
 
         <div className="card-price-container">
            {enOferta && (
@@ -97,8 +112,14 @@ function PostCard({
           </div>
         </div>
         
+        {location && (
+          <div className="card-location">
+            <i className="fa-solid fa-location-dot"></i> {location}
+          </div>
+        )}
+
         <div className="card-footer-info">
-          <div className="card-stock">Stock: {stock}</div>
+          <div className="card-stock">{disponible ? 'Disponible' : 'Sin stock'}</div>
           {conEnvio && (
              <div className="envio-gratis-badge">
                 <i className="fa-solid fa-truck-fast"></i> Con envío
@@ -114,7 +135,7 @@ function PostCard({
               <i className="fa-solid fa-trash"></i>
             </div>
             <h2 className="error-title">¿Eliminar Producto?</h2>
-            <p className="error-text">¿Estás seguro de que deseas eliminar "{title}" del catálogo?</p>
+            <p className="error-text">¿Estás seguro de que deseas eliminar &ldquo;{title}&rdquo; del catálogo?</p>
             
             <div className="delete-modal-actions">
               <button 

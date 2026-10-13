@@ -1,0 +1,101 @@
+.perfil-vendedor {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.perfil-vendedor-header {
+  margin: 16px 0 28px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.perfil-vendedor-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: #dcfce7;
+  color: var(--verde);
+  font-size: 32px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.perfil-vendedor-header h1 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.perfil-vendedor-yo {
+  font-size: 11px;
+  font-weight: 800;
+  background-color: var(--violeta);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.perfil-vendedor-nivel {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perfil-vendedor-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 28px;
+}
+
+.perfil-vendedor-stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.perfil-vendedor-stats strong {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.perfil-vendedor-stats span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.perfil-vendedor-stats i {
+  color: var(--naranja);
+}
+
+.perfil-vendedor-titulo {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .perfil-vendedor-stats {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-around;
+  }
+}

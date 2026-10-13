@@ -32,11 +32,27 @@
 .empty-cart-msg { text-align: center; color: #6b7280; font-weight: bold; margin-top: 40px; }
 
 .cart-item {
-  display: flex; justify-content: space-between; align-items: center;
-  background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;
 }
-.cart-item-title { font-size: 13px; color: #374151; font-weight: 700; margin-bottom: 4px; }
-.cart-item-price { font-size: 16px; font-weight: 900; color: #111827; }
+.cart-item-foto {
+  width: 64px; height: 64px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+  background: #f1f3f5;
+}
+.cart-item-sin-foto { display: flex; align-items: center; justify-content: center; color: #ced4da; font-size: 22px; }
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-title { font-size: 13px; color: #374151; font-weight: 600; margin-bottom: 4px; }
+.cart-item-price { font-size: 16px; font-weight: 600; color: #111827; }
+.cart-item-qty {
+  display: inline-flex; align-items: center; margin-top: 8px;
+  border: 1px solid #dddddd; border-radius: 6px; height: 28px;
+}
+.cart-item-qty button {
+  background: none; border: none; width: 28px; height: 100%;
+  font-size: 15px; color: #495057; cursor: pointer;
+}
+.cart-item-qty button:hover { color: #16a34a; }
+.cart-item-qty span { min-width: 24px; text-align: center; font-size: 13px; font-weight: 600; }
 .cart-item-remove { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; }
 
 .cart-footer { background: white; padding: 24px; border-top: 1px solid #e5e7eb; }
@@ -59,6 +75,12 @@
   padding: 16px; border-radius: 8px; font-size: 16px; font-weight: 900; cursor: pointer;
 }
 .btn-confirm-purchase:hover { background-color: #ea580c; }
+
+.btn-vaciar-carrito {
+  display: block; margin: 12px auto 0; background: none; border: none;
+  color: #6b7280; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-vaciar-carrito:hover { color: #ef4444; }
 
 /* ERROR MODAL ROJO */
 .error-modal-content {

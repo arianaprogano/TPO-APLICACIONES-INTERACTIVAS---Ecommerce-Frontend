@@ -4,10 +4,36 @@
   box-sizing: border-box;
 }
 
+/* Paleta de AgroMarket: fondo crema, verde como color principal, verde
+   oscuro para la barra de categorias y naranja para comprar y calificar. */
+:root {
+  --verde: #16a34a;
+  --verde-oscuro: #15803d;
+  --verde-barra: #166534;
+  --verde-medio: #22c55e;
+  --verde-claro: #22c55e;
+  --verde-suave: #f0fdf4;
+  --naranja: #f97316;
+  --naranja-oscuro: #ea580c;
+  --rojo-oferta: #f31b1b;
+  --violeta: #6c4abb;
+  --fondo: #fef9c7;
+  --texto: #111827;
+  --texto-secundario: #4b5563;
+  --texto-tenue: #9ca3af;
+  --borde: #e5e7eb;
+  --link: #16a34a;
+  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #fef9c7; /* Fondo de AgroMarket */
-  color: #1f2937;
+  background-color: var(--fondo);
+  color: var(--texto);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 .app-container {

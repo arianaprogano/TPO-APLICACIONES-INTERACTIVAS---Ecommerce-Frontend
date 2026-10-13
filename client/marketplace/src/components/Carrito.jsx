@@ -1,13 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Carrito.css'
 
-function Carrito({ isOpen, onClose, cart, removeFromCart }) {
+function Carrito({ isOpen, onClose, cart, removeFromCart, updateCartQty, clearCart }) {
   const navigate = useNavigate();
   const [showEmptyError, setShowEmptyError] = useState(false)
 
   const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
-  const formatMoney = (amount) => 'U$S ' + new Intl.NumberFormat('en-US').format(amount || 0)
+  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
   const handleGoToCheckout = () => {
     if (cart.length === 0) {
@@ -34,11 +34,21 @@ function Carrito({ isOpen, onClose, cart, removeFromCart }) {
           {cart.length === 0 ? (
             <div className="empty-cart-msg">Tu carrito está vacío.</div>
           ) : (
-            cart.map((item, index) => (
-              <article className="cart-item" key={index}>
+            cart.map((item) => (
+              <article className="cart-item" key={item.idItem}>
+                {item.image ? (
+                  <img className="cart-item-foto" src={item.image} alt={item.title} />
+                ) : (
+                  <div className="cart-item-foto cart-item-sin-foto"><i className="fa-regular fa-image"></i></div>
+                )}
                 <div className="cart-item-info">
                   <div className="cart-item-title">{item.title}</div>
-                  <div className="cart-item-price">{formatMoney(item.price)} x {item.qty}</div>
+                  <div className="cart-item-price">{formatMoney(item.price)}</div>
+                  <div className="cart-item-qty">
+                    <button onClick={() => updateCartQty(item.id, item.qty - 1)} aria-label="Quitar uno">-</button>
+                    <span>{item.qty}</span>
+                    <button onClick={() => updateCartQty(item.id, item.qty + 1)} aria-label="Agregar uno">+</button>
+                  </div>
                 </div>
                 <button className="cart-item-remove" onClick={() => removeFromCart(item.id)}>
                   <i className="fa-solid fa-trash-can"></i>
@@ -57,6 +67,12 @@ function Carrito({ isOpen, onClose, cart, removeFromCart }) {
           <button className="btn-confirm-purchase" onClick={handleGoToCheckout}>
             CONTINUAR COMPRA
           </button>
+
+          {cart.length > 0 && (
+            <button className="btn-vaciar-carrito" onClick={clearCart}>
+              <i className="fa-regular fa-trash-can"></i> Vaciar carrito
+            </button>
+          )}
         </footer>
       </aside>
 

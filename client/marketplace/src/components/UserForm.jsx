@@ -1,13 +1,43 @@
-import React from 'react'
+import { useState } from 'react'
+import { crearUsuario } from '../api/admin'
 import './AdminModals.css'
 
+const vacio = { mail: '', nombreUsuario: '', rol: 'CLIENTE', contrasena: '', nombre: '', apellido: '', direccion: '' }
+
 function UserForm({ onClose, onSave }) {
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Aquí a futuro se enviará la data al backend real
-    alert("Usuario guardado con éxito")
-    onSave() // Cierra el modal desde el componente padre
+  const [form, setForm] = useState(vacio)
+  const [error, setError] = useState('')
+  const [errores, setErrores] = useState({})
+  const [guardando, setGuardando] = useState(false)
+
+  const set = (campo, valor) => {
+    setForm(prev => ({ ...prev, [campo]: valor }))
+    setErrores(prev => ({ ...prev, [campo]: undefined }))
   }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setGuardando(true)
+    try {
+      await crearUsuario(form)
+      onSave()
+    } catch (err) {
+      setError(err.message)
+      setErrores(err.campos || {})
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const campo = (name, label, type = 'text', placeholder = '') => (
+    <div className="form-group">
+      <label htmlFor={`user-${name}`}>{label}</label>
+      <input id={`user-${name}`} type={type} placeholder={placeholder} value={form[name]} onChange={e => set(name, e.target.value)}
+        autoComplete={type === 'password' ? 'new-password' : 'off'} />
+      {errores[name] && <span className="form-error-campo">{errores[name]}</span>}
+    </div>
+  )
 
   return (
     <div className="user-modal-content">
@@ -19,55 +49,39 @@ function UserForm({ onClose, onSave }) {
           <i className="fa-solid fa-xmark"></i>
         </button>
       </header>
-      
-      <form onSubmit={handleSubmit}>
+
+      <form onSubmit={handleSubmit} noValidate>
         <div className="user-modal-body">
-          <div className="form-group full-width">
-            <label>CORREO ELECTRÓNICO *</label>
-            <input type="email" placeholder="ejemplo@test.com" required />
-          </div>
-          
+          {error && <div className="form-error">{error}</div>}
+
+          <div className="full-width">{campo('mail', 'CORREO ELECTRÓNICO *', 'email', 'ejemplo@test.com')}</div>
+
           <div className="user-modal-grid">
+            {campo('nombreUsuario', 'USUARIO *', 'text', 'usuario1')}
             <div className="form-group">
-              <label>USUARIO *</label>
-              <input type="text" placeholder="usuario1" required />
-            </div>
-            <div className="form-group">
-              <label>ROL *</label>
-              <select>
-                <option>Vendedor</option>
-                <option>Despachante</option>
-                <option>Administrador</option>
+              <label htmlFor="user-rol">ROL *</label>
+              <select id="user-rol" value={form.rol} onChange={e => set('rol', e.target.value)}>
+                <option value="CLIENTE">Cliente (compra y vende)</option>
+                <option value="DESPACHANTE">Despachante</option>
+                <option value="ADMIN">Administrador</option>
               </select>
             </div>
           </div>
 
-          <div className="form-group full-width">
-            <label>CONTRASEÑA</label>
-            <input type="password" placeholder="Contraseña" />
-          </div>
+          <div className="full-width">{campo('contrasena', 'CONTRASEÑA *', 'password', 'Contraseña')}</div>
 
           <div className="user-modal-grid">
-            <div className="form-group">
-              <label>NOMBRE</label>
-              <input type="text" placeholder="Nombre" />
-            </div>
-            <div className="form-group">
-              <label>APELLIDO</label>
-              <input type="text" placeholder="Apellido" />
-            </div>
+            {campo('nombre', 'NOMBRE *', 'text', 'Nombre')}
+            {campo('apellido', 'APELLIDO *', 'text', 'Apellido')}
           </div>
 
-          <div className="form-group full-width">
-            <label>DIRECCIÓN</label>
-            <input type="text" placeholder="Calle 123, Provincia" />
-          </div>
+          <div className="full-width">{campo('direccion', 'DIRECCIÓN', 'text', 'Calle 123, Localidad')}</div>
         </div>
 
         <footer className="user-modal-footer">
           <button type="button" className="btn-cancelar" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-guardar">
-            <i className="fa-solid fa-check"></i> Guardar Usuario
+          <button type="submit" className="btn-guardar" disabled={guardando}>
+            <i className="fa-solid fa-check"></i> {guardando ? 'Guardando...' : 'Guardar Usuario'}
           </button>
         </footer>
       </form>

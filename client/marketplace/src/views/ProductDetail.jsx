@@ -1,51 +1,50 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { getProducto, getSimilares } from '../api/productos'
+import { getResenasDeProducto, NIVELES_VENDEDOR } from '../api/resenas'
+import ProductRow from '../components/ProductRow'
+import OfertaModal from '../components/OfertaModal'
 import './ProductDetail.css'
 
-const initialData = [
-  { 
-    id: 1, vendedorId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3,
-    conEnvio: false, 
-    reviews: [
-      { id: 101, autor: "Carlos M.", estrellas: 5, texto: "Una máquina increíble, superó mis expectativas.", fecha: "Hace 1 mes" }
-    ]
-  },
-  { 
-    id: 2, vendedorId: 11, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, originalPrice: 85, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50,
-    conEnvio: true 
-  },
-  { 
-    id: 3, vendedorId: 10, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, originalPrice: 135000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1,
-    conEnvio: true 
-  }
-];
-
-function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
+function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMessage }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [quantity, setQuantity] = useState(1)
+  const [fotoActiva, setFotoActiva] = useState(0)
   const [loading, setLoading] = useState(true)
-  
-  // NUEVO: Estado para controlar el modal de confirmación de eliminación
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const [error, setError] = useState('')
+  const [similares, setSimilares] = useState([])
+  const [todasLasResenas, setTodasLasResenas] = useState(null)
+  const [ofertando, setOfertando] = useState(false)
 
   useEffect(() => {
+    let cancelado = false
     setLoading(true)
-    const found = initialData.find(p => p.id === parseInt(id))
-    setProduct(found || null)
-    setLoading(false)
+    setError('')
+    setQuantity(1)
+    setFotoActiva(0)
+    setTodasLasResenas(null)
+    getSimilares(id).then(lista => { if (!cancelado) setSimilares(lista) }).catch(() => setSimilares([]))
+    getProducto(id)
+      .then(p => { if (!cancelado) setProduct(p) })
+      .catch(err => {
+        if (cancelado) return
+        setProduct(null)
+        // 404 es "no existe"; cualquier otra cosa se muestra tal cual.
+        if (err.status !== 404) setError(err.message)
+      })
+      .finally(() => { if (!cancelado) setLoading(false) })
+    return () => { cancelado = true }
   }, [id])
-
-  // NUEVO: Función que se ejecuta al clickear "ELIMINAR" en el modal
-  const handleDeleteConfirm = () => {
-    // A futuro, aquí se hace la petición DELETE al backend.
-    setShowDeleteModal(false)
-    navigate('/home') // Redirigimos al administrador de vuelta al catálogo
-  }
 
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>Buscando producto...</div>
+  }
+
+  if (error) {
+    return <div style={{ padding: '40px', textAlign: 'center', fontSize: '16px', color: '#b91c1c', fontWeight: 'bold' }}>{error}</div>
   }
 
   if (!loading && !product) {
@@ -68,8 +67,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
 
   const isFavorite = favorites.includes(product.id)
   
-  const idDelDueño = product.vendedorId || product.sellerId;
-  const esMiProducto = user && product && String(user.id) === String(idDelDueño);
+  const esMiProducto = Boolean(user && product.vendedor?.nombreUsuario === user.username);
   
   const esAdmin = user?.role?.toLowerCase() === 'admin';
   
@@ -84,7 +82,25 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
     addToCart(product, quantity)
   }
 
-  const formatMoney = (amount) => 'U$S ' + new Intl.NumberFormat('en-US').format(amount)
+  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
+
+  // Ofertar solo tiene sentido si el vendedor lo permite y no es tuyo.
+  const puedeOfertar = product.aceptaOfertas && !esMiProducto && product.stock > 0 && (!user || user.role === 'cliente')
+  const abrirOferta = () => {
+    if (!user) {
+      setModalMessage?.('Para hacer una oferta, debes iniciar sesión primero.')
+      return
+    }
+    setOfertando(true)
+  }
+
+  // La ficha trae solo las ultimas reseñas; "ver todas" pide el resto.
+  const resenas = todasLasResenas ?? product.reviews
+  const hayMasResenas = !todasLasResenas && product.cantidadResenas > product.reviews.length
+  const verTodasLasResenas = () =>
+    getResenasDeProducto(product.id).then(setTodasLasResenas).catch(err => setModalMessage?.(err.message))
+
+  const nivelVendedor = NIVELES_VENDEDOR[product.vendedor?.nivel]
 
   const renderStars = (rating) => {
     const stars = [];
@@ -106,57 +122,62 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
         
         <div className="pd-top-row">
           <div className="product-detail-left">
-            <figure className="product-detail-image-wrapper" style={{ margin: 0, position: 'relative' }}>
-              <img src={product.image} alt={product.title} className="product-detail-image" />
-              
-              {esMiProducto && (
-                <div style={{ position: 'absolute', bottom: '16px', left: '16px', backgroundColor: '#8b5cf6', color: 'white', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  MI PRODUCTO
+            <div className="pd-galeria">
+              {product.fotos.length > 1 && (
+                <div className="pd-miniaturas">
+                  {product.fotos.map((foto, i) => (
+                    <button key={foto.id} className={`pd-miniatura ${i === fotoActiva ? 'activa' : ''}`} onClick={() => setFotoActiva(i)}>
+                      <img src={foto.url} alt={`${product.title} - foto ${i + 1}`} />
+                    </button>
+                  ))}
                 </div>
               )}
-            </figure>
+
+              <figure className="product-detail-image-wrapper" style={{ margin: 0, position: 'relative' }}>
+                {product.fotos.length > 0 ? (
+                  <img src={product.fotos[fotoActiva]?.url} alt={product.title} className="product-detail-image" />
+                ) : (
+                  <div className="product-detail-image pd-sin-foto"><i className="fa-regular fa-image"></i></div>
+                )}
+
+                {esMiProducto && (
+                  <div className="pd-mi-producto">MI PRODUCTO</div>
+                )}
+              </figure>
+            </div>
           </div>
 
           <div className="product-detail-info">
             <header className="pd-header-row">
               <div className="pd-tags">
-                <span className="pd-condition">{product.condition}</span>
-                <span className="pd-breadcrumb">{product.category} &gt; {product.subcategory || 'General'}</span>
+                <span className="pd-condition">{product.condition}{product.anio ? ` · ${product.anio}` : ''}</span>
+                <span className="pd-breadcrumb">{product.categoria?.nombreCategoriaPadre ? `${product.categoria.nombreCategoriaPadre} > ` : ''}{product.categoria?.nombre}</span>
               </div>
               
-              {/* NUEVO: Contenedor para botones de acción superiores */}
-              <div style={{ display: 'flex', gap: '12px' }}>
-                {!esAdmin && (
-                  <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={() => toggleFavorite(product.id)}>
-                    <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
-                    {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
-                  </button>
-                )}
-
-                {esAdmin && (
-                  <button className="btn-delete-product" onClick={() => setShowDeleteModal(true)}>
-                    <i className="fa-solid fa-trash"></i> Eliminar
-                  </button>
-                )}
-              </div>
+              {!esAdmin && (
+                <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={() => toggleFavorite(product.id)}>
+                  <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
+                  {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
+                </button>
+              )}
             </header>
 
             <h1 className="product-title">{product.title}</h1>
             
             <div className="product-rating">
               <span className="star-icon"><i className="fa-solid fa-star"></i></span>
-              <span className="rating-score">{product.rating}</span>
+              <span className="rating-score">{product.rating != null ? product.rating.toFixed(1) : 'Sin reseñas'}</span>
               <span className="rating-sales">| {product.sales} vendidos</span>
             </div>
 
             <div className="product-price-section">
-              {product.originalPrice && (
+              {product.enOferta && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                  <span style={{ textDecoration: 'line-through', color: '#9ca3af', fontSize: '18px' }}>
-                    {formatMoney(product.originalPrice)}
+                  <span className="pd-precio-tachado">
+                    {formatMoney(product.precioOriginal)}
                   </span>
-                  <span style={{ backgroundColor: '#22c55e', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                    OFERTA
+                  <span className="pd-badge-oferta">
+                    {product.porcentajeDescuento}% OFF
                   </span>
                 </div>
               )}
@@ -195,6 +216,37 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
                 </button>
               </div>
             )}
+
+            {puedeOfertar && (
+              <button className="btn-ofertar" onClick={abrirOferta}>
+                <i className="fa-solid fa-hand-holding-dollar"></i> Hacer una oferta
+              </button>
+            )}
+
+
+            <div className="pd-location">
+              <i className="fa-solid fa-location-dot"></i> {product.location}
+              {product.conEnvio && <span className="pd-envio"><i className="fa-solid fa-truck-fast"></i> Con envío</span>}
+            </div>
+
+            {product.vendedor && (
+              <section className="pd-vendedor">
+                <h4 className="pd-vendedor-titulo">Información sobre el vendedor</h4>
+                <div className="pd-vendedor-nombre">{product.vendedor.nombre} {product.vendedor.apellido}</div>
+                <div className="pd-vendedor-meta">
+                  @{product.vendedor.nombreUsuario}
+                  {product.vendedor.calificacion != null && ` · ${product.vendedor.calificacion.toFixed(1)} ★ (${product.vendedor.cantidadResenas})`}
+                </div>
+                {nivelVendedor && (
+                  <div className="pd-vendedor-nivel" style={{ color: nivelVendedor.color }}>
+                    <i className={`fa-solid ${nivelVendedor.icono}`}></i> {nivelVendedor.texto}
+                  </div>
+                )}
+                <button className="pd-vendedor-link" onClick={() => navigate(`/vendedor/${product.vendedor.nombreUsuario}`)}>
+                  Ver más productos del vendedor <i className="fa-solid fa-chevron-right"></i>
+                </button>
+              </section>
+            )}
           </div>
         </div>
 
@@ -213,8 +265,8 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
               Opiniones de los usuarios
             </h3>
             
-            {product.reviews && product.reviews.length > 0 ? (
-              product.reviews.map(review => (
+            {resenas && resenas.length > 0 ? (
+              resenas.map(review => (
                 <article key={review.id} className="review-card" style={{ marginBottom: '16px' }}>
                   <div className="review-stars">
                     {renderStars(review.estrellas)}
@@ -226,37 +278,35 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
             ) : (
               <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Este producto aún no tiene opiniones. ¡Sé el primero en calificarlo luego de tu compra!</p>
             )}
+            {hayMasResenas && (
+              <button className="pd-vendedor-link" onClick={verTodasLasResenas}>
+                Ver las {product.cantidadResenas} opiniones <i className="fa-solid fa-chevron-down"></i>
+              </button>
+            )}
           </section>
         </div>
 
       </article>
 
-      {/* NUEVO: MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Usa las clases existentes de PanelStyles.css) */}
-      {showDeleteModal && (
-        <div className="error-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-trash"></i>
-            </div>
-            <h2 className="error-title">¿Eliminar Producto?</h2>
-            <p className="error-text">¿Estás seguro de que deseas eliminar "<strong>{product.title}</strong>" del catálogo?</p>
-            
-            <div className="panel-modal-actions">
-              <button 
-                className="error-btn btn-cancel-panel" 
-                onClick={() => setShowDeleteModal(false)}
-              >
-                CANCELAR
-              </button>
-              <button 
-                className="error-btn" 
-                onClick={handleDeleteConfirm}
-              >
-                ELIMINAR
-              </button>
-            </div>
-          </div>
-        </div>
+      <ProductRow
+        titulo="Productos similares"
+        subtitulo="Otras publicaciones que te pueden interesar"
+        productos={similares}
+        user={user}
+        favorites={favorites}
+        toggleFavorite={toggleFavorite}
+      />
+
+      {ofertando && (
+        <OfertaModal
+          producto={product}
+          user={user}
+          onClose={() => setOfertando(false)}
+          onEnviada={() => {
+            setOfertando(false)
+            setModalMessage?.('¡Oferta enviada! Te avisamos cuando el vendedor responda. La podés seguir en "Mis Ofertas".')
+          }}
+        />
       )}
     </div>
   )

@@ -60,17 +60,3 @@ body, html {
 .main-content {
   flex: 1;
 }
-
-.success-icon-circle-wrapper {
-  width: 64px;
-  height: 64px;
-  background-color: #16a34a; /* Fondo verde fuerte */
-  color: #ffffff; /* Check blanco puro */
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 20px auto;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-}

@@ -1,0 +1,194 @@
+.publicar-container {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.publicar-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.publicar-header {
+  padding: 24px 28px 8px;
+}
+
+.publicar-header h1 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.publicar-header h1 i {
+  color: var(--verde);
+}
+
+.publicar-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.publicar-error {
+  margin: 16px 28px 0;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.publicar-seccion {
+  padding: 20px 28px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.publicar-seccion h2 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.publicar-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+
+.publicar-contador {
+  align-self: flex-end;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+
+.publicar-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.publicar-preview {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+}
+
+.publicar-preview.principal {
+  border-color: var(--naranja);
+}
+
+.publicar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.publicar-preview .badge-principal {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+}
+
+.publicar-preview .image-chip-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  width: 22px;
+  height: 22px;
+}
+
+/* Pantallas de "subiendo" y de resultado */
+.publicar-estado {
+  padding: 48px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.publicar-estado > i {
+  font-size: 48px;
+  color: var(--verde);
+}
+
+.publicar-estado > i.publicar-aviso {
+  color: #f59e0b;
+}
+
+.publicar-estado h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.publicar-estado p {
+  font-size: 15px;
+  color: #4b5563;
+  max-width: 520px;
+}
+
+.publicar-fotos-resultado {
+  list-style: none;
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+}
+
+.publicar-fotos-resultado li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+  font-size: 13px;
+}
+
+.publicar-fotos-resultado small {
+  flex-basis: 100%;
+  color: #b91c1c;
+}
+
+.foto-aprobada strong { color: var(--verde); }
+.foto-en_revision strong { color: #f59e0b; }
+.foto-rechazada strong { color: #ef4444; }
+
+.publicar-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .publicar-grid-3,
+  .publicar-card .publish-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .publicar-seccion,
+  .publicar-header {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

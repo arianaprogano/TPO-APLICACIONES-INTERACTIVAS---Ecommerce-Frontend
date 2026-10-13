@@ -26,3 +26,7 @@
   align-items: center;
   gap: 8px;
 }
+.despacho-tracking {
+  font-family: ui-monospace, 'Consolas', monospace;
+  letter-spacing: 0.5px;
+}
