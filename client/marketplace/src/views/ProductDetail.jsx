@@ -5,18 +5,18 @@ import './ProductDetail.css'
 const initialData = [
   { 
     id: 1, vendedorId: 10, title: "Tractor John Deere 7320", body: "Excelente estado. Motor impecable. Ideal para siembra gruesa.", price: 85000, category: "Maquinaria", subcategory: "Tractor", condition: "Usado", location: "Buenos Aires", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmQvKGGCrxEjqlYgoArtB9fyvxFqb5Lsc3gsOb8ioK2w&s=10", rating: 4.8, sales: 4, stock: 3,
-    conEnvio: false, // TRACTOR: Va al paquete "Acordar"
+    conEnvio: false, 
     reviews: [
       { id: 101, autor: "Carlos M.", estrellas: 5, texto: "Una máquina increíble, superó mis expectativas.", fecha: "Hace 1 mes" }
     ]
   },
   { 
     id: 2, vendedorId: 11, title: "Semillas de Maíz Híbrido (Bolsa 80k)", body: "Alto rendimiento y resistencia a plagas. Excelente poder germinativo.", price: 65, originalPrice: 85, category: "Insumos", subcategory: "Semillas", condition: "Nuevo", location: "Córdoba", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVnw-xXWYsJT_CYFOeqkfhsojpsx6FvGOz2c84WnaVtA&s=10", rating: 4.9, sales: 450, stock: 50,
-    conEnvio: true // SEMILLAS: Va al paquete "Envío a Domicilio"
+    conEnvio: true 
   },
   { 
     id: 3, vendedorId: 10, title: "Cosechadora Agrícola Valtra", body: "Mantenimiento al día. Cabina full equipada. Lista para la campaña.", price: 120000, originalPrice: 135000, category: "Maquinaria", subcategory: "Cosechadora", condition: "Usado", location: "Santa Fe", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5d1WLjF9IfxQeXKbcQ4tJDMQiPQl6cvDDbgo90BD_BQ&s=10", rating: 4.5, sales: 2, stock: 1,
-    conEnvio: true // COSECHADORA: Ahora SÍ va al paquete "Envío a Domicilio"
+    conEnvio: true 
   }
 ];
 
@@ -26,6 +26,9 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
   const [product, setProduct] = useState(null)
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
+  
+  // NUEVO: Estado para controlar el modal de confirmación de eliminación
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -33,6 +36,13 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
     setProduct(found || null)
     setLoading(false)
   }, [id])
+
+  // NUEVO: Función que se ejecuta al clickear "ELIMINAR" en el modal
+  const handleDeleteConfirm = () => {
+    // A futuro, aquí se hace la petición DELETE al backend.
+    setShowDeleteModal(false)
+    navigate('/home') // Redirigimos al administrador de vuelta al catálogo
+  }
 
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>Buscando producto...</div>
@@ -114,12 +124,21 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
                 <span className="pd-breadcrumb">{product.category} &gt; {product.subcategory || 'General'}</span>
               </div>
               
-              {!esAdmin && (
-                <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={() => toggleFavorite(product.id)}>
-                  <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
-                  {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
-                </button>
-              )}
+              {/* NUEVO: Contenedor para botones de acción superiores */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {!esAdmin && (
+                  <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={() => toggleFavorite(product.id)}>
+                    <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
+                    {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
+                  </button>
+                )}
+
+                {esAdmin && (
+                  <button className="btn-delete-product" onClick={() => setShowDeleteModal(true)}>
+                    <i className="fa-solid fa-trash"></i> Eliminar
+                  </button>
+                )}
+              </div>
             </header>
 
             <h1 className="product-title">{product.title}</h1>
@@ -211,6 +230,34 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart }) {
         </div>
 
       </article>
+
+      {/* NUEVO: MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Usa las clases existentes de PanelStyles.css) */}
+      {showDeleteModal && (
+        <div className="error-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon-box">
+              <i className="fa-solid fa-trash"></i>
+            </div>
+            <h2 className="error-title">¿Eliminar Producto?</h2>
+            <p className="error-text">¿Estás seguro de que deseas eliminar "<strong>{product.title}</strong>" del catálogo?</p>
+            
+            <div className="panel-modal-actions">
+              <button 
+                className="error-btn btn-cancel-panel" 
+                onClick={() => setShowDeleteModal(false)}
+              >
+                CANCELAR
+              </button>
+              <button 
+                className="error-btn" 
+                onClick={handleDeleteConfirm}
+              >
+                ELIMINAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
