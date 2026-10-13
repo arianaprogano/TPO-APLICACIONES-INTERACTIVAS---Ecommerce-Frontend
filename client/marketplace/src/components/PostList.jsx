@@ -19,8 +19,8 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
       rating: 4.8,
       sales: 4,
       stock: 3,
-      conEnvio: false, // Sin envío
-      enOferta: false,  // Sin oferta
+      conEnvio: false, 
+      enOferta: false,  
       vendedorId: 10
     },
     {
@@ -36,8 +36,8 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
       rating: 4.9,
       sales: 450,
       stock: 50,
-      conEnvio: true, // Con envío
-      enOferta: true, // En oferta
+      conEnvio: true, 
+      enOferta: true, 
       porcentajeDescuento: 15,
       precioOriginal: 75,
       vendedorId: 11 
@@ -55,8 +55,8 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
       rating: 4.5,
       sales: 2,
       stock: 1,
-      conEnvio: true, // Con envío
-      enOferta: true, // En oferta
+      conEnvio: true, 
+      enOferta: true, 
       porcentajeDescuento: 20,
       precioOriginal: 150000,
       vendedorId: 10 
@@ -116,6 +116,7 @@ function PostList({ user, searchTerm, selectedCategory, selectedSubcategory, con
             porcentajeDescuento={post.porcentajeDescuento}
             precioOriginal={post.precioOriginal}
             esMiProducto={user && user.id === post.vendedorId}
+            esAdmin={user?.role?.toLowerCase() === 'admin'} 
           />
         ))
       ) : (

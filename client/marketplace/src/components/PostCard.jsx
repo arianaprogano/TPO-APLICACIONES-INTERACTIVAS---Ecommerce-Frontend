@@ -1,42 +1,72 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom' 
+import { createPortal } from 'react-dom'
 import './PostCard.css'
 
 function PostCard({ 
   id, title, price, image, subcategory, condition, rating, sales, stock, 
   isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal,
-  esMiProducto
+  esMiProducto, esAdmin
 }) {
   const navigate = useNavigate(); 
+  
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isDeleted, setIsDeleted] = useState(false)
 
   const formatMoney = (amount) =>
     'U$S ' + new Intl.NumberFormat('en-US').format(amount || 0);
 
-  return (
-    <div className="card-item" onClick={() => navigate(`/product/${id}`)}>
-      {/* Botón de favoritos siempre arriba a la derecha */}
-      <button 
-        className={`card-heart-btn ${isFavorite ? 'active' : ''}`}
-        onClick={(e) => { 
-          e.stopPropagation(); 
-          onToggleFavorite(id); 
-        }}
-      >
-        <i className={`${isFavorite ? 'fa-solid' : 'fa-regular'} fa-heart`}></i>
-      </button>
+  const handleDeleteAdmin = (e) => {
+    e.stopPropagation(); 
+    setShowConfirm(true); 
+  }
 
-      {/* Cartelito de Oferta Flotante (Arriba a la izquierda) */}
+  const confirmDelete = (e) => {
+    e.stopPropagation();
+    setShowConfirm(false);
+    setIsDeleted(true); 
+  }
+
+  const cancelDelete = (e) => {
+    e.stopPropagation();
+    setShowConfirm(false);
+  }
+
+  if (isDeleted) return null;
+
+  return (
+    <div className="card-item" onClick={() => navigate(`/product/${id}`)} style={{ position: 'relative' }}>
+    
+      {esAdmin && (
+        <button 
+          className="card-admin-delete-btn"
+          onClick={handleDeleteAdmin}
+          title="Eliminar producto (Vista Admin)"
+        >
+          <i className="fa-solid fa-trash"></i>
+        </button>
+      )}
+
+      {!esAdmin && (
+        <button 
+          className={`card-heart-btn ${isFavorite ? 'active' : ''}`}
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            onToggleFavorite(id); 
+          }}
+        >
+          <i className={`${isFavorite ? 'fa-solid' : 'fa-regular'} fa-heart`}></i>
+        </button>
+      )}
+
       {enOferta && (
         <div className="badge-oferta-flotante">
           {porcentajeDescuento}% OFF
         </div>
       )}
 
-      {/* CONTENEDOR DE LA IMAGEN (Con el cartel violeta adentro) */}
       <div className="card-image-wrapper" style={{ position: 'relative' }}>
         <img src={image || 'https://placehold.co/400'} alt={title} className="card-image" />
-        
-        {/* EL CARTELITO VIOLETA DE "MI PRODUCTO" (Abajo a la izquierda de la foto) */}
         {esMiProducto && (
           <div className="badge-mi-producto-foto">
             Mi Producto
@@ -76,6 +106,35 @@ function PostCard({
           )}
         </div>
       </div>
+
+      {showConfirm && createPortal(
+        <div className="error-overlay" onClick={cancelDelete}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon-box">
+              <i className="fa-solid fa-trash"></i>
+            </div>
+            <h2 className="error-title">¿Eliminar Producto?</h2>
+            <p className="error-text">¿Estás seguro de que deseas eliminar "{title}" del catálogo?</p>
+            
+            <div className="delete-modal-actions">
+              <button 
+                className="error-btn btn-cancel-delete" 
+                onClick={cancelDelete}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="error-btn" 
+                onClick={confirmDelete}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
   )
 }

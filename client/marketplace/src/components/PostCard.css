@@ -174,7 +174,7 @@
 .envio-gratis-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #16a34a; /* Verde éxito */
+  color: #16a34a;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -200,4 +200,44 @@
   width: 100%;
   background-color: #f9fafb;
   overflow: hidden;
+}
+
+.card-admin-delete-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: background-color 0.2s ease;
+}
+
+.card-admin-delete-btn:hover {
+  background-color: #dc2626;
+
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-cancel-delete {
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+  transition: background-color 0.2s;
+}
+
+.btn-cancel-delete:hover {
+  background-color: #d1d5db !important;
 }

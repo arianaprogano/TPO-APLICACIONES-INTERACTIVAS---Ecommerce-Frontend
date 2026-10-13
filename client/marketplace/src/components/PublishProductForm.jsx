@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import './ProductForm.css'
 
 function PublishProductForm({ onClose }) {
-  // Estados para manejar los modales personalizados
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
@@ -10,24 +9,20 @@ function PublishProductForm({ onClose }) {
   const [publishForm, setPublishForm] = useState({
     title: '', category: '', subcategory: '', condition: '', price: '', stock: '', description: ''
   })
+  
   const handleImageChange = (e) => {
-    // Convertimos los archivos seleccionados a un arreglo y los sumamos a los que ya teníamos
     const newFiles = Array.from(e.target.files);
     setSelectedImages(prevImages => [...prevImages, ...newFiles]);
-    
-    // Reseteamos el input para que permita subir el mismo archivo dos veces si el usuario lo borró y se arrepintió
     e.target.value = null; 
   }
 
   const handleRemoveImage = (indexToRemove) => {
-    // Filtramos el arreglo dejando todos menos el que queremos borrar
     setSelectedImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
   }
 
   const handleSubmit = (e) => {
     e.preventDefault() 
 
-    // A. Sumamos selectedImages.length === 0 para que la foto sea obligatoria
     if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description || 
         !publishForm.category || !publishForm.subcategory || !publishForm.condition ||
         selectedImages.length === 0) {
@@ -40,15 +35,16 @@ function PublishProductForm({ onClose }) {
 
   const handleSuccessAccept = () => {
     setShowSuccessModal(false)
-    onClose() // Cierra todo el panel de publicación
+    onClose() 
   }
 
   return (
     <>
       <div className="publish-modal-content">
         <header className="publish-modal-header">
+          {/* SE ELIMINÓ EL ÍCONO DE LA CAJITA AQUÍ */}
           <div className="modal-title-with-icon">
-            <i className="fa-solid fa-box-open" style={{ color: '#16a34a' }}></i> Publicar Producto
+            Publicar Producto
           </div>
           <button type="button" className="close-modal-btn" onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
@@ -91,20 +87,17 @@ function PublishProductForm({ onClose }) {
               </div>
               <div className="form-group">
                 <label>PRECIO (U$S)</label>
-                <input type="number" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} />
+                <input type="number" min="1" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} />
               </div>
             </div>
             
             <div className="form-group full-width">
               <label>STOCK</label>
-              <input type="number" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} />
+              <input type="number" min="1" value={publishForm.stock} onChange={e => setPublishForm({...publishForm, stock: e.target.value})} />
             </div>
             
-            {/* NUEVA LÓGICA DE IMÁGENES CON CHIPS */}
-<div className="form-group full-width">
+            <div className="form-group full-width">
               <label>SUBIR IMÁGENES (LOCAL)</label>
-              
-              {/* Contenedor que simula ser el input para que los chips queden adentro */}
               <div className="file-input-wrapper">
                 <input 
                   type="file" 
@@ -119,10 +112,7 @@ function PublishProductForm({ onClose }) {
                   <div className="image-chips-container">
                     {selectedImages.map((file, index) => (
                       <div key={index} className={`image-chip ${index === 0 ? 'main-image-chip' : ''}`}>
-                        
-                        {/* Indicador visual para la foto principal (la primera) */}
                         {index === 0 && <span className="badge-principal">Principal</span>}
-                        
                         <span className="image-chip-name">{file.name}</span>
                         <button 
                           type="button" 
@@ -152,7 +142,6 @@ function PublishProductForm({ onClose }) {
         </form>
       </div>
 
-      {/* MODAL DE ERROR (Campos incompletos) */}
       {showErrorModal && (
         <div className="modal-overlay" style={{ zIndex: 12000 }}>
           <div className="modal-content-wide">
@@ -161,7 +150,6 @@ function PublishProductForm({ onClose }) {
             </div>
             <h3 className="modal-title-wide">Campos Incompletos</h3>
             <p className="modal-text-wide">No puedes publicar un producto con los campos vacíos. Por favor, completa toda la información.</p>
-            {/* type="button" es clave aquí para que no envíe el formulario al cerrar el error */}
             <button type="button" className="modal-btn-red" onClick={() => setShowErrorModal(false)}>
               ENTENDIDO
             </button>
@@ -169,7 +157,6 @@ function PublishProductForm({ onClose }) {
         </div>
       )}
 
-      {/* MODAL DE ÉXITO (Publicación confirmada) */}
       {showSuccessModal && (
         <div className="modal-overlay" style={{ zIndex: 12000 }}>
           <div className="modal-content-wide">

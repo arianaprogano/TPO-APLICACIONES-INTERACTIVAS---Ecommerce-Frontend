@@ -4,14 +4,14 @@ import logoImg from '../assets/logo.png'
 import PublishProductForm from './PublishProductForm'
 import './Navigation.css'
 
-
 function Navigation({ 
   searchTerm, setSearchTerm, 
   selectedCategory, setSelectedCategory,
   selectedSubcategory, setSelectedSubcategory,
   favoritesCount,
   user, setUser,
-  cartCount, openCart
+  cartCount, openCart,
+  clearCart, clearFavorites 
 }) {
   const navigate = useNavigate()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -28,8 +28,11 @@ function Navigation({
     }
   }
 
+  // MAGIA AQUÍ: Limpiamos todo al salir
   const handleLogout = () => {
     setUser(null)
+    if (clearCart) clearCart()
+    if (clearFavorites) clearFavorites()
     setIsDropdownOpen(false)
     setIsNotifOpen(false)
     navigate('/home')

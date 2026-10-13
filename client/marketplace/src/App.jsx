@@ -11,6 +11,7 @@ import VendedorPanel from './views/VendedorPanel'
 import MisDatos from './views/MisDatos'
 import Favoritos from './views/Favoritos'
 import MisCompras from './views/MisCompras'
+import Checkout from './views/Checkout'
 
 import './App.css'
 import './Excepciones.css' 
@@ -22,13 +23,11 @@ function App() {
   
   const [favorites, setFavorites] = useState([])
   
-  // MAGIA NUEVA: Al arrancar, buscamos si ya había un usuario guardado en la memoria
   const [user, setUser] = useState(() => {
     const usuarioGuardado = localStorage.getItem('agroMarketUser')
     return usuarioGuardado ? JSON.parse(usuarioGuardado) : null
   })
 
-  // MAGIA NUEVA: Cada vez que 'user' cambia (al loguearse o desloguearse), lo guardamos en memoria
   useEffect(() => {
     if (user) {
       localStorage.setItem('agroMarketUser', JSON.stringify(user))
@@ -53,7 +52,6 @@ function App() {
     }
     
     const idDelDueño = product.vendedorId || product.sellerId;
-    
     if (user.id == idDelDueño) {
       setModalMessage("No te puedes comprar tu propio producto.");
       return;
@@ -61,11 +59,24 @@ function App() {
 
     setCart(prev => {
       const exist = prev.find(item => item.id === product.id)
+      
       if (exist) {
-        return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + qty } : item)
+        const nuevaCantidad = exist.qty + qty;
+        if (nuevaCantidad > product.stock) {
+          setModalMessage(`No hay suficiente stock. Solo quedan ${product.stock} unidades de este producto.`);
+          return prev; 
+        }
+        return prev.map(item => item.id === product.id ? { ...item, qty: nuevaCantidad } : item)
       }
+      
+      if (qty > product.stock) {
+        setModalMessage(`No hay suficiente stock. Solo quedan ${product.stock} unidades de este producto.`);
+        return prev;
+      }
+      
       return [...prev, { ...product, qty }]
     })
+    
     setIsCartOpen(true)
   }
 
@@ -84,6 +95,7 @@ function App() {
       setFavorites([...favorites, productId])
     }
   }
+  
   const clearFavorites = () => setFavorites([])
 
   return (
@@ -95,6 +107,7 @@ function App() {
         favoritesCount={favorites.length}
         user={user} setUser={setUser}
         cartCount={cartCount} openCart={() => setIsCartOpen(true)}
+        clearCart={clearCart} clearFavorites={clearFavorites}
       />
 
       <main className="main-content">
@@ -119,7 +132,7 @@ function App() {
           } />
           
           <Route path="/vendedor" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'vendedor' ? <VendedorPanel /> : <Navigate to="/home" />
+            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'vendedor' ? <VendedorPanel setModalMessage={setModalMessage} /> : <Navigate to="/home" />
           } />
           
           <Route path="/perfil" element={
@@ -131,6 +144,11 @@ function App() {
           <Route path="/mis-compras" element={
             user ? <MisCompras user={user} setModalMessage={setModalMessage} /> : <Navigate to="/login" />
           } />
+
+          <Route path="/checkout" element={
+            user ? <Checkout cart={cart} clearCart={clearCart} user={user} /> : <Navigate to="/login" />
+          } />
+
         </Routes>
       </main>
 

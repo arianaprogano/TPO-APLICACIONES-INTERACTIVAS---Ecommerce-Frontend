@@ -257,3 +257,19 @@
   justify-content: flex-end;
   gap: 12px;
 }
+
+.panel-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-cancel-panel {
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel-panel:hover {
+  background-color: #d1d5db !important;
+}

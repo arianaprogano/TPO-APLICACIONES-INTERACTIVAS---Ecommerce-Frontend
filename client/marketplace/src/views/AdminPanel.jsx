@@ -5,16 +5,33 @@ import './PanelStyles.css'
 
 function AdminPanel() {
   const [activeTab, setActiveTab] = useState('ordenes')
-  
-  // Estado para el modal de usuarios
   const [isModalOpen, setIsModalOpen] = useState(false) 
   
-  // Estados para la Gestión de Categorías
   const [isCatModalOpen, setIsCatModalOpen] = useState(false)
   const [busquedaCategoria, setBusquedaCategoria] = useState('')
-  const [editingCategory, setEditingCategory] = useState(null) // Guardamos qué categoría estamos editando
+  const [editingCategory, setEditingCategory] = useState(null) 
 
-  // Datos simulados de categorías
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [categoryToDelete, setCategoryToDelete] = useState(null)
+
+  const [busquedaUsuario, setBusquedaUsuario] = useState('')
+  const [usuarios, setUsuarios] = useState([
+    { id: 1, name: 'Admin Principal', username: 'admin', email: 'admin@test.com', role: 'admin', address: 'Oficina Central', active: true },
+    { id: 2, name: 'Juan Vendedor', username: 'juanv', email: 'juan@test.com', role: 'vendedor', address: 'Rosario, Santa Fe', active: false },
+    { id: 3, name: 'Pedro Cliente', username: 'pedroc', email: 'pedro@test.com', role: 'cliente', address: 'Capital Federal', active: false }
+  ])
+
+  const usuariosFiltrados = usuarios.filter(user => 
+    user.email.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
+    user.username.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
+    user.role.toLowerCase().includes(busquedaUsuario.toLowerCase())
+  )
+
+  const confirmarEliminarUsuario = () => {
+    setUsuarios(usuarios.filter(user => user.id !== userToDelete.id))
+    setUserToDelete(null)
+  }
+
   const [categorias, setCategorias] = useState([
     { id: 1, name: 'Maquinaria', subcategories: 'Tractor, Cosechadora' },
     { id: 2, name: 'Insumos', subcategories: 'Semillas, Fertilizantes' }
@@ -34,7 +51,6 @@ function AdminPanel() {
     setIsCatModalOpen(true)
   }
 
-  // Esta función se la pasamos al CategoryForm para que la ejecute al dar "Guardar"
   const handleSaveCategory = (catForm) => {
     if (catForm.id) {
       const categoriasActualizadas = categorias.map(c => c.id === catForm.id ? catForm : c);
@@ -45,6 +61,11 @@ function AdminPanel() {
       setCategorias([...categorias, nuevaCategoria]);
     }
     setIsCatModalOpen(false);
+  }
+  
+  const confirmarEliminarCategoria = () => {
+    setCategorias(categorias.filter(cat => cat.id !== categoryToDelete.id))
+    setCategoryToDelete(null)
   }
 
   return (
@@ -85,7 +106,12 @@ function AdminPanel() {
             <header className="users-toolbar">
               <div className="search-bar">
                 <i className="fa-solid fa-search"></i>
-                <input type="text" placeholder="Buscar por email, usuario o rol..." />
+                <input 
+                  type="text" 
+                  placeholder="Buscar por email, usuario o rol..." 
+                  value={busquedaUsuario}
+                  onChange={(e) => setBusquedaUsuario(e.target.value)}
+                />
               </div>
               <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
                 <i className="fa-solid fa-user-plus"></i> NUEVO USUARIO
@@ -97,18 +123,40 @@ function AdminPanel() {
                 <tr><th>USUARIO / EMAIL</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>DIRECCIÓN</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>
-                    <div className="user-info">
-                      <div className="avatar">A</div>
-                      <div><strong>admin</strong><br/><span>admin@test.com</span></div>
-                    </div>
-                  </td>
-                  <td>Admin Principal</td>
-                  <td><span className="badge-role admin">ADMINISTRADOR</span></td>
-                  <td>Oficina Central</td>
-                  <td className="text-right action-text italic">Sesión activa</td>
-                </tr>
+                {usuariosFiltrados.length > 0 ? (
+                  usuariosFiltrados.map(user => (
+                    <tr key={user.id}>
+                      <td>
+                        <div className="user-info">
+                          <div className="avatar">{user.username.charAt(0).toUpperCase()}</div>
+                          <div><strong>{user.username}</strong><br/><span>{user.email}</span></div>
+                        </div>
+                      </td>
+                      <td>{user.name}</td>
+                      <td>
+                        <span className={`badge-role ${user.role}`}>
+                          {user.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td>{user.address}</td>
+                      <td className="text-right">
+                        {user.active ? (
+                          <span className="action-text italic">Sesión activa</span>
+                        ) : (
+                          <button 
+                            className="btn-icon-delete" 
+                            title="Eliminar usuario"
+                            onClick={() => setUserToDelete(user)}
+                          >
+                            <i className="fa-solid fa-trash"></i> Eliminar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="5" className="empty-state">No se encontraron usuarios.</td></tr>
+                )}
               </tbody>
             </table>
           </section>
@@ -131,30 +179,32 @@ function AdminPanel() {
                 <tr><th>ID</th><th>NOMBRE DE LA CATEGORÍA</th><th>SUBCATEGORÍAS</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
-                {categoriasFiltradas.map(cat => (
-                  <tr key={cat.id}>
-                    <td><strong className="text-gray-500">#{cat.id}</strong></td>
-                    <td><strong>{cat.name}</strong></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {cat.subcategories.split(',').map((sub, index) => (
-                          <span key={index} className="subcat-badge">{sub.trim()}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="text-right">
-                      <button onClick={() => openEditCategoryModal(cat)} className="btn-icon-edit" title="Editar"><i className="fa-solid fa-pen"></i></button>
-                      <button className="btn-icon-delete" title="Eliminar"><i className="fa-solid fa-trash"></i></button>
-                    </td>
-                  </tr>
-                ))}
+                {categoriasFiltradas.length > 0 ? (
+                  categoriasFiltradas.map(cat => (
+                    <tr key={cat.id}>
+                      <td><strong className="text-gray-500">#{cat.id}</strong></td>
+                      <td><strong>{cat.name}</strong></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {cat.subcategories.split(',').map((sub, index) => (
+                            <span key={index} className="subcat-badge">{sub.trim()}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="text-right">
+                        <button onClick={() => openEditCategoryModal(cat)} className="btn-icon-edit" title="Editar"><i className="fa-solid fa-pen"></i></button>
+                        <button onClick={() => setCategoryToDelete(cat)} className="btn-icon-delete" title="Eliminar"><i className="fa-solid fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                   <tr><td colSpan="4" className="empty-state">No se encontraron categorías.</td></tr>
+                )}
               </tbody>
             </table>
           </section>
         )}
       </main>
-
-      {/* --- RENDERIZADO DE LOS COMPONENTES EXTERNOS --- */}
       
       {isModalOpen && (
         <div className="modal-overlay">
@@ -174,6 +224,61 @@ function AdminPanel() {
           />
         </div>
       )}
+
+      {userToDelete && (
+        <div className="error-overlay" onClick={() => setUserToDelete(null)}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon-box">
+              <i className="fa-solid fa-user"></i>
+            </div>
+            <h2 className="error-title">¿Eliminar Usuario?</h2>
+            <p className="error-text">¿Estás seguro de que deseas eliminar al usuario <strong>{userToDelete.username}</strong>?</p>
+            
+            <div className="panel-modal-actions">
+              <button 
+                className="error-btn btn-cancel-panel" 
+                onClick={() => setUserToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="error-btn" 
+                onClick={confirmarEliminarUsuario}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {categoryToDelete && (
+        <div className="error-overlay" onClick={() => setCategoryToDelete(null)}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon-box">
+              <i className="fa-solid fa-folder-minus"></i>
+            </div>
+            <h2 className="error-title">¿Eliminar Categoría?</h2>
+            <p className="error-text">¿Estás seguro de que deseas eliminar la categoría <strong>{categoryToDelete.name}</strong>?</p>
+            
+            <div className="panel-modal-actions">
+              <button 
+                className="error-btn btn-cancel-panel" 
+                onClick={() => setCategoryToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="error-btn" 
+                onClick={confirmarEliminarCategoria}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

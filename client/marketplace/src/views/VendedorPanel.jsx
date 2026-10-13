@@ -2,11 +2,10 @@ import React, { useState } from 'react'
 import EditProductForm from '../components/EditProductForm'
 import './PanelStyles.css'
 
-function VendedorPanel() {
+function VendedorPanel({ setModalMessage }) {
   const [activeTab, setActiveTab] = useState('publicaciones')
   const [isEditOpen, setIsEditOpen] = useState(false)
 
-  // Simulación del producto del vendedor
   const mockProduct = {
     title: 'Semillas de Maíz Híbrido (Bolsa 80k)',
     category: 'Insumos',
@@ -21,22 +20,20 @@ function VendedorPanel() {
     setIsEditOpen(true)
   }
 
-  // Función que se ejecuta cuando el formulario nos avisa que guardó
   const handleSaveProduct = (updatedProduct) => {
-    // Aquí a futuro enviarías los datos modificados al backend
     setIsEditOpen(false)
-    alert("¡Producto actualizado con éxito!")
+    if (setModalMessage) {
+      setModalMessage("¡Producto actualizado con éxito!");
+    }
   }
 
   return (
     <div className="panel-container">
-      {/* Cambiado a <nav> por semántica */}
       <nav className="panel-tabs">
         <button className={activeTab === 'publicaciones' ? 'active' : ''} onClick={() => setActiveTab('publicaciones')}>Mis Publicaciones</button>
         <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Órdenes Recibidas</button>
       </nav>
 
-      {/* Cambiado a <main> */}
       <main className="panel-content">
         {activeTab === 'publicaciones' && (
           <table className="panel-table">
@@ -87,7 +84,6 @@ function VendedorPanel() {
         )}
       </main>
 
-      {/* MODAL EXTERNO DE EDITAR PRODUCTO */}
       {isEditOpen && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>
           <EditProductForm 

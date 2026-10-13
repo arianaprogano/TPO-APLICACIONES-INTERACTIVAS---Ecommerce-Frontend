@@ -19,18 +19,22 @@
 
 .product-detail-card {
   display: flex;
+  flex-direction: column; 
   background-color: #ffffff;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  gap: 40px;
   padding: 32px;
 }
 
-/* --- COLUMNA IZQUIERDA (Foto + Reseñas) --- */
+.pd-top-row {
+  display: flex;
+  gap: 40px;
+}
+
 .product-detail-left {
   flex: 1;
-  max-width: 45%;
+  max-width: 50%;
   display: flex;
   flex-direction: column;
 }
@@ -51,16 +55,33 @@
   object-fit: cover;
 }
 
-.product-reviews-section {
+/* --- SECCIÓN INFERIOR: Alineada a la izquierda y con margen gigante --- */
+.product-bottom-section {
+  margin-top: 80px; 
+  padding-top: 40px;
   border-top: 1px solid #e5e7eb;
-  padding-top: 24px;
-  margin-top: 80px; /* Separación amplia de la imagen */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; 
+  text-align: left; 
+}
+
+.product-description-bottom {
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 50px; /* Separación con las reseñas */
+}
+
+.product-reviews-section {
+  width: 100%;
+  max-width: 800px;
 }
 
 .reviews-title {
-  font-size: 16px;
+  font-size: 18px;
   color: #374151;
   margin-bottom: 16px;
+  font-weight: bold;
 }
 
 .review-card {
@@ -189,7 +210,6 @@
   margin-top: 8px;
 }
 
-/* Caja de medios de pago */
 .payment-box {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -227,7 +247,6 @@
   font-size: 14px;
 }
 
-/* Fila del carrito y contador */
 .product-actions-row {
   display: flex;
   gap: 16px;
@@ -276,12 +295,4 @@
 
 .btn-add-cart:hover {
   background-color: #ea580c;
-}
-
-.product-description-bottom {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 20px;
-  font-size: 14px;
-  color: #4b5563;
-  line-height: 1.6;
 }
