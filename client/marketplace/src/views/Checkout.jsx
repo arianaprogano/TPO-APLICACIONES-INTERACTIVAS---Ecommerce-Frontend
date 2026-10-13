@@ -4,14 +4,36 @@ import './Checkout.css'
 
 function Checkout({ cart, clearCart, user }) {
   const navigate = useNavigate()
-  const [address, setAddress] = useState('')
-  const [errorModal, setErrorModal] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
 
-  // Separamos los paquetes:
-  const itemsConEnvio = cart.filter(item => item.conEnvio);
-  const itemsAcordar = cart.filter(item => !item.conEnvio);
+  // MAGIA AQUÍ: Agrupamos por Vendedor Y por Tipo de Envío
+  const agruparPaquetes = () => {
+    const paquetesObj = {};
+    
+    cart.forEach(item => {
+      // Buscamos el ID del vendedor (por si lo guardaste como vendedorId o sellerId)
+      const vId = item.vendedorId || item.sellerId || 'Desconocido';
+      // Determinamos si es envío o retiro
+      const tipo = item.conEnvio ? 'envio' : 'retiro';
+      
+      // Creamos una clave única, ej: "10-retiro" o "11-envio"
+      const clave = `${vId}-${tipo}`;
+      
+      if (!paquetesObj[clave]) {
+        paquetesObj[clave] = {
+          vendedorId: vId,
+          tipo: tipo,
+          items: []
+        };
+      }
+      paquetesObj[clave].items.push(item);
+    });
 
+    // Convertimos el objeto en un array para poder recorrerlo
+    return Object.values(paquetesObj);
+  }
+
+  const paquetes = agruparPaquetes();
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
   const formatMoney = (amount) => 'U$S ' + new Intl.NumberFormat('en-US').format(amount || 0)
 
@@ -27,10 +49,6 @@ function Checkout({ cart, clearCart, user }) {
   }
 
   const handlePay = () => {
-    if (itemsConEnvio.length > 0 && address.trim() === '') {
-      setErrorModal('Por favor, ingresa una dirección de entrega para los productos que van a domicilio.')
-      return
-    }
     setShowSuccess(true)
   }
 
@@ -45,69 +63,69 @@ function Checkout({ cart, clearCart, user }) {
       <div className="checkout-left">
         <h2 className="checkout-section-title">Revisa tu compra</h2>
 
-        {/* --- PAQUETE 1: ENVÍO A DOMICILIO --- */}
-        {itemsConEnvio.length > 0 && (
-          <article className="paquete-card">
-            <header className="paquete-header">
-              <div className="paquete-icon icon-envio"><i className="fa-solid fa-truck-fast"></i></div>
-              <div>
-                <h3 className="paquete-title">Envío a Domicilio</h3>
-                <p className="paquete-subtitle">Llegará a la dirección que indiques.</p>
-              </div>
-            </header>
-            
-            <div className="paquete-items">
-              {itemsConEnvio.map((item, index) => (
-                <div className="checkout-item" key={`envio-${item.id}-${index}`}>
-                  <div>
-                    <div className="checkout-item-title">{item.title}</div>
-                    <div className="checkout-item-qty">Cantidad: {item.qty}</div>
-                  </div>
-                  <div className="checkout-item-price">{formatMoney(item.price * item.qty)}</div>
-                </div>
-              ))}
-            </div>
+        {/* RECORREMOS LOS PAQUETES DINÁMICAMENTE */}
+        {paquetes.map((paquete, index) => {
+          const numPaquete = index + 1;
+          const esEnvio = paquete.tipo === 'envio';
 
-            <div className="address-input-container">
-              <label>¿A dónde enviamos este paquete?</label>
-              <input 
-                type="text" 
-                placeholder="Ej: Av. Corrientes 1234, CABA" 
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
-          </article>
-        )}
-
-        {/* --- PAQUETE 2: ACORDAR CON EL VENDEDOR --- */}
-        {itemsAcordar.length > 0 && (
-          <article className="paquete-card" style={{ marginTop: itemsConEnvio.length > 0 ? '24px' : '0' }}>
-            <header className="paquete-header">
-              <div className="paquete-icon icon-acordar"><i className="fa-solid fa-handshake"></i></div>
-              <div>
-                <h3 className="paquete-title">Acordar con el vendedor</h3>
-                <p className="paquete-subtitle">Deberás coordinar el retiro directamente con el dueño.</p>
-              </div>
-            </header>
-            
-            <div className="paquete-items">
-              {itemsAcordar.map((item, index) => (
-                <div className="checkout-item" key={`acordar-${item.id}-${index}`}>
-                  <div>
-                    <div className="checkout-item-title">{item.title}</div>
-                    <div className="checkout-item-qty">Cantidad: {item.qty}</div>
+          return (
+            <article className="paquete-card" key={index} style={{ marginTop: index > 0 ? '24px' : '0' }}>
+              <header className="paquete-header">
+                {esEnvio ? (
+                  <div className="paquete-icon icon-envio"><i className="fa-solid fa-box"></i></div>
+                ) : (
+                  <div className="paquete-icon icon-acordar" style={{ backgroundColor: '#f3f4f6', color: '#4b5563' }}>
+                    <i className="fa-solid fa-shop"></i>
                   </div>
-                  <div className="checkout-item-price">{formatMoney(item.price * item.qty)}</div>
+                )}
+                
+                <div>
+                  <h3 className="paquete-title">Paquete {numPaquete} <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'normal' }}>- Vendedor #{paquete.vendedorId}</span></h3>
+                  
+                  {esEnvio ? (
+                    <>
+                      <p className="paquete-subtitle" style={{ color: '#3b82f6', fontWeight: 'bold', marginTop: '2px' }}>
+                        Envío a acordar con el vendedor
+                      </p>
+                      <p className="paquete-subtitle" style={{ fontSize: '12px', marginTop: '2px' }}>
+                        Coordinarás el flete o entrega con el dueño.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="paquete-subtitle" style={{ color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
+                        Retiro en el domicilio del vendedor
+                      </p>
+                      <p className="paquete-subtitle" style={{ fontSize: '12px', marginTop: '2px' }}>
+                        Deberás buscar estos productos directamente en la ubicación del vendedor.
+                      </p>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-            
-            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
-              <i className="fa-solid fa-circle-info"></i> Te daremos los datos del vendedor una vez confirmado el pago.
-            </div>
-          </article>
-        )}
+              </header>
+              
+              <div className="paquete-items">
+                {paquete.items.map((item, i) => (
+                  <div className="checkout-item" key={i}>
+                    <div>
+                      <div className="checkout-item-title">{item.title}</div>
+                      <div className="checkout-item-qty">Cantidad: {item.qty}</div>
+                    </div>
+                    <div className="checkout-item-price">{formatMoney(item.price * item.qty)}</div>
+                  </div>
+                ))}
+              </div>
+              
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: esEnvio ? '#eff6ff' : '#fef3c7', color: esEnvio ? '#1e3a8a' : '#92400e', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' }}>
+                {esEnvio ? (
+                  <><i className="fa-solid fa-circle-info"></i> Te enviaremos los datos de contacto tras confirmar el pago.</>
+                ) : (
+                  <><i className="fa-solid fa-location-dot"></i> Obtendrás la dirección exacta al finalizar la compra.</>
+                )}
+              </div>
+            </article>
+          )
+        })}
       </div>
 
       <div className="checkout-right">
@@ -117,20 +135,15 @@ function Checkout({ cart, clearCart, user }) {
           <span>{formatMoney(subtotal)}</span>
         </div>
         
-        {/* MAGIA AQUÍ: El resumen reacciona a los paquetes que tengas */}
-        {itemsConEnvio.length > 0 && (
-          <div className="summary-row">
-            <span>Envío a domicilio</span>
-            <span style={{ color: '#6b7280' }}>A calcular</span>
+        {/* Resumen dinámico de paquetes */}
+        {paquetes.map((paquete, index) => (
+          <div className="summary-row" key={index}>
+            <span>{paquete.tipo === 'envio' ? 'Envío' : 'Retiro'} (Paq. {index + 1})</span>
+            <span style={{ color: paquete.tipo === 'envio' ? '#3b82f6' : '#16a34a', fontWeight: '600' }}>
+              {paquete.tipo === 'envio' ? 'A acordar' : 'En persona'}
+            </span>
           </div>
-        )}
-
-        {itemsAcordar.length > 0 && (
-          <div className="summary-row">
-            <span>Retiro</span>
-            <span style={{ color: '#16a34a', fontWeight: '600' }}>A acordar</span>
-          </div>
-        )}
+        ))}
 
         <div className="summary-total">
           <span>Total</span>
@@ -142,18 +155,6 @@ function Checkout({ cart, clearCart, user }) {
         </button>
       </div>
 
-      {/* --- MODALES --- */}
-      {errorModal && (
-        <div className="error-overlay">
-          <div className="error-modal">
-            <div className="error-icon-box"><i className="fa-solid fa-xmark"></i></div>
-            <h2 className="error-title">Faltan datos</h2>
-            <p className="error-text">{errorModal}</p>
-            <button className="error-btn" onClick={() => setErrorModal('')}>Aceptar</button>
-          </div>
-        </div>
-      )}
-
       {showSuccess && (
         <div className="error-overlay">
           <div className="error-modal">
@@ -161,7 +162,7 @@ function Checkout({ cart, clearCart, user }) {
               <i className="fa-solid fa-check"></i>
             </div>
             <h2 className="error-title">¡Compra Exitosa!</h2>
-            <p className="error-text">Tu orden ha sido procesada correctamente.</p>
+            <p className="error-text">Tu orden ha sido procesada. Ya puedes contactar a los vendedores.</p>
             <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={handleSuccessClose}>Ir a Mis Compras</button>
           </div>
         </div>
