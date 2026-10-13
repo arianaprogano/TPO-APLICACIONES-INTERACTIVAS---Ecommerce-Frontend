@@ -1,13 +1,20 @@
 import React, { useState } from 'react'
 import './ProductForm.css'
 
+const PROVINCIAS = [
+  'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Ciudad Autónoma de Buenos Aires', 
+  'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 
+  'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 
+  'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'
+];
+
 function PublishProductForm({ onClose }) {
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const [selectedImages, setSelectedImages] = useState([])
   const [publishForm, setPublishForm] = useState({
-    title: '', category: '', subcategory: '', condition: '', price: '', stock: '', description: ''
+    title: '', category: '', subcategory: '', condition: '', price: '', stock: '', province: '', description: ''
   })
   
   const handleImageChange = (e) => {
@@ -24,7 +31,7 @@ function PublishProductForm({ onClose }) {
     e.preventDefault() 
 
     if (!publishForm.title || !publishForm.price || !publishForm.stock || !publishForm.description || 
-        !publishForm.category || !publishForm.subcategory || !publishForm.condition ||
+        !publishForm.category || !publishForm.subcategory || !publishForm.condition || !publishForm.province ||
         selectedImages.length === 0) {
       setShowErrorModal(true)
       return
@@ -42,7 +49,6 @@ function PublishProductForm({ onClose }) {
     <>
       <div className="publish-modal-content">
         <header className="publish-modal-header">
-          {/* SE ELIMINÓ EL ÍCONO DE LA CAJITA AQUÍ */}
           <div className="modal-title-with-icon">
             Publicar Producto
           </div>
@@ -88,6 +94,17 @@ function PublishProductForm({ onClose }) {
               <div className="form-group">
                 <label>PRECIO (U$S)</label>
                 <input type="number" min="1" value={publishForm.price} onChange={e => setPublishForm({...publishForm, price: e.target.value})} />
+              </div>
+              
+              {/* NUEVO CAMPO DE PROVINCIA */}
+              <div className="form-group">
+                <label>UBICACIÓN (PROVINCIA)</label>
+                <select value={publishForm.province} onChange={e => setPublishForm({...publishForm, province: e.target.value})}>
+                  <option value="" disabled>Seleccionar...</option>
+                  {PROVINCIAS.map(prov => (
+                    <option key={prov} value={prov}>{prov}</option>
+                  ))}
+                </select>
               </div>
             </div>
             

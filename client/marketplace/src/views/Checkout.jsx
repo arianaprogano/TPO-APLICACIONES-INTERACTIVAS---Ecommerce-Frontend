@@ -6,17 +6,13 @@ function Checkout({ cart, clearCart, user }) {
   const navigate = useNavigate()
   const [showSuccess, setShowSuccess] = useState(false)
 
-  // MAGIA AQUÍ: Agrupamos por Vendedor Y por Tipo de Envío
+  // Agrupamos por Vendedor Y por Tipo de Envío
   const agruparPaquetes = () => {
     const paquetesObj = {};
     
     cart.forEach(item => {
-      // Buscamos el ID del vendedor (por si lo guardaste como vendedorId o sellerId)
       const vId = item.vendedorId || item.sellerId || 'Desconocido';
-      // Determinamos si es envío o retiro
       const tipo = item.conEnvio ? 'envio' : 'retiro';
-      
-      // Creamos una clave única, ej: "10-retiro" o "11-envio"
       const clave = `${vId}-${tipo}`;
       
       if (!paquetesObj[clave]) {
@@ -29,7 +25,6 @@ function Checkout({ cart, clearCart, user }) {
       paquetesObj[clave].items.push(item);
     });
 
-    // Convertimos el objeto en un array para poder recorrerlo
     return Object.values(paquetesObj);
   }
 
@@ -156,14 +151,16 @@ function Checkout({ cart, clearCart, user }) {
       </div>
 
       {showSuccess && (
-        <div className="error-overlay">
-          <div className="error-modal">
-            <div className="error-icon-box" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+        <div className="modal-overlay" style={{ zIndex: 12000 }}>
+          <div className="modal-content-wide">
+            <div className="success-icon-circle-wrapper">
               <i className="fa-solid fa-check"></i>
             </div>
-            <h2 className="error-title">¡Compra Exitosa!</h2>
-            <p className="error-text">Tu orden ha sido procesada. Ya puedes contactar a los vendedores.</p>
-            <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={handleSuccessClose}>Ir a Mis Compras</button>
+            <h3 className="modal-title-wide">¡Compra Exitosa!</h3>
+            <p className="modal-text-wide">Tu orden ha sido procesada. Ya puedes contactar a los vendedores.</p>
+            <button type="button" className="modal-btn-green" onClick={handleSuccessClose}>
+              IR A MIS COMPRAS
+            </button>
           </div>
         </div>
       )}

@@ -5,6 +5,7 @@ import './PanelStyles.css'
 function VendedorPanel({ setModalMessage }) {
   const [activeTab, setActiveTab] = useState('publicaciones')
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const mockProduct = {
     title: 'Semillas de Maíz Híbrido (Bolsa 80k)',
@@ -22,9 +23,7 @@ function VendedorPanel({ setModalMessage }) {
 
   const handleSaveProduct = (updatedProduct) => {
     setIsEditOpen(false)
-    if (setModalMessage) {
-      setModalMessage("¡Producto actualizado con éxito!");
-    }
+    setShowSuccessModal(true) // Disparamos el modal verde local en vez del rojo global
   }
 
   return (
@@ -91,6 +90,21 @@ function VendedorPanel({ setModalMessage }) {
             onClose={() => setIsEditOpen(false)} 
             onSave={handleSaveProduct} 
           />
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="modal-overlay" style={{ zIndex: 12000 }}>
+          <div className="modal-content-wide">
+            <div className="success-icon-circle-wrapper">
+              <i className="fa-solid fa-check"></i>
+            </div>
+            <h3 className="modal-title-wide">¡Actualización Exitosa!</h3>
+            <p className="modal-text-wide">Los datos del producto han sido guardados correctamente.</p>
+            <button type="button" className="modal-btn-green" onClick={() => setShowSuccessModal(false)}>
+              ACEPTAR
+            </button>
+          </div>
         </div>
       )}
     </div>

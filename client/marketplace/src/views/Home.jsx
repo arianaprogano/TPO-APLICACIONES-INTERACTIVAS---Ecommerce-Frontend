@@ -2,7 +2,13 @@ import React, { useState } from 'react'
 import PostList from '../components/PostList'
 import './Home.css'
 
-// 1. ¡ACÁ AGREGAMOS 'user' PARA QUE LO RECIBA!
+const PROVINCIAS = [
+  'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Ciudad Autónoma de Buenos Aires', 
+  'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 
+  'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 
+  'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'
+];
+
 export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
@@ -105,19 +111,18 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
             </header>
             
             {openLocation && (
-              <div className="filtro-opciones">
-                <label>
-                  <input type="checkbox" checked={locations.includes('Buenos Aires')} onChange={() => handleLocationChange('Buenos Aires')} /> 
-                  Buenos Aires
-                </label>
-                <label>
-                  <input type="checkbox" checked={locations.includes('Córdoba')} onChange={() => handleLocationChange('Córdoba')} /> 
-                  Córdoba
-                </label>
-                <label>
-                  <input type="checkbox" checked={locations.includes('Santa Fe')} onChange={() => handleLocationChange('Santa Fe')} /> 
-                  Santa Fe
-                </label>
+            
+              <div className="filtro-opciones" style={{ maxHeight: '100px', overflowY: 'auto', paddingRight: '8px' }}>
+                {PROVINCIAS.map(prov => (
+                  <label key={prov}>
+                    <input 
+                      type="checkbox" 
+                      checked={locations.includes(prov)} 
+                      onChange={() => handleLocationChange(prov)} 
+                    /> 
+                    {prov}
+                  </label>
+                ))}
               </div>
             )}
           </section>
