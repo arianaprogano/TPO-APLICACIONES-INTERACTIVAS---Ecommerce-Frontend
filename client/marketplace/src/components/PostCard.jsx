@@ -1,43 +1,46 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom' 
-import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { darDeBajaProducto } from '../api/admin'
+import { useAvisos } from './avisosContext'
 import './PostCard.css'
 
-function PostCard({ 
-  id, title, price, image, condition, anio, rating, sales, disponible, location, 
+function PostCard({
+  id, title, price, image, condition, anio, rating, sales, disponible, location,
   isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal,
-  esMiProducto, esAdmin, nivelDestacado
+  esMiProducto, esAdmin, nivelDestacado, onAddToCart
 }) {
-  const navigate = useNavigate(); 
-  
-  const [showConfirm, setShowConfirm] = useState(false)
+  const navigate = useNavigate()
+  const { error, confirmar } = useAvisos()
   const [isDeleted, setIsDeleted] = useState(false)
 
   const formatMoney = (amount) =>
     '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0);
 
-  const handleDeleteAdmin = (e) => {
-    e.stopPropagation(); 
-    setShowConfirm(true); 
-  }
-
   // Baja logica en el backend: sale del catalogo y de los carritos.
-  const confirmDelete = async (e) => {
-    e.stopPropagation();
-    setShowConfirm(false);
+  const handleDeleteAdmin = async (e) => {
+    e.stopPropagation()
+    const ok = await confirmar({
+      titulo: '¿Eliminar producto?',
+      texto: `"${title}" sale del catálogo y de los carritos.`,
+      ok: 'Eliminar',
+      peligro: true,
+    })
+    if (!ok) return
     try {
-      await darDeBajaProducto(id);
-      setIsDeleted(true);
+      await darDeBajaProducto(id)
+      setIsDeleted(true)
     } catch (err) {
-      window.alert(err.message);
+      error(err.message)
     }
   }
 
-  const cancelDelete = (e) => {
-    e.stopPropagation();
-    setShowConfirm(false);
+  // Desde la tarjeta se suma una unidad sin entrar a la ficha.
+  const agregar = (e) => {
+    e.stopPropagation()
+    onAddToCart({ id, title }, 1)
   }
+
+  const puedeAgregar = onAddToCart && disponible && !esMiProducto && !esAdmin
 
   if (isDeleted) return null;
 
@@ -126,36 +129,13 @@ function PostCard({
              </div>
           )}
         </div>
+
+        {puedeAgregar && (
+          <button className="card-agregar" onClick={agregar}>
+            <i className="fa-solid fa-cart-plus"></i> Agregar al carrito
+          </button>
+        )}
       </div>
-
-      {showConfirm && createPortal(
-        <div className="error-overlay" onClick={cancelDelete}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-trash"></i>
-            </div>
-            <h2 className="error-title">¿Eliminar Producto?</h2>
-            <p className="error-text">¿Estás seguro de que deseas eliminar &ldquo;{title}&rdquo; del catálogo?</p>
-            
-            <div className="delete-modal-actions">
-              <button 
-                className="error-btn btn-cancel-delete" 
-                onClick={cancelDelete}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="error-btn" 
-                onClick={confirmDelete}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
     </div>
   )
 }

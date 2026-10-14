@@ -197,3 +197,110 @@
   height: 22px;
   background-color: rgba(255, 255, 255, 0.9);
 }
+
+/* Fotos en el editor: imagen, estado y borrar */
+.edit-foto-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.edit-foto-estado {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #ffffff;
+  background-color: var(--verde);
+}
+
+.estado-en_revision .edit-foto-estado { background-color: #f59e0b; }
+.estado-rechazada .edit-foto-estado { background-color: #ef4444; }
+.estado-rechazada .edit-foto-img { opacity: 0.5; }
+
+.edit-foto-agregar {
+  width: 88px;
+  height: 88px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: none !important;
+  margin: 0 !important;
+}
+
+.edit-foto-agregar:hover {
+  border-color: var(--verde);
+  color: var(--verde);
+}
+
+.edit-foto-agregar input {
+  display: none;
+}
+
+.edit-foto-agregar.subiendo {
+  cursor: wait;
+}
+
+/* Envio: eleccion obligatoria entre dos opciones */
+.entrega-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.entrega-opcion {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: none !important;
+  margin: 0 !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+  font-weight: 400 !important;
+}
+
+.entrega-opcion input {
+  width: auto !important;
+  accent-color: var(--verde);
+}
+
+.entrega-opcion i {
+  font-size: 18px;
+  color: #9ca3af;
+}
+
+.entrega-opcion span {
+  display: flex;
+  flex-direction: column;
+}
+
+.entrega-opcion small {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.entrega-opcion.elegida {
+  border-color: var(--verde);
+  background-color: #f0fdf4;
+}
+
+.entrega-opcion.elegida i {
+  color: var(--verde);
+}

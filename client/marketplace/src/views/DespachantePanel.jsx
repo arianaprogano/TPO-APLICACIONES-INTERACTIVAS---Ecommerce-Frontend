@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { cambiarEstadoEnvio, getHistorialEntregas, getMisEnvios, recibirEnvio } from '../api/envios'
 import { nombreProvincia } from '../api/ordenes'
 import './DespachantePanel.css'
+import { useAvisos } from '../components/avisosContext'
 
 // El despachante trabaja como en una sucursal: no elige de una lista, carga el
 // numero de la etiqueta del paquete que tiene en la mano. Con eso lo toma y
 // recien ahi ve la direccion de entrega. Despues lo marca entregado.
-function DespachantePanel({ setModalMessage }) {
+function DespachantePanel() {
+  const { error: avisarError, confirmar } = useAvisos()
   const [activeTab, setActiveTab] = useState('encurso')
   const [enCurso, setEnCurso] = useState(null)
   const [historial, setHistorial] = useState(null)
@@ -46,12 +48,12 @@ function DespachantePanel({ setModalMessage }) {
   }
 
   const marcarEntregado = async (envio) => {
-    if (!window.confirm(`¿Confirmás la entrega del envío ${envio.numeroSeguimiento} a ${envio.comprador?.nombre} ${envio.comprador?.apellido}?`)) return
+    if (!(await confirmar(`¿Confirmás la entrega del envío ${envio.numeroSeguimiento} a ${envio.comprador?.nombre} ${envio.comprador?.apellido}?`))) return
     try {
       await cambiarEstadoEnvio(envio.id, 'ENTREGADO')
       cargar()
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     }
   }
 

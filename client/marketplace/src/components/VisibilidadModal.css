@@ -1,0 +1,152 @@
+.visibilidad-modal {
+  max-width: 640px !important;
+}
+
+.visibilidad-producto {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.visibilidad-planes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.visibilidad-plan {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #ffffff;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.visibilidad-plan > i {
+  font-size: 22px;
+  color: #9ca3af;
+}
+
+.visibilidad-plan strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.visibilidad-precio {
+  font-size: 18px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.visibilidad-precio small {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.visibilidad-texto {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.visibilidad-plan.elegido {
+  border-color: var(--verde);
+  background-color: #f0fdf4;
+}
+
+.visibilidad-plan.elegido > i {
+  color: var(--verde);
+}
+
+.visibilidad-meses {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.visibilidad-meses span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  margin-right: 4px;
+}
+
+.visibilidad-meses button {
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+}
+
+.visibilidad-meses button.elegido {
+  background-color: var(--verde);
+  border-color: var(--verde);
+  color: #ffffff;
+}
+
+.visibilidad-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.visibilidad-total strong {
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.visibilidad-resumen {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.visibilidad-resumen div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.visibilidad-resumen .total {
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 8px;
+  font-size: 16px;
+}
+
+.visibilidad-resumen .total strong {
+  font-size: 20px;
+  color: #111827;
+}
+
+.visibilidad-nota {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .visibilidad-planes {
+    grid-template-columns: 1fr;
+  }
+}

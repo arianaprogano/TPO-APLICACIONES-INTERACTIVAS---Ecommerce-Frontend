@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Navigation from './components/Navigation'
-import Carrito from './components/Carrito'
+import { useAvisos } from './components/avisosContext'
 import { Home } from './views/Home'
 import Inicio from './views/Inicio'
 import ProductDetail from './views/ProductDetail'
@@ -17,24 +17,29 @@ import PublicarProducto from './views/PublicarProducto'
 import PerfilVendedor from './views/PerfilVendedor'
 import MisOfertas from './views/MisOfertas'
 import DetalleOrden from './views/DetalleOrden'
+import CarritoPage from './views/CarritoPage'
 import { configurarSesionVencida, getToken } from './api/client'
 import { getUsuarioActual, logout } from './api/auth'
 import { agregarAlCarrito, cambiarCantidad, getCarrito, quitarDelCarrito, vaciarCarrito } from './api/carrito'
 import { agregarAWishlist, getWishlist, quitarDeWishlist, vaciarWishlist } from './api/wishlist'
 
 import './App.css'
-import './Excepciones.css' 
+import './Excepciones.css'
 
 function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const avisos = useAvisos()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
-  
+
   // Lista de deseos tal como la devuelve el backend. favorites son solo los
   // ids de producto, que es lo que necesitan las tarjetas para el corazon.
   const [wishlist, setWishlist] = useState([])
   const favorites = wishlist.map(item => item.id)
-  
+
   // El usuario se guarda para que un F5 no muestre la pantalla deslogueada
   // mientras se valida el token; el que manda es el token.
   const [user, setUser] = useState(() => {
@@ -56,17 +61,15 @@ function App() {
   useEffect(() => {
     configurarSesionVencida(() => {
       setUser(null)
-      setModalMessage('Tu sesión venció. Volvé a iniciar sesión.')
+      avisos.error('Tu sesión venció. Volvé a iniciar sesión.', 'Sesión vencida')
     })
     if (getToken()) {
       getUsuarioActual().then(setUser).catch(() => {})
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  
-  const [modalMessage, setModalMessage] = useState('')
 
   const [cart, setCart] = useState([])
-  const [isCartOpen, setIsCartOpen] = useState(false)
 
   // Solo los clientes tienen carrito y lista de deseos: el backend les da 403
   // a admin y despachante.
@@ -84,23 +87,22 @@ function App() {
     getWishlist().then(setWishlist).catch(() => setWishlist([]))
   }, [user?.id, puedeComprar])
 
+  // Sin sesion, comprar o guardar lleva al login, y al entrar se vuelve a la
+  // pagina donde estaba.
+  const pedirLogin = (motivo) =>
+    navigate('/login', { state: { desde: location.pathname + location.search, motivo } })
+
   const addToCart = async (product, qty) => {
-    if (!user) {
-      setModalMessage("Para comprar, debes iniciar sesión primero.")
-      return
-    }
-    if (!puedeComprar) {
-      setModalMessage(`Tu rol de ${user.role} no te permite realizar compras.`)
-      return
-    }
+    if (!user) return pedirLogin('Iniciá sesión para agregar productos al carrito.')
+    if (!puedeComprar) return avisos.error(`Tu rol de ${user.role} no te permite realizar compras.`)
     // Stock, producto propio y publicacion activa los valida el backend, con
     // el mensaje que corresponde a cada caso.
     try {
       const carrito = await agregarAlCarrito(product.id, qty)
       setCart(carrito.items)
-      setIsCartOpen(true)
+      avisos.toast(`${product.title} se agregó al carrito`, { texto: 'Ver carrito', ruta: '/carrito' })
     } catch (err) {
-      setModalMessage(err.message)
+      avisos.error(err.message)
     }
   }
 
@@ -111,7 +113,7 @@ function App() {
       const carrito = await operacion()
       setCart(carrito.items)
     } catch (err) {
-      setModalMessage(err.message)
+      avisos.error(err.message)
     }
   }
 
@@ -128,19 +130,14 @@ function App() {
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0)
 
   const toggleFavorite = async (productId) => {
-    if (!user) {
-      setModalMessage("Para agregar productos a tu Lista de Deseos, debes iniciar sesión primero.")
-      return
-    }
-    if (!puedeComprar) {
-      setModalMessage(`Tu rol de ${user.role} no tiene Lista de Deseos.`)
-      return
-    }
+    if (!user) return pedirLogin('Iniciá sesión para guardar productos en tu Lista de Deseos.')
+    if (!puedeComprar) return avisos.error(`Tu rol de ${user.role} no tiene Lista de Deseos.`)
     const item = wishlist.find(i => i.id === productId)
     try {
       setWishlist(item ? await quitarDeWishlist(item.idItem) : await agregarAWishlist(productId))
+      if (!item) avisos.toast('Guardado en tu Lista de Deseos', { texto: 'Ver lista', ruta: '/favoritos' })
     } catch (err) {
-      setModalMessage(err.message)
+      avisos.error(err.message)
     }
   }
 
@@ -148,108 +145,82 @@ function App() {
     try {
       setWishlist(await vaciarWishlist())
     } catch (err) {
-      setModalMessage(err.message)
+      avisos.error(err.message)
     }
   }
 
+  const soloCliente = (elemento) =>
+    !user ? <Navigate to="/login" state={{ desde: location.pathname }} /> : user.role === 'cliente' ? elemento : <Navigate to="/home" />
+
   return (
     <div className="app-container">
-      <Navigation 
+      <Navigation
         searchTerm={searchTerm} setSearchTerm={setSearchTerm}
         selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
         selectedSubcategory={selectedSubcategory} setSelectedSubcategory={setSelectedSubcategory}
         favoritesCount={favorites.length}
         user={user} setUser={setUser}
-        cartCount={cartCount} openCart={() => setIsCartOpen(true)}
+        cartCount={cartCount} openCart={() => navigate('/carrito')}
       />
 
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/home" />} />
-          
+
           <Route path="/home" element={
-            user?.role?.toLowerCase() === 'despachante' 
-              ? <Navigate to="/despachante" /> 
-              : <Inicio user={user} favorites={favorites} toggleFavorite={toggleFavorite} setSelectedCategory={setSelectedCategory} setSelectedSubcategory={setSelectedSubcategory} setSearchTerm={setSearchTerm} />
+            user?.role === 'despachante'
+              ? <Navigate to="/despachante" />
+              : <Inicio user={user} favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} setSelectedCategory={setSelectedCategory} setSelectedSubcategory={setSelectedSubcategory} setSearchTerm={setSearchTerm} />
           } />
 
           <Route path="/productos" element={
-            user?.role?.toLowerCase() === 'despachante' 
-              ? <Navigate to="/despachante" /> 
-              : <Home user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} />
+            user?.role === 'despachante'
+              ? <Navigate to="/despachante" />
+              : <Home user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
           } />
-          
-          <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} setModalMessage={setModalMessage} />} />
+
+          <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} pedirLogin={pedirLogin} />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
-          
+
           <Route path="/admin" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'admin' ? <AdminPanel user={user} setModalMessage={setModalMessage} /> : <Navigate to="/home" />
+            !user ? <Navigate to="/login" /> : user.role === 'admin' ? <AdminPanel user={user} /> : <Navigate to="/home" />
           } />
-          
+
           <Route path="/despachante" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'despachante' ? <DespachantePanel setModalMessage={setModalMessage} /> : <Navigate to="/home" />
+            !user ? <Navigate to="/login" /> : user.role === 'despachante' ? <DespachantePanel /> : <Navigate to="/home" />
           } />
-          
-          <Route path="/vendedor" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'cliente' ? <VendedorPanel setModalMessage={setModalMessage} /> : <Navigate to="/home" />
-          } />
+
+          <Route path="/vendedor" element={soloCliente(<VendedorPanel />)} />
 
           <Route path="/vendedor/:nombreUsuario" element={
-            <PerfilVendedor user={user} favorites={favorites} toggleFavorite={toggleFavorite} />
+            <PerfilVendedor user={user} favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
           } />
 
-          <Route path="/ofertas" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'cliente' ? <MisOfertas user={user} setModalMessage={setModalMessage} /> : <Navigate to="/home" />
-          } />
+          <Route path="/ofertas" element={soloCliente(<MisOfertas user={user} />)} />
 
           <Route path="/orden/:id" element={
-            user ? <DetalleOrden user={user} /> : <Navigate to="/login" />
+            user ? <DetalleOrden user={user} /> : <Navigate to="/login" state={{ desde: location.pathname }} />
           } />
 
-          <Route path="/publicar" element={
-            !user ? <Navigate to="/login" /> : user.role?.toLowerCase() === 'cliente' ? <PublicarProducto /> : <Navigate to="/home" />
-          } />
-          
+          <Route path="/publicar" element={soloCliente(<PublicarProducto />)} />
+
           <Route path="/perfil" element={
             user ? <MisDatos user={user} setUser={setUser} /> : <Navigate to="/login" />
           } />
           <Route path="/favoritos" element={
-            user ? <Favoritos wishlist={wishlist} user={user} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} /> : <Navigate to="/login" />
+            user ? <Favoritos wishlist={wishlist} user={user} toggleFavorite={toggleFavorite} clearFavorites={clearFavorites} addToCart={addToCart} /> : <Navigate to="/login" state={{ desde: '/favoritos' }} />
           } />
-          <Route path="/mis-compras" element={
-            user ? <MisCompras user={user} setModalMessage={setModalMessage} /> : <Navigate to="/login" />
-          } />
+          <Route path="/mis-compras" element={soloCliente(<MisCompras user={user} />)} />
 
-          <Route path="/checkout" element={
-            user ? <Checkout cart={cart} onCompraRealizada={() => setCart([])} user={user} /> : <Navigate to="/login" />
-          } />
+          <Route path="/carrito" element={soloCliente(
+            <CarritoPage cart={cart} removeFromCart={removeFromCart} updateCartQty={updateCartQty} clearCart={clearCart} />
+          )} />
 
+          <Route path="/checkout" element={soloCliente(
+            <Checkout cart={cart} onCompraRealizada={() => setCart([])} user={user} />
+          )} />
         </Routes>
       </main>
-
-      <Carrito 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-        cart={cart} 
-        removeFromCart={removeFromCart}
-        updateCartQty={updateCartQty}
-        clearCart={clearCart}
-      />
-
-      {modalMessage && typeof modalMessage === 'string' && modalMessage.trim() !== '' && (
-        <div className="error-overlay">
-          <div className="error-modal">
-            <div className="error-icon-box">
-              <i className="fa-solid fa-xmark"></i>
-            </div>
-            <h2 className="error-title">Error</h2>
-            <p className="error-text">{modalMessage}</p>
-            <button className="error-btn" onClick={() => setModalMessage('')}>
-              Aceptar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

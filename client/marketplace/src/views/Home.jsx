@@ -7,7 +7,7 @@ const rangoVacio = { precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' 
 import './Home.css'
 
 // 1. ¡ACÁ AGREGAMOS 'user' PARA QUE LO RECIBA!
-export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
+export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
   const [openPrecio, setOpenPrecio] = useState(true)
@@ -226,6 +226,7 @@ export const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory, 
           <PostList
             orden={orden}
             user={user}
+            addToCart={addToCart}
             searchTerm={searchTerm}
             selectedCategory={selectedCategory}
             selectedSubcategory={selectedSubcategory}

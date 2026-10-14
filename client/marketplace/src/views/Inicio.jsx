@@ -29,7 +29,7 @@ const fotoCategoria = (nombre = '') => {
 
 // Portada: banner rotativo, acceso al catalogo completo y filas de ofertas,
 // mas vistos y mas vendidos. El listado con filtros vive en /productos.
-function Inicio({ user, favorites, toggleFavorite, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
+function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
   const navigate = useNavigate()
   const [categorias, setCategorias] = useState([])
   const [porCategoria, setPorCategoria] = useState({})
@@ -95,7 +95,7 @@ function Inicio({ user, favorites, toggleFavorite, setSelectedCategory, setSelec
     },
   ]
 
-  const filaProps = { user, favorites, toggleFavorite }
+  const filaProps = { user, favorites, toggleFavorite, addToCart }
 
   return (
     <div className="inicio">

@@ -5,6 +5,7 @@ import { cancelarOrden, getMisCompras, nombreProvincia } from '../api/ordenes'
 import { crearResena, getResenasDeProducto } from '../api/resenas'
 import { cambiarEstadoEnvio, ESTADOS_ENVIO, getMisEnvios } from '../api/envios'
 import './PanelStyles.css'
+import { useAvisos } from '../components/avisosContext'
 
 const ESTADOS = {
   PENDIENTE: { texto: 'Pendiente de pago', color: '#f59e0b', icono: 'fa-clock' },
@@ -15,7 +16,8 @@ const ESTADOS = {
 // Las ordenes salen de GET /ordenes/mis-compras. Cada orden es de un solo
 // vendedor pero puede tener varios productos, y la opinion se deja por
 // producto: por eso el boton va en cada renglon y no en la orden.
-function MisCompras({ user, setModalMessage }) {
+function MisCompras({ user }) {
+  const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
 
   const [compras, setCompras] = useState([])
@@ -54,16 +56,17 @@ function MisCompras({ user, setModalMessage }) {
       .catch(err => setError(err.message))
       .finally(() => setCargando(false))
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { cargar() }, [])
 
   // En las entregas a coordinar no hay despachante: lo confirma el comprador.
   const confirmarRecepcion = async (envio) => {
-    if (!window.confirm('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.')) return
+    if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
     try {
       const actualizado = await cambiarEstadoEnvio(envio.id, 'ENTREGADO')
       setEnvios(prev => ({ ...prev, [actualizado.idOrden]: actualizado }))
     } catch (err) {
-      setModalMessage(err.message)
+      avisarError(err.message)
     }
   }
 
@@ -79,12 +82,12 @@ function MisCompras({ user, setModalMessage }) {
   }
 
   const handleCancelar = async (orden) => {
-    if (!window.confirm(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`)) return
+    if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
     try {
       const actualizada = await cancelarOrden(orden.id)
       setCompras(prev => prev.map(c => c.id === actualizada.id ? actualizada : c))
     } catch (err) {
-      setModalMessage(err.message)
+      avisarError(err.message)
     }
   }
 
@@ -98,10 +101,10 @@ function MisCompras({ user, setModalMessage }) {
       })
       setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
       setProductoAReseñar(null)
-      setModalMessage('¡Gracias por tu opinión! Tu reseña ha sido guardada con éxito.')
+      exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })
     } catch (err) {
       setProductoAReseñar(null)
-      setModalMessage(err.message)
+      avisarError(err.message)
     }
   }
 

@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import EditProductForm from '../components/EditProductForm'
-import { cambiarEstadoPublicacion, darDeBajaProducto, getDashboard, getMisPublicaciones, subirFoto } from '../api/productos'
+import VisibilidadModal from '../components/VisibilidadModal'
+import { cambiarEstadoPublicacion, darDeBajaProducto, getDashboard, getMisPublicaciones, reactivarPublicacion } from '../api/productos'
 import { cancelarOrden, getMisVentas, nombreProvincia } from '../api/ordenes'
 import { cambiarEstadoEnvio, ESTADOS_ENVIO, getMisEnvios } from '../api/envios'
 import './PanelStyles.css'
+import { useAvisos } from '../components/avisosContext'
 
 const ESTADOS_PUBLICACION = {
   PUBLICADO: { texto: 'Publicado', clase: 'publicado' },
@@ -23,9 +25,13 @@ const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amo
 // Panel del vendedor: sus publicaciones (GET /productos/mis-publicaciones) y lo
 // que le compraron (GET /ordenes/mis-ventas). Cada accion actualiza la fila
 // con lo que devuelve el backend.
-function VendedorPanel({ setModalMessage }) {
+function VendedorPanel() {
+  const { error: avisarError, exito, confirmar, toast } = useAvisos()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('publicaciones')
+  // Las notificaciones abren una pestaña puntual (?tab=ordenes).
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'publicaciones')
+  useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
 
   const [publicaciones, setPublicaciones] = useState([])
   const [ventas, setVentas] = useState([])
@@ -35,12 +41,8 @@ function VendedorPanel({ setModalMessage }) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [editando, setEditando] = useState(null)
+  const [destacando, setDestacando] = useState(null)
   const [ocupado, setOcupado] = useState(null)
-
-  // Un solo input de archivo para todas las filas: se recuerda para que
-  // producto se abrio.
-  const inputFoto = useRef(null)
-  const [fotoPara, setFotoPara] = useState(null)
 
   const cargar = async () => {
     setError('')
@@ -67,7 +69,19 @@ function VendedorPanel({ setModalMessage }) {
   const handleSaveProduct = (actualizado) => {
     reemplazar(actualizado)
     setEditando(null)
-    setModalMessage?.('¡Producto actualizado con éxito!')
+    exito('Los cambios del producto se guardaron.', { titulo: 'Producto actualizado' })
+  }
+
+  const reactivar = async (producto) => {
+    setOcupado(producto.id)
+    try {
+      reemplazar(await reactivarPublicacion(producto.id))
+      toast(`"${producto.title}" se reactivó y volvió a Publicaciones`)
+    } catch (err) {
+      avisarError(err.message)
+    } finally {
+      setOcupado(null)
+    }
   }
 
   const alternarPausa = async (producto) => {
@@ -75,72 +89,62 @@ function VendedorPanel({ setModalMessage }) {
     try {
       reemplazar(await cambiarEstadoPublicacion(producto.id, producto.estadoPublicacion === 'PAUSADO' ? 'PUBLICADO' : 'PAUSADO'))
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     } finally {
       setOcupado(null)
     }
   }
 
   const darDeBaja = async (producto) => {
-    if (!window.confirm(`¿Eliminar "${producto.title}"? Sale del catálogo y de los carritos, y no se puede deshacer desde acá.`)) return
+    const ok = await confirmar({
+      titulo: '¿Dar de baja la publicación?',
+      texto: `"${producto.title}" sale del catálogo y de los carritos. Queda acá en gris y la podés reactivar cuando quieras.`,
+      ok: 'Dar de baja',
+      peligro: true,
+    })
+    if (!ok) return
     setOcupado(producto.id)
     try {
       await darDeBajaProducto(producto.id)
-      setPublicaciones(prev => prev.filter(p => p.id !== producto.id))
+      setPublicaciones(prev => prev.map(p => p.id === producto.id ? { ...p, activo: false } : p))
+      toast(`"${producto.title}" pasó a Publicaciones inactivas`)
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     } finally {
       setOcupado(null)
-    }
-  }
-
-  const elegirFoto = (producto) => {
-    setFotoPara(producto)
-    inputFoto.current.click()
-  }
-
-  const handleFoto = async (e) => {
-    const archivo = e.target.files[0]
-    e.target.value = null
-    if (!archivo || !fotoPara) return
-    setOcupado(fotoPara.id)
-    try {
-      const foto = await subirFoto(fotoPara.id, archivo)
-      // La subida cambia el estado (un borrador queda publicado): se recarga.
-      await cargar()
-      setModalMessage?.(foto.estadoVerificacion === 'APROBADA'
-        ? 'Foto agregada.'
-        : 'Foto subida. Queda en revisión hasta que la apruebe un administrador; si el producto estaba en borrador, se publica en ese momento.')
-    } catch (err) {
-      setModalMessage?.(err.message)
-    } finally {
-      setOcupado(null)
-      setFotoPara(null)
     }
   }
 
   const cancelarVenta = async (orden) => {
-    if (!window.confirm(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`)) return
+    if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
     try {
       const actualizada = await cancelarOrden(orden.id)
       setVentas(prev => prev.map(v => v.id === actualizada.id ? actualizada : v))
       cargar()
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     }
   }
 
   // Despachar genera el numero de seguimiento que despues carga el despachante.
   const despachar = async (envio) => {
-    if (!window.confirm(`¿Despachar la orden #${envio.idOrden}? Se genera el número de seguimiento para la etiqueta.`)) return
+    if (!(await confirmar(`¿Despachar la orden #${envio.idOrden}? Se genera el número de seguimiento para la etiqueta.`))) return
     try {
       const actualizado = await cambiarEstadoEnvio(envio.id, 'DESPACHADO')
       setEnvios(prev => ({ ...prev, [actualizado.idOrden]: actualizado }))
-      setModalMessage?.(`Envío despachado. Número de seguimiento: ${actualizado.numeroSeguimiento}`)
+      exito('Pegale al bulto una etiqueta con este número de seguimiento. El despachante lo va a cargar para llevarlo.', {
+        titulo: 'Envío despachado',
+        destacado: actualizado.numeroSeguimiento,
+      })
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     }
   }
+
+  // Las dadas de baja van a su propia pestaña, para poder reactivarlas.
+  const activas = publicaciones.filter(p => p.activo !== false)
+  const inactivas = publicaciones.filter(p => p.activo === false)
+  const listaVisible = activeTab === 'inactivas' ? inactivas : activas
 
   const filaVacia = (colSpan, texto) => (
     <tr><td colSpan={colSpan} className="empty-state" style={error ? { color: '#b91c1c' } : undefined}>{texto}</td></tr>
@@ -150,14 +154,10 @@ function VendedorPanel({ setModalMessage }) {
     <div className="panel-container">
       <nav className="panel-tabs">
         <button className={activeTab === 'resumen' ? 'active' : ''} onClick={() => setActiveTab('resumen')}>Resumen</button>
-        <button className={activeTab === 'publicaciones' ? 'active' : ''} onClick={() => setActiveTab('publicaciones')}>Mis Publicaciones ({publicaciones.length})</button>
+        <button className={activeTab === 'publicaciones' ? 'active' : ''} onClick={() => setActiveTab('publicaciones')}>Publicaciones ({activas.length})</button>
+        <button className={activeTab === 'inactivas' ? 'active' : ''} onClick={() => setActiveTab('inactivas')}>Publicaciones inactivas ({inactivas.length})</button>
         <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Órdenes Recibidas ({ventas.length})</button>
-        <button className="panel-tab-accion" onClick={() => navigate('/publicar')}>
-          <i className="fa-solid fa-plus"></i> Publicar producto
-        </button>
       </nav>
-
-      <input ref={inputFoto} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFoto} />
 
       {activeTab === 'resumen' && (
         cargando ? <p className="empty-state">Cargando tu resumen...</p>
@@ -222,7 +222,7 @@ function VendedorPanel({ setModalMessage }) {
       )}
 
       <main className="panel-content" style={activeTab === 'resumen' ? { display: 'none' } : undefined}>
-        {activeTab === 'publicaciones' && (
+        {(activeTab === 'publicaciones' || activeTab === 'inactivas') && (
           <table className="panel-table">
             <thead>
               <tr>
@@ -236,12 +236,17 @@ function VendedorPanel({ setModalMessage }) {
             <tbody>
               {cargando ? filaVacia(5, 'Cargando tus publicaciones...')
                 : error ? filaVacia(5, error)
-                : publicaciones.length === 0 ? filaVacia(5, 'Todavía no publicaste nada.')
-                : publicaciones.map(p => {
-                  const estado = ESTADOS_PUBLICACION[p.estadoPublicacion] ?? { texto: p.estadoPublicacion, clase: '' }
+                : listaVisible.length === 0 ? filaVacia(5, activeTab === 'inactivas'
+                  ? 'No tenés publicaciones dadas de baja.'
+                  : 'No tenés publicaciones activas. Las dadas de baja están en "Publicaciones inactivas".')
+                : listaVisible.map(p => {
+                  const dadaDeBaja = p.activo === false
+                  const estado = dadaDeBaja
+                    ? { texto: 'Dada de baja', clase: 'baja' }
+                    : ESTADOS_PUBLICACION[p.estadoPublicacion] ?? { texto: p.estadoPublicacion, clase: '' }
                   const trabajando = ocupado === p.id
                   return (
-                    <tr key={p.id} style={trabajando ? { opacity: 0.5 } : undefined}>
+                    <tr key={p.id} className={dadaDeBaja ? 'fila-dada-de-baja' : undefined} style={trabajando ? { opacity: 0.5 } : undefined}>
                       <td>
                         <div className="panel-producto">
                           {p.image
@@ -267,24 +272,40 @@ function VendedorPanel({ setModalMessage }) {
                         {p.enOferta && <span className="panel-descuento">{p.porcentajeDescuento}% OFF</span>}
                       </td>
                       <td><strong style={p.stock === 0 ? { color: '#ef4444' } : undefined}>{p.stock}</strong></td>
-                      <td><span className={`badge-estado ${estado.clase}`}>{estado.texto}</span></td>
+                      <td>
+                        <span className={`badge-estado ${estado.clase}`}>{estado.texto}</span>
+                        {p.nivelDestacado && p.nivelDestacado !== 'NINGUNO' && (
+                          <div className="badge-destacado" title={p.destacadoHasta ? `Hasta el ${p.destacadoHasta}` : undefined}>
+                            <i className="fa-solid fa-rocket"></i> {p.nivelDestacado.charAt(0) + p.nivelDestacado.slice(1).toLowerCase()}
+                            {p.destacadoHasta && ` · hasta ${p.destacadoHasta}`}
+                          </div>
+                        )}
+                      </td>
                       <td className="text-right">
-                        <div className="panel-acciones">
-                          <button className="btn-icon-edit" title="Editar" disabled={trabajando} onClick={() => setEditando(p)}>
-                            <i className="fa-solid fa-pen"></i>
+                        {dadaDeBaja ? (
+                          <button className="btn-reactivar" disabled={trabajando} onClick={() => reactivar(p)}>
+                            <i className="fa-solid fa-rotate-left"></i> Reactivar
                           </button>
-                          <button className="btn-icon-edit" title="Agregar foto" disabled={trabajando} onClick={() => elegirFoto(p)}>
-                            <i className="fa-solid fa-camera"></i>
-                          </button>
-                          {p.estadoPublicacion !== 'BORRADOR' && (
-                            <button className="btn-icon-edit" title={p.estadoPublicacion === 'PAUSADO' ? 'Reanudar' : 'Pausar'} disabled={trabajando} onClick={() => alternarPausa(p)}>
-                              <i className={`fa-solid ${p.estadoPublicacion === 'PAUSADO' ? 'fa-play' : 'fa-pause'}`}></i>
+                        ) : (
+                          <div className="panel-acciones">
+                            <button className="btn-icon-edit" title="Editar publicación (datos y fotos)" disabled={trabajando} onClick={() => setEditando(p)}>
+                              <i className="fa-solid fa-pen"></i>
                             </button>
-                          )}
-                          <button className="btn-icon-delete" title="Eliminar" disabled={trabajando} onClick={() => darDeBaja(p)}>
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </div>
+                            {p.estadoPublicacion === 'PUBLICADO' && (
+                              <button className="btn-icon-edit" title="Comprar visibilidad" disabled={trabajando} onClick={() => setDestacando(p)}>
+                                <i className="fa-solid fa-rocket"></i>
+                              </button>
+                            )}
+                            {p.estadoPublicacion !== 'BORRADOR' && (
+                              <button className="btn-icon-edit" title={p.estadoPublicacion === 'PAUSADO' ? 'Reanudar' : 'Pausar'} disabled={trabajando} onClick={() => alternarPausa(p)}>
+                                <i className={`fa-solid ${p.estadoPublicacion === 'PAUSADO' ? 'fa-play' : 'fa-pause'}`}></i>
+                              </button>
+                            )}
+                            <button className="btn-icon-delete" title="Dar de baja" disabled={trabajando} onClick={() => darDeBaja(p)}>
+                              <i className="fa-solid fa-trash"></i>
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
@@ -361,6 +382,18 @@ function VendedorPanel({ setModalMessage }) {
           </table>
         )}
       </main>
+
+      {destacando && (
+        <VisibilidadModal
+          producto={destacando}
+          onClose={() => setDestacando(null)}
+          onComprado={(actualizado, compra) => {
+            reemplazar(actualizado)
+            setDestacando(null)
+            exito(`Plan ${compra.nivel} por ${compra.meses} ${compra.meses === 1 ? 'mes' : 'meses'}. Tu publicación ya sale más arriba en el catálogo.`, { titulo: 'Visibilidad activada' })
+          }}
+        />
+      )}
 
       {editando && (
         <div className="modal-overlay" style={{ zIndex: 10000 }}>

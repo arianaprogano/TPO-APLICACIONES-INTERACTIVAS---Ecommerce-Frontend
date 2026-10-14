@@ -7,7 +7,7 @@ import './PerfilVendedor.css'
 
 // Pagina publica de un vendedor: su reputacion (promedio, reseñas, nivel) y
 // todo lo que tiene publicado.
-function PerfilVendedor({ user, favorites, toggleFavorite }) {
+function PerfilVendedor({ user, favorites, toggleFavorite, addToCart }) {
   const { nombreUsuario } = useParams()
   const navigate = useNavigate()
   const [calificacion, setCalificacion] = useState(null)
@@ -78,6 +78,7 @@ function PerfilVendedor({ user, favorites, toggleFavorite }) {
               location={post.location}
               isFavorite={favorites.includes(post.id)}
               onToggleFavorite={toggleFavorite}
+              onAddToCart={addToCart}
               conEnvio={post.conEnvio}
               enOferta={post.enOferta}
               porcentajeDescuento={post.porcentajeDescuento}

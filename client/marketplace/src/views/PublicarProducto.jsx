@@ -11,7 +11,8 @@ const ANIO_MAXIMO = new Date().getFullYear() + 1
 const formularioVacio = {
   nombre: '', idCategoria: '', idSubcategoria: '', condicion: '', anio: '',
   precio: '', descuento: '', stock: '1',
-  provincia: '', ubicacion: '', admiteEnvio: false, aceptaOfertas: false,
+  // admiteEnvio arranca sin elegir: el vendedor tiene que decidirlo.
+  provincia: '', ubicacion: '', admiteEnvio: null, aceptaOfertas: false,
   descripcion: '',
 }
 
@@ -69,6 +70,7 @@ function PublicarProducto() {
     if (form.stock === '' || Number(form.stock) < 0) e.stock = 'El stock no puede ser negativo'
     if (form.descuento !== '' && (Number(form.descuento) < 0 || Number(form.descuento) > 100)) e.descuento = 'Entre 0 y 100'
     if (!form.provincia) e.provincia = 'Elegí la provincia'
+    if (form.admiteEnvio === null) e.admiteEnvio = 'Indicá si hacés envíos'
     if (fotos.length === 0) e.fotos = 'Subí al menos una foto: sin foto el producto no se publica'
     return e
   }
@@ -108,21 +110,21 @@ function PublicarProducto() {
       return
     }
 
-    // Las fotos de a una y en orden: la primera queda como principal.
+    // Las fotos de a una y en orden: la primera queda como principal. La
+    // subida no espera a la IA: el backend la revisa en segundo plano y avisa
+    // con una notificacion, asi que esto tarda lo que tarda subir el archivo.
     const fotosSubidas = []
     for (let i = 0; i < fotos.length; i++) {
-      setProgreso(`Subiendo foto ${i + 1} de ${fotos.length}... puede tardar unos segundos.`)
+      setProgreso(`Subiendo foto ${i + 1} de ${fotos.length}...`)
       try {
-        const subida = await subirFoto(producto.id, fotos[i].file)
-        fotosSubidas.push({ nombre: fotos[i].file.name, estado: subida.estadoVerificacion })
+        await subirFoto(producto.id, fotos[i].file)
+        fotosSubidas.push({ nombre: fotos[i].file.name, ok: true })
       } catch (err) {
-        fotosSubidas.push({ nombre: fotos[i].file.name, estado: 'RECHAZADA', mensaje: err.message })
+        fotosSubidas.push({ nombre: fotos[i].file.name, ok: false, mensaje: err.message })
       }
     }
 
-    // Solo una foto aprobada publica: las que quedan en revision no las ve el
-    // comprador, asi que el producto espera en borrador hasta que se aprueben.
-    setResultado({ producto, fotos: fotosSubidas, publicado: fotosSubidas.some(f => f.estado === 'APROBADA') })
+    setResultado({ producto, fotos: fotosSubidas })
     setPaso('listo')
   }
 
@@ -138,38 +140,31 @@ function PublicarProducto() {
   }
 
   if (paso === 'listo') {
-    const etiqueta = { APROBADA: 'Aprobada', EN_REVISION: 'En revisión', RECHAZADA: 'Rechazada' }
+    const subidas = resultado.fotos.filter(f => f.ok).length
     return (
       <div className="publicar-container">
         <div className="publicar-card publicar-estado">
-          <i className={resultado.publicado ? 'fa-solid fa-circle-check publicar-ok' : 'fa-solid fa-triangle-exclamation publicar-aviso'}></i>
-          <h2>{resultado.publicado ? '¡Publicación creada!' : 'Quedó como borrador'}</h2>
+          <i className={subidas > 0 ? 'fa-solid fa-circle-check publicar-ok' : 'fa-solid fa-triangle-exclamation publicar-aviso'}></i>
+          <h2>{subidas > 0 ? '¡Se subió todo!' : 'No se pudo subir ninguna foto'}</h2>
           <p>
-            {resultado.publicado
-              ? `"${resultado.producto.nombre}" ya está publicado.`
-              : resultado.fotos.some(f => f.estado === 'EN_REVISION')
-                ? 'Tus fotos quedaron en revisión. El producto se publica automáticamente cuando un administrador apruebe alguna.'
-                : 'No se aceptó ninguna foto, así que el producto no se muestra en el catálogo. Subí otra foto desde Mis Publicaciones.'}
+            {subidas > 0
+              ? `"${resultado.producto.nombre}" está en revisión. Te avisamos con una notificación cuando termine: si se aprueba alguna foto, se publica sola.`
+              : 'El producto quedó como borrador. Podés subir fotos desde Mis Publicaciones › Editar publicación.'}
           </p>
 
           <ul className="publicar-fotos-resultado">
             {resultado.fotos.map((f, i) => (
-              <li key={i} className={`foto-${f.estado.toLowerCase()}`}>
+              <li key={i} className={f.ok ? 'foto-en_revision' : 'foto-rechazada'}>
                 <span>{f.nombre}</span>
-                <strong>{etiqueta[f.estado] ?? f.estado}</strong>
+                <strong>{f.ok ? 'En revisión' : 'No se subió'}</strong>
                 {f.mensaje && <small>{f.mensaje}</small>}
               </li>
             ))}
           </ul>
-          {resultado.fotos.some(f => f.estado === 'EN_REVISION') && (
-            <p className="publicar-nota">Las fotos en revisión no se muestran hasta que las apruebe un administrador.</p>
-          )}
 
           <div className="publicar-acciones">
-            {resultado.publicado && (
-              <button className="btn-guardar" onClick={() => navigate(`/product/${resultado.producto.id}`)}>Ver publicación</button>
-            )}
-            <button className="btn-cancelar" onClick={() => navigate('/vendedor')}>Mis publicaciones</button>
+            <button className="btn-guardar" onClick={() => navigate('/vendedor')}>Ir a Mis publicaciones</button>
+            <button className="btn-cancelar" onClick={() => { setResultado(null); setForm(formularioVacio); setFotos([]); setPaso('formulario') }}>Publicar otro</button>
           </div>
         </div>
       </div>
@@ -273,10 +268,22 @@ function PublicarProducto() {
             </div>
           </div>
 
-          <label className="publicar-check">
-            <input type="checkbox" checked={form.admiteEnvio} onChange={e => set('admiteEnvio', e.target.checked)} />
-            <span><strong>Hago envíos</strong> — si no, la entrega se coordina con el comprador.</span>
-          </label>
+          <div className="form-group">
+            <label>¿HACÉS ENVÍOS?</label>
+            <div className="entrega-opciones">
+              <label className={`entrega-opcion ${form.admiteEnvio === true ? 'elegida' : ''}`}>
+                <input type="radio" name="publicar-entrega" checked={form.admiteEnvio === true} onChange={() => set('admiteEnvio', true)} />
+                <i className="fa-solid fa-truck-fast"></i>
+                <span><strong>Sí, con envío</strong><small>Se despacha a domicilio, siempre</small></span>
+              </label>
+              <label className={`entrega-opcion ${form.admiteEnvio === false ? 'elegida' : ''}`}>
+                <input type="radio" name="publicar-entrega" checked={form.admiteEnvio === false} onChange={() => set('admiteEnvio', false)} />
+                <i className="fa-solid fa-handshake"></i>
+                <span><strong>No, sin envío</strong><small>Retiro o entrega a coordinar</small></span>
+              </label>
+            </div>
+            {campoError('admiteEnvio')}
+          </div>
           <label className="publicar-check">
             <input type="checkbox" checked={form.aceptaOfertas} onChange={e => set('aceptaOfertas', e.target.checked)} />
             <span><strong>Acepto ofertas</strong> — los compradores pueden proponerte otro precio.</span>
@@ -309,8 +316,8 @@ function PublicarProducto() {
         <section className="publicar-seccion">
           <h2>Descripción</h2>
           <div className="form-group">
-            <textarea rows="5" maxLength={500} placeholder="Estado, horas de uso, características..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
-            <span className="publicar-contador">{form.descripcion.length}/500</span>
+            <textarea rows="5" maxLength={255} placeholder="Estado, horas de uso, características..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
+            <span className="publicar-contador">{form.descripcion.length}/255</span>
             {campoError('descripcion')}
           </div>
         </section>

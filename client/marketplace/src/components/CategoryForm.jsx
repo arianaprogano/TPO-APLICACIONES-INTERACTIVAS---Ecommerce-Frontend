@@ -73,7 +73,7 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
 
           <div className="form-group full-width">
             <label htmlFor="cat-descripcion">DESCRIPCIÓN</label>
-            <textarea id="cat-descripcion" rows="3" maxLength={500} placeholder="Se muestra en el banner de la portada"
+            <textarea id="cat-descripcion" rows="3" maxLength={255} placeholder="Se muestra en el banner de la portada"
               value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })}
               style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '6px', padding: '10px 12px', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }}
             ></textarea>

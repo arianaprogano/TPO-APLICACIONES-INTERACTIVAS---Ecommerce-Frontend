@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { login, registrar } from '../api/auth'
 import './Login.css'
 
@@ -7,6 +7,8 @@ const registroVacio = { nombre: '', apellido: '', nombreUsuario: '', mail: '', c
 
 function Login({ setUser }) {
   const navigate = useNavigate()
+  // Si llego aca por querer comprar o guardar algo, despues de entrar vuelve ahi.
+  const { desde, motivo } = useLocation().state ?? {}
   const [modo, setModo] = useState('login')
   const [credenciales, setCredenciales] = useState({ mail: '', contrasena: '' })
   const [registro, setRegistro] = useState(registroVacio)
@@ -16,7 +18,8 @@ function Login({ setUser }) {
 
   const entrar = (usuario) => {
     setUser(usuario)
-    navigate(usuario.role === 'despachante' ? '/despachante' : '/home')
+    if (usuario.role === 'despachante') navigate('/despachante')
+    else navigate(desde && desde !== '/login' ? desde : '/home', { replace: true })
   }
 
   const enviar = async (e) => {
@@ -65,6 +68,8 @@ function Login({ setUser }) {
           <h2>{modo === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
           <p>{modo === 'login' ? 'Ingresá con tu mail y contraseña.' : 'Completá tus datos para registrarte.'}</p>
         </div>
+
+        {motivo && <div className="login-motivo"><i className="fa-solid fa-circle-info"></i> {motivo}</div>}
 
         <form className="login-form" onSubmit={enviar} noValidate>
           {error && <div className="login-error">{error}</div>}

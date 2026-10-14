@@ -1,0 +1,92 @@
+/* Variantes del modal de Excepciones.css: el rojo queda para los errores */
+.aviso-exito .error-icon-box,
+.aviso-confirmar .error-icon-box {
+  background-color: var(--verde);
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.3);
+}
+
+.aviso-exito .error-btn,
+.aviso-confirmar .error-btn {
+  background-color: var(--verde);
+}
+
+.aviso-confirmar.aviso-peligro .error-icon-box {
+  background-color: #f59e0b;
+  box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+}
+
+.aviso-confirmar.aviso-peligro .error-btn:not(.aviso-cancelar) {
+  background-color: #ef4444;
+}
+
+.aviso-botones {
+  display: flex;
+  gap: 12px;
+}
+
+.error-btn.aviso-cancelar {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* Dato importante dentro del modal de exito, ej. el numero de seguimiento */
+.aviso-destacado {
+  margin: -12px 0 24px;
+  padding: 14px;
+  border: 2px dashed var(--verde);
+  border-radius: 10px;
+  background-color: #f0fdf4;
+  font-family: ui-monospace, 'Consolas', monospace;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--verde-oscuro);
+  letter-spacing: 1px;
+  user-select: all;
+}
+
+.avisos-toasts {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.aviso-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #111827;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 14px;
+  font-weight: 600;
+  animation: avisoEntrada 0.25s ease-out;
+}
+
+.aviso-toast i {
+  color: #4ade80;
+}
+
+.aviso-toast button {
+  background: none;
+  border: none;
+  color: #4ade80;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@keyframes avisoEntrada {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

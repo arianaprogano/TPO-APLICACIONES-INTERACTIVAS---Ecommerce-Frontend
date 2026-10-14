@@ -133,3 +133,14 @@
   color: #111827;
   text-decoration: underline;
 }
+.login-motivo {
+  margin: -12px 0 18px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getArbolCategorias } from '../api/categorias'
 import { PROVINCIAS } from '../api/ordenes'
-import { actualizarProducto, eliminarFoto } from '../api/productos'
+import { actualizarProducto, eliminarFoto, getFotosDeProducto, subirFoto } from '../api/productos'
+import FotoConToken from './FotoConToken'
 import './ProductForm.css'
+import { useAvisos } from '../components/avisosContext'
 
 // El PUT del backend reemplaza el producto entero, asi que el formulario
 // arranca con todos los datos actuales y manda todos de vuelta. Las fotos y
@@ -26,34 +28,66 @@ const desdeProducto = (p) => {
   }
 }
 
+const ESTADOS_FOTO = { APROBADA: 'Aprobada', EN_REVISION: 'En revisión', RECHAZADA: 'Rechazada' }
+
 function EditProductForm({ onClose, producto, onSave }) {
+  const { confirmar } = useAvisos()
   const [categorias, setCategorias] = useState([])
   const [form, setForm] = useState(() => desdeProducto(producto))
   const [errores, setErrores] = useState({})
   const [editError, setEditError] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const [fotos, setFotos] = useState(producto.fotos ?? [])
-  const [fotosBorradas, setFotosBorradas] = useState(false)
+  // Todas las fotos, tambien las que estan en revision o rechazadas: el
+  // vendedor tiene que ver que paso con cada una.
+  const [fotos, setFotos] = useState(null)
+  const [subiendo, setSubiendo] = useState(0)
+  // Si cambiaron las fotos, al cerrar el panel se recarga (el estado del
+  // producto puede haber cambiado).
+  const [fotosCambiaron, setFotosCambiaron] = useState(false)
 
-  // Las fotos se borran al instante (no esperan a "Guardar cambios"): es otro
-  // endpoint y el PUT del producto no las toca.
+  const cargarFotos = () => getFotosDeProducto(producto.id).then(setFotos).catch(() => setFotos([]))
+
+  // Las fotos se suben y se borran al instante (no esperan a "Guardar
+  // cambios"): son otro endpoint y el PUT del producto no las toca.
   const borrarFoto = async (foto) => {
-    const esLaUltima = fotos.length === 1
-    const aviso = esLaUltima
-      ? 'Es la última foto: el producto vuelve a borrador y sale del catálogo hasta que subas otra. ¿Borrarla?'
-      : '¿Borrar esta foto?'
-    if (!window.confirm(aviso)) return
+    const aprobadas = (fotos ?? []).filter(f => f.estadoVerificacion === 'APROBADA')
+    const esLaUltimaVisible = foto.estadoVerificacion === 'APROBADA' && aprobadas.length === 1
+    const ok = await confirmar({
+      titulo: '¿Borrar esta foto?',
+      texto: esLaUltimaVisible ? 'Es la última foto aprobada: el producto vuelve a borrador y sale del catálogo hasta que se apruebe otra.' : undefined,
+      ok: 'Borrar',
+      peligro: true,
+    })
+    if (!ok) return
     try {
       await eliminarFoto(foto.id)
       setFotos(prev => prev.filter(f => f.id !== foto.id))
-      setFotosBorradas(true)
+      setFotosCambiaron(true)
     } catch (err) {
       setEditError(err.message)
     }
   }
 
+  const agregarFotos = async (e) => {
+    const archivos = Array.from(e.target.files)
+    e.target.value = null
+    if (archivos.length === 0) return
+    setSubiendo(archivos.length)
+    try {
+      for (const archivo of archivos) await subirFoto(producto.id, archivo)
+      setFotosCambiaron(true)
+      await cargarFotos()
+    } catch (err) {
+      setEditError(err.message)
+    } finally {
+      setSubiendo(0)
+    }
+  }
+
   useEffect(() => {
     getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
+    cargarFotos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const categoria = categorias.find(c => String(c.id) === form.idCategoria)
@@ -103,7 +137,7 @@ function EditProductForm({ onClose, producto, onSave }) {
         <div className="modal-title-with-icon">
           <i className="fa-solid fa-pen-to-square" style={{ color: '#16a34a' }}></i> Editar Producto
         </div>
-        <button type="button" className="close-modal-btn" onClick={() => onClose(fotosBorradas)}>
+        <button type="button" className="close-modal-btn" onClick={() => onClose(fotosCambiaron)}>
           <i className="fa-solid fa-xmark"></i>
         </button>
       </header>
@@ -180,10 +214,21 @@ function EditProductForm({ onClose, producto, onSave }) {
             <input id="edit-ubicacion" type="text" maxLength={150} value={form.ubicacion} onChange={e => set('ubicacion', e.target.value)} />
           </div>
 
-          <label className="publicar-check">
-            <input type="checkbox" checked={form.admiteEnvio} onChange={e => set('admiteEnvio', e.target.checked)} />
-            <span><strong>Hago envíos</strong></span>
-          </label>
+          <div className="form-group full-width">
+            <label>ENTREGA</label>
+            <div className="entrega-opciones">
+              <label className={`entrega-opcion ${form.admiteEnvio ? 'elegida' : ''}`}>
+                <input type="radio" name="edit-entrega" checked={form.admiteEnvio} onChange={() => set('admiteEnvio', true)} />
+                <i className="fa-solid fa-truck-fast"></i>
+                <span><strong>Con envío</strong><small>Se despacha a domicilio</small></span>
+              </label>
+              <label className={`entrega-opcion ${!form.admiteEnvio ? 'elegida' : ''}`}>
+                <input type="radio" name="edit-entrega" checked={!form.admiteEnvio} onChange={() => set('admiteEnvio', false)} />
+                <i className="fa-solid fa-handshake"></i>
+                <span><strong>Sin envío</strong><small>Retiro o entrega a coordinar</small></span>
+              </label>
+            </div>
+          </div>
           <label className="publicar-check">
             <input type="checkbox" checked={form.aceptaOfertas} onChange={e => set('aceptaOfertas', e.target.checked)} />
             <span><strong>Acepto ofertas</strong></span>
@@ -191,31 +236,37 @@ function EditProductForm({ onClose, producto, onSave }) {
 
           <div className="form-group full-width">
             <label>FOTOS</label>
-            {fotos.length === 0 ? (
-              <span className="publicar-nota">Sin fotos aprobadas. Agregá una desde el botón de la cámara en Mis Publicaciones.</span>
+            {fotos === null ? (
+              <span className="publicar-nota">Cargando fotos...</span>
             ) : (
               <div className="edit-fotos">
                 {fotos.map((foto, i) => (
-                  <div key={foto.id} className="edit-foto">
-                    <img src={foto.url} alt={`Foto ${i + 1}`} />
-                    {i === 0 && <span className="badge-principal">Principal</span>}
+                  <div key={foto.id} className={`edit-foto estado-${foto.estadoVerificacion.toLowerCase()}`}>
+                    <FotoConToken src={foto.url} alt={`Foto ${i + 1}`} className="edit-foto-img" />
+                    <span className="edit-foto-estado">{ESTADOS_FOTO[foto.estadoVerificacion] ?? foto.estadoVerificacion}</span>
                     <button type="button" className="image-chip-delete" title="Borrar foto" onClick={() => borrarFoto(foto)}>
                       <i className="fa-solid fa-xmark"></i>
                     </button>
                   </div>
                 ))}
+                <label className={`edit-foto-agregar ${subiendo ? 'subiendo' : ''}`}>
+                  <input type="file" accept="image/*" multiple onChange={agregarFotos} disabled={subiendo > 0} />
+                  <i className={`fa-solid ${subiendo ? 'fa-spinner fa-spin' : 'fa-plus'}`}></i>
+                  <span>{subiendo ? 'Subiendo...' : 'Agregar'}</span>
+                </label>
               </div>
             )}
+            <span className="publicar-nota" style={{ marginTop: '6px' }}>Las fotos nuevas se revisan en segundo plano: te avisamos con una notificación.</span>
           </div>
 
           <div className="form-group full-width">
             <label htmlFor="edit-descripcion">DESCRIPCIÓN</label>
-            <textarea id="edit-descripcion" rows="4" maxLength={500} value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
+            <textarea id="edit-descripcion" rows="4" maxLength={255} value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
           </div>
         </section>
 
         <footer className="publish-modal-footer">
-          <button type="button" className="btn-cancelar" onClick={() => onClose(fotosBorradas)}>Cancelar</button>
+          <button type="button" className="btn-cancelar" onClick={() => onClose(fotosCambiaron)}>Cancelar</button>
           <button type="submit" className="btn-guardar" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar Cambios'}</button>
         </footer>
       </form>

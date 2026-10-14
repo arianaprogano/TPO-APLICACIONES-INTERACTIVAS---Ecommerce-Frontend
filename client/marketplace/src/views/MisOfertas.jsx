@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { aceptarOferta, cancelarOferta, ESTADOS_OFERTA, getMisOfertas, rechazarOferta } from '../api/ofertas'
 import './PanelStyles.css'
+import { useAvisos } from '../components/avisosContext'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
@@ -9,7 +10,8 @@ const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amo
 // quien es el comprador. El vendedor acepta (se crea la orden al precio
 // acordado) o rechaza; el comprador puede retirar la suya mientras este
 // pendiente.
-function MisOfertas({ user, setModalMessage }) {
+function MisOfertas({ user }) {
+  const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('recibidas')
   const [ofertas, setOfertas] = useState(null)
@@ -28,14 +30,14 @@ function MisOfertas({ user, setModalMessage }) {
       rechazar: `¿Rechazar la oferta de ${oferta.comprador?.nombreUsuario}? Puede volver a ofertar más alto.`,
       cancelar: '¿Retirar tu oferta?',
     }
-    if (!window.confirm(textos[accion])) return
+    if (!(await confirmar(textos[accion]))) return
     try {
       const accionApi = { aceptar: aceptarOferta, rechazar: rechazarOferta, cancelar: cancelarOferta }[accion]
       await accionApi(oferta.id)
       await cargar()
-      if (accion === 'aceptar') setModalMessage?.('Oferta aceptada: se creó la orden de compra. La ves en Mis Publicaciones › Órdenes Recibidas.')
+      if (accion === 'aceptar') exito('Se creó la orden de compra al precio acordado. La ves en Mis Publicaciones › Órdenes Recibidas.', { titulo: 'Oferta aceptada' })
     } catch (err) {
-      setModalMessage?.(err.message)
+      avisarError(err.message)
     }
   }
 

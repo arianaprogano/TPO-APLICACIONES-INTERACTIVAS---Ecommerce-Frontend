@@ -4,9 +4,11 @@ import { getProducto, getSimilares } from '../api/productos'
 import { getResenasDeProducto, NIVELES_VENDEDOR } from '../api/resenas'
 import ProductRow from '../components/ProductRow'
 import OfertaModal from '../components/OfertaModal'
+import { useAvisos } from '../components/avisosContext'
 import './ProductDetail.css'
 
-function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMessage }) {
+function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin }) {
+  const { error: avisarError, exito } = useAvisos()
   const { id } = useParams()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
@@ -87,10 +89,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMes
   // Ofertar solo tiene sentido si el vendedor lo permite y no es tuyo.
   const puedeOfertar = product.aceptaOfertas && !esMiProducto && product.stock > 0 && (!user || user.role === 'cliente')
   const abrirOferta = () => {
-    if (!user) {
-      setModalMessage?.('Para hacer una oferta, debes iniciar sesión primero.')
-      return
-    }
+    if (!user) return pedirLogin('Iniciá sesión para hacer una oferta.')
     setOfertando(true)
   }
 
@@ -98,7 +97,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMes
   const resenas = todasLasResenas ?? product.reviews
   const hayMasResenas = !todasLasResenas && product.cantidadResenas > product.reviews.length
   const verTodasLasResenas = () =>
-    getResenasDeProducto(product.id).then(setTodasLasResenas).catch(err => setModalMessage?.(err.message))
+    getResenasDeProducto(product.id).then(setTodasLasResenas).catch(err => avisarError(err.message))
 
   const nivelVendedor = NIVELES_VENDEDOR[product.vendedor?.nivel]
 
@@ -295,6 +294,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMes
         user={user}
         favorites={favorites}
         toggleFavorite={toggleFavorite}
+        addToCart={addToCart}
       />
 
       {ofertando && (
@@ -304,7 +304,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, setModalMes
           onClose={() => setOfertando(false)}
           onEnviada={() => {
             setOfertando(false)
-            setModalMessage?.('¡Oferta enviada! Te avisamos cuando el vendedor responda. La podés seguir en "Mis Ofertas".')
+            exito('Te avisamos con una notificación cuando el vendedor responda. La podés seguir en "Mis Ofertas".', { titulo: '¡Oferta enviada!' })
           }}
         />
       )}

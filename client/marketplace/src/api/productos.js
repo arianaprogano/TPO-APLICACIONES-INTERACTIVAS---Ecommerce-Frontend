@@ -45,6 +45,7 @@ export const adaptarDetalle = (p) => ({
   aceptaOfertas: p.aceptaOfertas,
   estadoPublicacion: p.estadoPublicacion,
   activo: p.activo,
+  destacadoHasta: p.destacadoHasta ? new Date(p.destacadoHasta).toLocaleDateString('es-AR') : null,
   categoria: p.categoria,
   vendedor: p.vendedor,
   fotos: (p.fotos ?? []).map((f) => ({ ...f, url: urlFoto(f.url) })),
@@ -93,6 +94,17 @@ export const getSimilares = async (id) => {
 export const getProductosDeVendedor = (nombreUsuario) =>
   listarPaginado(`/productos/vendedor/${encodeURIComponent(nombreUsuario)}`, adaptarResumen)
 
+// Todas las fotos de un producto. Su vendedor ve tambien las que estan en
+// revision o rechazadas; el resto, solo las aprobadas. 404 si no tiene.
+export const getFotosDeProducto = async (idProducto) => {
+  try {
+    return (await api.get(`/fotos?idProducto=${idProducto}`)).map((f) => ({ ...f, url: urlFoto(f.url) }))
+  } catch (err) {
+    if (err.status === 404) return []
+    throw err
+  }
+}
+
 // Baja de una foto. Si era la ultima aprobada, el producto vuelve a BORRADOR.
 export const eliminarFoto = (idFoto) => api.put(`/fotos/${idFoto}/baja`)
 
@@ -120,8 +132,12 @@ export const actualizarProducto = async (id, datos) =>
 export const cambiarEstadoPublicacion = async (id, estado) =>
   adaptarDetalle(await api.put(`/productos/${id}/estado?estado=${estado}`))
 
-// Baja logica: sale del catalogo, de los carritos y de "mis publicaciones".
+// Baja logica: sale del catalogo y de los carritos. En "mis publicaciones"
+// sigue apareciendo (en gris) para poder reactivarla.
 export const darDeBajaProducto = (id) => api.put(`/productos/${id}/baja`)
+
+// Vuelve a estar activa, en el estado de publicacion que tenia antes de la baja.
+export const reactivarPublicacion = async (id) => adaptarDetalle(await api.put(`/productos/${id}/reactivar`))
 
 // El producto nace en BORRADOR: no aparece en el catalogo hasta que se le
 // sube una foto. Devuelve { producto, mensaje }.
@@ -136,3 +152,11 @@ export const subirFoto = (idProducto, archivo) => {
   form.append('idProducto', idProducto)
   return api.post('/fotos', form)
 }
+
+// Planes de visibilidad con su precio por mes (publico).
+export const getPlanesVisibilidad = () => api.get('/destacados/planes')
+
+// El vendedor compra visibilidad para su producto. No hay pasarela: el pago es
+// simulado y el backend registra lo cobrado.
+export const comprarVisibilidad = async (id, nivel, meses) =>
+  adaptarDetalle(await api.put(`/productos/${id}/destacar?nivel=${nivel}&meses=${meses}`))

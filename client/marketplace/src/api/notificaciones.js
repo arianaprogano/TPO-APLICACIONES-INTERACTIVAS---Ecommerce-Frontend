@@ -14,6 +14,13 @@ export const ICONOS_NOTIFICACION = {
   DISPONIBLE_OTRA_VEZ: 'fa-box',
   OFERTA_RECIBIDA: 'fa-hand-holding-dollar',
   OFERTA_RESPONDIDA: 'fa-handshake',
+  VENTA: 'fa-sack-dollar',
+  ORDEN_ACTUALIZADA: 'fa-receipt',
+  ENVIO_ACTUALIZADO: 'fa-truck-fast',
+  OPINA_TU_COMPRA: 'fa-star',
+  FOTO_VERIFICADA: 'fa-image',
+  FOTO_PENDIENTE: 'fa-images',
+  MENSAJE: 'fa-comments',
 }
 
 // El backend arma los links con sus propias rutas; aca se pasan a las del front.
@@ -21,8 +28,13 @@ const rutaFront = (link) => {
   if (!link) return null
   const producto = link.match(/^\/productos\/(\d+)/)
   if (producto) return `/product/${producto[1]}`
+  const orden = link.match(/^\/ordenes\/(\d+)/)
+  if (orden) return `/orden/${orden[1]}`
   if (link.startsWith('/ofertas')) return '/ofertas'
-  if (link.startsWith('/ordenes')) return '/mis-compras'
+  if (link.startsWith('/ordenes') || link.startsWith('/opinar')) return '/mis-compras'
+  if (link.startsWith('/ventas')) return '/vendedor?tab=ordenes'
+  if (link.startsWith('/mis-publicaciones')) return '/vendedor?tab=publicaciones'
+  if (link.startsWith('/fotos/pendientes')) return '/admin?tab=productos'
   return null
 }
 

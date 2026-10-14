@@ -7,7 +7,7 @@ const POR_PAGINA = 12
 
 // Todos los filtros y la paginacion los resuelve el backend (GET /productos):
 // asi cada pagina viene llena y el total es el real.
-function PostList({ user, orden, searchTerm, selectedCategory, selectedSubcategory, conditions, provincia, rango, favorites, toggleFavorite, soloConEnvio, soloSinEnvio, soloOfertas }) {
+function PostList({ user, addToCart, orden, searchTerm, selectedCategory, selectedSubcategory, conditions, provincia, rango, favorites, toggleFavorite, soloConEnvio, soloSinEnvio, soloOfertas }) {
   const [resultado, setResultado] = useState({ items: [], pagina: 0, totalPaginas: 0, total: 0 })
   const [pagina, setPagina] = useState(0)
   const [cargando, setCargando] = useState(true)
@@ -105,6 +105,7 @@ function PostList({ user, orden, searchTerm, selectedCategory, selectedSubcatego
               location={post.location}
               isFavorite={favorites.includes(post.id)}
               onToggleFavorite={toggleFavorite}
+              onAddToCart={addToCart}
               conEnvio={post.conEnvio}
               enOferta={post.enOferta}
               porcentajeDescuento={post.porcentajeDescuento}

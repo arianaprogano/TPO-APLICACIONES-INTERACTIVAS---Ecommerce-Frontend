@@ -49,11 +49,13 @@ export const revisarFoto = (idFoto, aprobada) =>
   api.put(`/fotos/${idFoto}/revision?aprobada=${aprobada}`)
 
 // --- Usuarios ---
-// Solo los activos: el backend no lista los dados de baja.
+// Solo los activos: los dados de baja tienen su propio listado.
 export const getUsuarios = () => listarPaginado('/usuarios')
+export const getUsuariosInactivos = () => listarPaginado('/usuarios/inactivos')
 
 export const cambiarRol = (idUsuario, rol) => api.put(`/usuarios/${idUsuario}/rol?rol=${rol}`)
 export const darDeBajaUsuario = (idUsuario) => api.put(`/usuarios/${idUsuario}/baja`)
+export const reactivarUsuario = (idUsuario) => api.put(`/usuarios/${idUsuario}/reactivar`)
 
 // El registro siempre crea un CLIENTE. Para otro rol se crea y despues se le
 // cambia. El token que devuelve el registro es el de la cuenta nueva: se
@@ -74,3 +76,16 @@ export const editarCategoria = (id, datos) => api.put(`/categorias/${id}`, datos
 
 // Solo se puede dar de baja una categoria vacia: sin hijas y sin productos.
 export const darDeBajaCategoria = (id) => api.put(`/categorias/${id}/baja`)
+
+// Sin ninguna dada de baja el backend responde 404: aca es una lista vacia.
+export const getCategoriasInactivas = async () => {
+  try {
+    return await api.get('/categorias/inactivas')
+  } catch (err) {
+    if (err.status === 404) return []
+    throw err
+  }
+}
+
+// 409 si su categoria padre sigue dada de baja: hay que reactivar esa primero.
+export const reactivarCategoria = (id) => api.put(`/categorias/${id}/reactivar`)

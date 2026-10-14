@@ -4,7 +4,7 @@ import './Favoritos.css'
 
 // La lista viene del backend (GET /wishlist) a traves de App, que tambien
 // resuelve agregar, quitar y vaciar.
-function Favoritos({ wishlist, user, toggleFavorite, clearFavorites }) {
+function Favoritos({ wishlist, user, toggleFavorite, clearFavorites, addToCart }) {
   const navigate = useNavigate()
 
   return (
@@ -46,6 +46,7 @@ function Favoritos({ wishlist, user, toggleFavorite, clearFavorites }) {
               nivelDestacado={post.nivelDestacado}
               isFavorite={true}
               onToggleFavorite={toggleFavorite}
+              onAddToCart={addToCart}
               esAdmin={user?.role === 'admin'}
             />
           ))

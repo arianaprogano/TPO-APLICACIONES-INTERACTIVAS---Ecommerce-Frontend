@@ -74,7 +74,8 @@ function Navigation({
     }
     const actualizarContador = () => contarNoLeidas().then(setNoLeidas).catch(() => {})
     actualizarContador()
-    const timer = setInterval(actualizarContador, 60000)
+    // Cada 20 s: es por donde se enteran de todo, mensajes del chat incluidos.
+    const timer = setInterval(actualizarContador, 20000)
     return () => clearInterval(timer)
   }, [user])
 

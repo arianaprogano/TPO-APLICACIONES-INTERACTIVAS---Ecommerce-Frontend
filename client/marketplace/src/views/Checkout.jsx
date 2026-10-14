@@ -3,20 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import { crearOrden, nombreProvincia, PROVINCIAS } from '../api/ordenes'
 import './Checkout.css'
 
-// El backend arma la orden con lo que hay en el carrito del usuario. Aca se
-// elige como se entrega y, si algo se despacha, a donde. Los productos que no
-// admiten envio se coordinan con el vendedor si o si.
+// El backend arma la orden con lo que hay en el carrito del usuario. Como se
+// entrega lo decide cada producto: con envio se despacha si o si y sin envio
+// se coordina si o si. Aca solo se pide a donde, si algo se despacha.
 function Checkout({ cart, onCompraRealizada, user }) {
   const navigate = useNavigate()
-  const [coordinarTodo, setCoordinarTodo] = useState(false)
   const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [ordenesCreadas, setOrdenesCreadas] = useState(null)
 
-  // Mismo criterio que el backend: se despacha solo lo que admite envio y
-  // siempre que el comprador no haya pedido coordinar todo.
-  const seDespacha = (item) => item.conEnvio && !coordinarTodo
+  // Mismo criterio que el backend: se despacha lo que admite envio.
+  const seDespacha = (item) => item.conEnvio
 
   const agruparPaquetes = () => {
     const paquetes = []
@@ -77,10 +75,7 @@ function Checkout({ cart, onCompraRealizada, user }) {
     }
     setEnviando(true)
     try {
-      const ordenes = await crearOrden({
-        coordinarConVendedor: coordinarTodo,
-        ...(hayDespacho ? entrega : {}),
-      })
+      const ordenes = await crearOrden(hayDespacho ? entrega : {})
       onCompraRealizada()
       setOrdenesCreadas(ordenes)
     } catch (err) {
@@ -95,18 +90,10 @@ function Checkout({ cart, onCompraRealizada, user }) {
       <div className="checkout-left">
         <h2 className="checkout-section-title">Revisa tu compra</h2>
 
-        <section className="paquete-card">
-          <h3 className="paquete-title" style={{ marginBottom: '12px' }}>¿Cómo querés recibirlo?</h3>
-          <label className="checkout-opcion">
-            <input type="radio" name="entrega" checked={!coordinarTodo} onChange={() => setCoordinarTodo(false)} />
-            <span>Envío a domicilio <small>(solo los productos que lo admiten; el resto se coordina)</small></span>
-          </label>
-          <label className="checkout-opcion">
-            <input type="radio" name="entrega" checked={coordinarTodo} onChange={() => setCoordinarTodo(true)} />
-            <span>Coordinar todo con el vendedor</span>
-          </label>
-
-          {hayDespacho && (
+        {hayDespacho && (
+          <section className="paquete-card">
+            <h3 className="paquete-title" style={{ marginBottom: '4px' }}>¿A dónde te lo enviamos?</h3>
+            <p className="paquete-subtitle">Para los productos con envío. Los que no tienen envío se coordinan con el vendedor.</p>
             <div className="address-input-container">
               <label htmlFor="provincia">PROVINCIA</label>
               <select id="provincia" value={entrega.provinciaEntrega} onChange={e => setEntrega({ ...entrega, provinciaEntrega: e.target.value })}>
@@ -120,8 +107,8 @@ function Checkout({ cart, onCompraRealizada, user }) {
               <label htmlFor="direccion">DIRECCIÓN</label>
               <input id="direccion" type="text" placeholder="Calle y número" value={entrega.direccionEntrega} onChange={e => setEntrega({ ...entrega, direccionEntrega: e.target.value })} />
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {paquetes.map((paquete, index) => {
           const esEnvio = paquete.tipo === 'envio'

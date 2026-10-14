@@ -34,11 +34,11 @@ export const adaptarOrden = (o) => ({
   })),
 })
 
-// El contenido sale del carrito del usuario en el backend; aca solo va como
-// se entrega. Devuelve una orden por cada vendedor y metodo de entrega, y el
-// backend deja el carrito vacio.
-export const crearOrden = async ({ coordinarConVendedor, provinciaEntrega, localidadEntrega, direccionEntrega }) =>
-  (await api.post('/ordenes', { coordinarConVendedor, provinciaEntrega, localidadEntrega, direccionEntrega }))
+// El contenido sale del carrito del usuario en el backend; aca solo va a
+// donde se despacha (si algo tiene envio). Devuelve una orden por cada
+// vendedor y metodo de entrega, y el backend deja el carrito vacio.
+export const crearOrden = async ({ provinciaEntrega, localidadEntrega, direccionEntrega }) =>
+  (await api.post('/ordenes', { provinciaEntrega, localidadEntrega, direccionEntrega }))
     .map(adaptarOrden)
 
 export const getMisCompras = () => listarPaginado('/ordenes/mis-compras', adaptarOrden)

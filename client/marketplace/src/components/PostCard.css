@@ -252,3 +252,26 @@
   border-radius: 4px;
   text-transform: uppercase;
 }
+
+/* Agregar al carrito sin entrar a la ficha */
+.card-agregar {
+  margin-top: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--naranja);
+  color: #ffffff;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.card-agregar:hover {
+  background-color: var(--naranja-oscuro);
+}

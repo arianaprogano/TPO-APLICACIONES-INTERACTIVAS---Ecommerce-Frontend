@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import UserForm from '../components/UserForm'
 import CategoryForm from '../components/CategoryForm'
+import FotoConToken from '../components/FotoConToken'
 import {
   cambiarRol, darDeBajaCategoria, darDeBajaProducto, darDeBajaUsuario, destacarProducto,
-  getCategorias, getFotosPendientes, getHistorialDestacados, getTodasLasOrdenes,
-  getTodosLosProductos, getUsuarios, marcarOrdenPagada, NIVELES_DESTACADO, reactivarProducto,
-  revisarFoto,
+  getCategorias, getCategoriasInactivas, getFotosPendientes, getHistorialDestacados, getTodasLasOrdenes,
+  getTodosLosProductos, getUsuarios, getUsuariosInactivos, marcarOrdenPagada, NIVELES_DESTACADO,
+  reactivarCategoria, reactivarProducto, reactivarUsuario, revisarFoto,
 } from '../api/admin'
 import { nombreProvincia } from '../api/ordenes'
 import { ESTADOS_ENVIO, getTodosLosEnvios } from '../api/envios'
 import './PanelStyles.css'
+import { useAvisos } from '../components/avisosContext'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
@@ -31,9 +33,14 @@ const ROLES = { ADMIN: 'Administrador', CLIENTE: 'Cliente', DESPACHANTE: 'Despac
 // Cada pestaña trae sus datos del backend la primera vez que se abre, y cada
 // accion actualiza con lo que el backend devuelve. Los errores (por ejemplo,
 // borrar una categoria que todavia tiene productos) se muestran tal cual.
-function AdminPanel({ user, setModalMessage }) {
+function AdminPanel({ user }) {
+  const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('ordenes')
+  // ?tab= permite llegar directo a una pestaña, por ejemplo desde el aviso de
+  // fotos pendientes.
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'ordenes')
+  useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
 
   const [ordenes, setOrdenes] = useState(null)
   const [enviosPorOrden, setEnviosPorOrden] = useState({})
@@ -43,6 +50,10 @@ function AdminPanel({ user, setModalMessage }) {
   const [productos, setProductos] = useState(null)
   const [usuarios, setUsuarios] = useState(null)
   const [categorias, setCategorias] = useState(null)
+  const [usuariosInactivos, setUsuariosInactivos] = useState(null)
+  const [categoriasInactivas, setCategoriasInactivas] = useState(null)
+  // En Usuarios y Categorias: false muestra los activos, true los dados de baja.
+  const [verBajas, setVerBajas] = useState(false)
   const [error, setError] = useState('')
 
   const [busquedaUsuario, setBusquedaUsuario] = useState('')
@@ -53,7 +64,7 @@ function AdminPanel({ user, setModalMessage }) {
   const [userToDelete, setUserToDelete] = useState(null)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
 
-  const avisar = (mensaje) => setModalMessage?.(mensaje)
+  const avisar = (mensaje) => avisarError(mensaje)
 
   const cargar = {
     ordenes: () => Promise.all([
@@ -62,21 +73,22 @@ function AdminPanel({ user, setModalMessage }) {
     ]),
     productos: () => Promise.all([getFotosPendientes().then(setFotos), getTodosLosProductos().then(setProductos)]),
     destacados: () => getHistorialDestacados().then(setDestacados),
-    usuarios: () => getUsuarios().then(setUsuarios),
-    categorias: () => getCategorias().then(setCategorias),
+    usuarios: () => Promise.all([getUsuarios().then(setUsuarios), getUsuariosInactivos().then(setUsuariosInactivos)]),
+    categorias: () => Promise.all([getCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
   }
 
   // Se recarga solo al cambiar de pestaña: cargar se arma en cada render y
   // ponerlo como dependencia dispararia un pedido por render.
   useEffect(() => {
     setError('')
+    setVerBajas(false)
     cargar[activeTab]().catch(err => setError(err.message))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
   // --- Ordenes ---
   const marcarPagada = async (orden) => {
-    if (!window.confirm(`¿Confirmás que se acreditó el pago de la orden #${orden.id} (${formatMoney(orden.total)})?`)) return
+    if (!(await confirmar(`¿Confirmás que se acreditó el pago de la orden #${orden.id} (${formatMoney(orden.total)})?`))) return
     try {
       const actualizada = await marcarOrdenPagada(orden.id)
       setOrdenes(prev => prev.map(o => o.id === actualizada.id ? actualizada : o))
@@ -89,7 +101,7 @@ function AdminPanel({ user, setModalMessage }) {
 
   // --- Fotos y productos ---
   const resolverFoto = async (foto, aprobada) => {
-    if (!aprobada && !window.confirm(`¿Rechazar la foto de "${foto.nombreProducto}"? Se elimina.`)) return
+    if (!aprobada && !(await confirmar(`¿Rechazar la foto de "${foto.nombreProducto}"? Se elimina.`))) return
     try {
       await revisarFoto(foto.id, aprobada)
       // Aprobar puede publicar el producto: se recargan las dos listas.
@@ -101,7 +113,7 @@ function AdminPanel({ user, setModalMessage }) {
 
   const bajaOReactivar = async (producto) => {
     const reactivar = producto.activo === false
-    if (!reactivar && !window.confirm(`¿Dar de baja "${producto.title}"? Sale del catálogo y de los carritos.`)) return
+    if (!reactivar && !(await confirmar(`¿Dar de baja "${producto.title}"? Sale del catálogo y de los carritos.`))) return
     try {
       if (reactivar) await reactivarProducto(producto.id)
       else await darDeBajaProducto(producto.id)
@@ -125,7 +137,7 @@ function AdminPanel({ user, setModalMessage }) {
 
   // --- Usuarios ---
   const cambiarRolUsuario = async (usuario, rol) => {
-    if (!window.confirm(`¿Cambiar a ${usuario.nombreUsuario} de ${ROLES[usuario.rol]} a ${ROLES[rol]}?`)) return
+    if (!(await confirmar(`¿Cambiar a ${usuario.nombreUsuario} de ${ROLES[usuario.rol]} a ${ROLES[rol]}?`))) return
     try {
       const actualizado = await cambiarRol(usuario.id, rol)
       setUsuarios(prev => prev.map(u => u.id === actualizado.id ? actualizado : u))
@@ -138,6 +150,7 @@ function AdminPanel({ user, setModalMessage }) {
     try {
       await darDeBajaUsuario(userToDelete.id)
       setUsuarios(prev => prev.filter(u => u.id !== userToDelete.id))
+      setUsuariosInactivos(prev => [...(prev ?? []), { ...userToDelete, activo: false }])
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -145,7 +158,27 @@ function AdminPanel({ user, setModalMessage }) {
     }
   }
 
+  const reactivarUnUsuario = async (usuario) => {
+    try {
+      await reactivarUsuario(usuario.id)
+      await cargar.usuarios()
+      exito(`${usuario.nombreUsuario} puede volver a iniciar sesión. Sus publicaciones siguen dadas de baja: las reactiva cada una desde Productos.`, { titulo: 'Usuario reactivado' })
+    } catch (err) {
+      avisar(err.message)
+    }
+  }
+
   // --- Categorias ---
+  const reactivarUnaCategoria = async (categoria) => {
+    try {
+      await reactivarCategoria(categoria.id)
+      await cargar.categorias()
+      exito(`"${categoria.nombre}" vuelve a estar disponible para publicar.`, { titulo: 'Categoría reactivada' })
+    } catch (err) {
+      avisar(err.message)
+    }
+  }
+
   const confirmarEliminarCategoria = async () => {
     try {
       await darDeBajaCategoria(categoryToDelete.id)
@@ -163,6 +196,30 @@ function AdminPanel({ user, setModalMessage }) {
   const categoriasFiltradas = categoriasOrdenadas.filter(c =>
     c.nombre.toLowerCase().includes(busquedaCategoria.toLowerCase()) ||
     (c.nombreCategoriaPadre ?? '').toLowerCase().includes(busquedaCategoria.toLowerCase())
+  )
+
+  const categoriasInactivasFiltradas = (categoriasInactivas ?? []).filter(c =>
+    c.nombre.toLowerCase().includes(busquedaCategoria.toLowerCase()) ||
+    (c.nombreCategoriaPadre ?? '').toLowerCase().includes(busquedaCategoria.toLowerCase())
+  )
+  // Una subcategoria no se puede reactivar mientras su padre siga de baja.
+  const padreDeBaja = (c) => (categoriasInactivas ?? []).find(p => p.id === c.idCategoriaPadre)
+
+  const usuariosInactivosFiltrados = (usuariosInactivos ?? []).filter(u => {
+    const q = busquedaUsuario.toLowerCase()
+    return u.mail.toLowerCase().includes(q) || u.nombreUsuario.toLowerCase().includes(q) || u.rol.toLowerCase().includes(q)
+  })
+
+  // Selector "Activos / Dados de baja" de Usuarios y Categorias.
+  const segmento = (activos, bajas) => (
+    <div className="panel-segmento">
+      <button className={!verBajas ? 'active' : ''} onClick={() => setVerBajas(false)}>
+        {activos} ({activeTab === 'usuarios' ? usuarios?.length ?? 0 : categorias?.length ?? 0})
+      </button>
+      <button className={verBajas ? 'active' : ''} onClick={() => setVerBajas(true)}>
+        {bajas} ({activeTab === 'usuarios' ? usuariosInactivos?.length ?? 0 : categoriasInactivas?.length ?? 0})
+      </button>
+    </div>
   )
 
   const usuariosFiltrados = (usuarios ?? []).filter(u => {
@@ -247,7 +304,7 @@ function AdminPanel({ user, setModalMessage }) {
               <div className="panel-fotos">
                 {fotos.map(f => (
                   <article key={f.id} className="panel-foto">
-                    <img src={f.url} alt={f.nombreProducto} />
+                    <FotoConToken src={f.url} alt={f.nombreProducto} className="panel-foto-img" />
                     <div className="panel-foto-info">
                       <strong>{f.nombreProducto}</strong>
                       <span className="panel-producto-meta">Categoría: {f.nombreCategoria}</span>
@@ -356,11 +413,43 @@ function AdminPanel({ user, setModalMessage }) {
               <i className="fa-solid fa-search"></i>
               <input type="text" placeholder="Buscar por email, usuario o rol..." value={busquedaUsuario} onChange={e => setBusquedaUsuario(e.target.value)} />
             </div>
+            {segmento('Activos', 'Dados de baja')}
             <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
               <i className="fa-solid fa-user-plus"></i> NUEVO USUARIO
             </button>
           </header>
 
+          {verBajas ? (
+          <main className="panel-content">
+            <table className="panel-table">
+              <thead>
+                <tr><th>USUARIO / EMAIL</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>DIRECCIÓN</th><th className="text-right">ACCIÓN</th></tr>
+              </thead>
+              <tbody>
+                {filaEstado(usuariosInactivos, 5, 'No hay usuarios dados de baja.') ?? (usuariosInactivosFiltrados.length === 0
+                  ? <tr><td colSpan="5" className="empty-state">No se encontraron usuarios.</td></tr>
+                  : usuariosInactivosFiltrados.map(u => (
+                    <tr key={u.id} className="fila-dada-de-baja">
+                      <td>
+                        <div className="user-info">
+                          <div className="avatar">{u.nombreUsuario.charAt(0).toUpperCase()}</div>
+                          <div><strong>{u.nombreUsuario}</strong><br /><span>{u.mail}</span></div>
+                        </div>
+                      </td>
+                      <td>{u.nombre} {u.apellido}</td>
+                      <td>{ROLES[u.rol] ?? u.rol}</td>
+                      <td>{u.direccion || '—'}</td>
+                      <td className="text-right">
+                        <button className="btn-reactivar" onClick={() => reactivarUnUsuario(u)}>
+                          <i className="fa-solid fa-rotate-left"></i> Reactivar
+                        </button>
+                      </td>
+                    </tr>
+                  )))}
+              </tbody>
+            </table>
+          </main>
+          ) : (
           <main className="panel-content">
             <table className="panel-table">
               <thead>
@@ -405,6 +494,7 @@ function AdminPanel({ user, setModalMessage }) {
               </tbody>
             </table>
           </main>
+          )}
         </section>
       )}
 
@@ -415,11 +505,45 @@ function AdminPanel({ user, setModalMessage }) {
               <i className="fa-solid fa-search"></i>
               <input type="text" placeholder="Buscar categoría..." value={busquedaCategoria} onChange={e => setBusquedaCategoria(e.target.value)} />
             </div>
+            {segmento('Activas', 'Dadas de baja')}
             <button className="btn-new-user" onClick={() => setCategoriaEditando(null)}>
               <i className="fa-solid fa-folder-plus"></i> NUEVA CATEGORÍA
             </button>
           </header>
 
+          {verBajas ? (
+          <main className="panel-content">
+            <table className="panel-table">
+              <thead>
+                <tr><th>ID</th><th>NOMBRE</th><th>PERTENECE A</th><th>DESCRIPCIÓN</th><th className="text-right">ACCIÓN</th></tr>
+              </thead>
+              <tbody>
+                {filaEstado(categoriasInactivas, 5, 'No hay categorías dadas de baja.') ?? (categoriasInactivasFiltradas.length === 0
+                  ? <tr><td colSpan="5" className="empty-state">No se encontraron categorías.</td></tr>
+                  : categoriasInactivasFiltradas.map(c => {
+                    const padre = padreDeBaja(c)
+                    return (
+                      <tr key={c.id} className="fila-dada-de-baja">
+                        <td><strong>#{c.id}</strong></td>
+                        <td><strong>{c.nombre}</strong></td>
+                        <td>{c.nombreCategoriaPadre ? <span className="subcat-badge">{c.nombreCategoriaPadre}</span> : <span className="panel-producto-meta">Principal</span>}</td>
+                        <td style={{ fontSize: '13px' }}>{c.descripcion || '—'}</td>
+                        <td className="text-right">
+                          {padre ? (
+                            <span className="action-text italic">Reactivá antes &quot;{padre.nombre}&quot;</span>
+                          ) : (
+                            <button className="btn-reactivar" onClick={() => reactivarUnaCategoria(c)}>
+                              <i className="fa-solid fa-rotate-left"></i> Reactivar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  }))}
+              </tbody>
+            </table>
+          </main>
+          ) : (
           <main className="panel-content">
             <table className="panel-table">
               <thead>
@@ -447,6 +571,7 @@ function AdminPanel({ user, setModalMessage }) {
               </tbody>
             </table>
           </main>
+          )}
         </section>
       )}
 
