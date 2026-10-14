@@ -20,7 +20,6 @@ export const ICONOS_NOTIFICACION = {
   OPINA_TU_COMPRA: 'fa-star',
   FOTO_VERIFICADA: 'fa-image',
   FOTO_PENDIENTE: 'fa-images',
-  MENSAJE: 'fa-comments',
 }
 
 // El backend arma los links con sus propias rutas; aca se pasan a las del front.
