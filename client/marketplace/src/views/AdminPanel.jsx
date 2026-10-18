@@ -74,7 +74,7 @@ function AdminPanel({ user }) {
     productos: () => Promise.all([getFotosPendientes().then(setFotos), getTodosLosProductos().then(setProductos)]),
     destacados: () => getHistorialDestacados().then(setDestacados),
     usuarios: () => Promise.all([getUsuarios().then(setUsuarios), getUsuariosInactivos().then(setUsuariosInactivos)]),
-    categorias: () => Promise.all([getCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
+    categorias: () => Promise.all([getCCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
   }
 
   // Se recarga solo al cambiar de pestaña: cargar se arma en cada render y
@@ -635,7 +635,17 @@ function AdminPanel({ user }) {
             </div>
             <h2 className="error-title">¿Eliminar Usuario?</h2>
             <p className="error-text">
-              ¿Dar de baja a <strong>{userToDelete.nombreUsuario}</strong>? Sus publicaciones salen del catálogo y de los carritos. Las órdenes se conservan.
+              ¿Estás seguro de dar de baja a <strong>{userToDelete.nombreUsuario}</strong>?
+              <br /><br />
+              {userToDelete.rol === 'DESPACHANTE' && (
+                "Este usuario ya no podrá gestionar el estado de los envíos."
+              )}
+              {userToDelete.rol === 'ADMIN' && (
+                "Este usuario perderá el acceso al Panel de Administración."
+              )}
+              {userToDelete.rol === 'CLIENTE' && (
+                "Sus publicaciones saldrán del catálogo y de los carritos. Las órdenes se conservan."
+              )}
             </p>
             <div className="panel-modal-actions">
               <button className="error-btn btn-cancel-panel" onClick={() => setUserToDelete(null)}>Cancelar</button>
