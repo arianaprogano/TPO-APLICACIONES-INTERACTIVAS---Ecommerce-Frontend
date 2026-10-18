@@ -2,35 +2,30 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PostList from '../components/PostList'
 import { PROVINCIAS } from '../api/ordenes'
-
-const rangoVacio = { precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' }
 import './Home.css'
 
-// 1. ¡ACÁ AGREGAMOS 'user' PARA QUE LO RECIBA!
-export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite }) => {
+const rangoVacio = { precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' }
+
+const Home = ({ 
+  user, addToCart, searchTerm, selectedCategory, selectedSubcategory, favorites, toggleFavorite,
+  // Props de filtros levantadas a App.jsx
+  conditions, setConditions,
+  provincia, setProvincia,
+  rango, setRango,
+  soloConEnvio, setSoloConEnvio,
+  soloSinEnvio, setSoloSinEnvio,
+  soloOfertas, setSoloOfertas 
+}) => {
+  
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
   const [openPrecio, setOpenPrecio] = useState(true)
   const [openAnio, setOpenAnio] = useState(false)
   const [openEnvio, setOpenEnvio] = useState(true)
-  const [openOfertas, setOpenOfertas] = useState(true)
+  const [openOfertasMenu, setOpenOfertasMenu] = useState(true)
 
-  const [conditions, setConditions] = useState([])
-  // Todos los filtros los resuelve el backend: con paginacion, filtrar aca
-  // dejaria paginas a medio llenar.
-  const [provincia, setProvincia] = useState('')
-  const [rango, setRango] = useState(rangoVacio)
-  const [soloConEnvio, setSoloConEnvio] = useState(false)
-  const [soloSinEnvio, setSoloSinEnvio] = useState(false)
-  // "Ofertas", "Más vistos" y "Más vendidos" de la portada llegan por la URL
-  // (?ofertas=1, ?orden=vistos), así el link se puede compartir.
   const [searchParams, setSearchParams] = useSearchParams()
   const orden = searchParams.get('orden') || ''
-  const [soloOfertas, setSoloOfertas] = useState(searchParams.get('ofertas') === '1')
-
-  useEffect(() => {
-    setSoloOfertas(searchParams.get('ofertas') === '1')
-  }, [searchParams])
 
   const cambiarOrden = (nuevoOrden) => {
     const params = new URLSearchParams(searchParams)
@@ -49,22 +44,20 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
   }
 
   const handleConditionChange = (cond) => {
-    if (conditions.includes(cond)) {
-      setConditions(conditions.filter(c => c !== cond))
-    } else {
-      setConditions([...conditions, cond])
-    }
+    setConditions(prev => 
+      prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]
+    )
   }
 
   const cambiarRango = (campo, valor) => setRango(prev => ({ ...prev, [campo]: valor }))
 
   const handleFiltroEnvio = (tipo) => {
     if (tipo === 'conEnvio') {
-      setSoloConEnvio(!soloConEnvio)
-      if (!soloConEnvio) setSoloSinEnvio(false)
+      setSoloConEnvio(prev => !prev)
+      setSoloSinEnvio(false)
     } else if (tipo === 'sinEnvio') {
-      setSoloSinEnvio(!soloSinEnvio)
-      if (!soloSinEnvio) setSoloConEnvio(false)
+      setSoloSinEnvio(prev => !prev)
+      setSoloConEnvio(false)
     }
   }
 
@@ -74,26 +67,9 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
 
         <aside className="sidebar-filtros">
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 className="filtros-titulo" style={{ margin: 0 }}>Filtros</h3>
-
-            <button
-              className="btn-limpiar"
-              onClick={limpiarFiltros}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#16a34a',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#e7f1f7'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
+          <div className="filtros-header-principal">
+            <h3 className="filtros-titulo">Filtros</h3>
+            <button className="btn-limpiar" onClick={limpiarFiltros}>
               Limpiar
             </button>
           </div>
@@ -150,15 +126,15 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
           </section>
 
           <section className="filtro-grupo">
-            <header className="filtro-header" onClick={() => setOpenOfertas(!openOfertas)}>
+            <header className="filtro-header" onClick={() => setOpenOfertasMenu(!openOfertasMenu)}>
               <h4>Ofertas</h4>
-              <i className={`fa-solid fa-chevron-down ${openOfertas ? 'rotado' : ''}`}></i>
+              <i className={`fa-solid fa-chevron-down ${openOfertasMenu ? 'rotado' : ''}`}></i>
             </header>
 
-            {openOfertas && (
+            {openOfertasMenu && (
               <div className="filtro-opciones">
                 <label>
-                  <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(!soloOfertas)} />
+                  <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(prev => !prev)} />
                   Solo productos en oferta
                 </label>
               </div>

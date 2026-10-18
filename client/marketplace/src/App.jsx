@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Navigation from './components/Navigation'
 import { useAvisos } from './components/avisosContext'
-import { Home } from './views/Home'
+import Home  from './views/Home'
 import Inicio from './views/Inicio'
 import ProductDetail from './views/ProductDetail'
 import Login from './views/Login'
@@ -35,13 +35,17 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
 
-  // Lista de deseos tal como la devuelve el backend. favorites son solo los
-  // ids de producto, que es lo que necesitan las tarjetas para el corazon.
+
+  const [conditions, setConditions] = useState([])
+  const [provincia, setProvincia] = useState('')
+  const [rango, setRango] = useState({ precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' })
+  const [soloConEnvio, setSoloConEnvio] = useState(false)
+  const [soloSinEnvio, setSoloSinEnvio] = useState(false)
+  const [soloOfertas, setSoloOfertas] = useState(false)
+
   const [wishlist, setWishlist] = useState([])
   const favorites = wishlist.map(item => item.id)
 
-  // El usuario se guarda para que un F5 no muestre la pantalla deslogueada
-  // mientras se valida el token; el que manda es el token.
   const [user, setUser] = useState(() => {
     const usuarioGuardado = localStorage.getItem('agroMarketUser')
     return usuarioGuardado && getToken() ? JSON.parse(usuarioGuardado) : null
@@ -56,8 +60,22 @@ function App() {
     }
   }, [user])
 
-  // Al abrir la app se confirma el token contra el backend y se refrescan los
-  // datos del usuario. Si el token vencio, el cliente avisa y se cierra sesion.
+  const [usuarioAnterior, setUsuarioAnterior] = useState(user)
+
+  useEffect(() => {
+    // Si la memoria dice que ANTES había un usuario y AHORA es null -> Cerró sesión.
+    if (usuarioAnterior && !user) {
+      setConditions([])
+      setProvincia('')
+      setRango({ precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' })
+      setSoloConEnvio(false)
+      setSoloSinEnvio(false)
+      setSoloOfertas(false)
+    }
+    // Actualizamos la memoria para el próximo cambio de estado
+    setUsuarioAnterior(user)
+  }, [user, usuarioAnterior])
+
   useEffect(() => {
     configurarSesionVencida(() => {
       setUser(null)
@@ -66,17 +84,12 @@ function App() {
     if (getToken()) {
       getUsuarioActual().then(setUser).catch(() => {})
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const [cart, setCart] = useState([])
 
-  // Solo los clientes tienen carrito y lista de deseos: el backend les da 403
-  // a admin y despachante.
   const puedeComprar = user?.role === 'cliente'
 
-  // Al entrar se traen el carrito y la wishlist guardados; al salir solo se
-  // limpia la vista, lo guardado en el servidor queda para la proxima vez.
   useEffect(() => {
     if (!puedeComprar) {
       setCart([])
@@ -87,16 +100,12 @@ function App() {
     getWishlist().then(setWishlist).catch(() => setWishlist([]))
   }, [user?.id, puedeComprar])
 
-  // Sin sesion, comprar o guardar lleva al login, y al entrar se vuelve a la
-  // pagina donde estaba.
   const pedirLogin = (motivo) =>
     navigate('/login', { state: { desde: location.pathname + location.search, motivo } })
 
   const addToCart = async (product, qty) => {
     if (!user) return pedirLogin('Iniciá sesión para agregar productos al carrito.')
     if (!puedeComprar) return avisos.error(`Tu rol de ${user.role} no te permite realizar compras.`)
-    // Stock, producto propio y publicacion activa los valida el backend, con
-    // el mensaje que corresponde a cada caso.
     try {
       const carrito = await agregarAlCarrito(product.id, qty)
       setCart(carrito.items)
@@ -106,8 +115,6 @@ function App() {
     }
   }
 
-  // Envuelve cada operacion del carrito: actualiza con lo que devuelve el
-  // backend o muestra su error.
   const operarCarrito = async (operacion) => {
     try {
       const carrito = await operacion()
@@ -176,7 +183,16 @@ function App() {
           <Route path="/productos" element={
             user?.role === 'despachante'
               ? <Navigate to="/despachante" />
-              : <Home user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
+              : <Home 
+                  user={user} searchTerm={searchTerm} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} 
+                  favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart}
+                  conditions={conditions} setConditions={setConditions}
+                  provincia={provincia} setProvincia={setProvincia}
+                  rango={rango} setRango={setRango}
+                  soloConEnvio={soloConEnvio} setSoloConEnvio={setSoloConEnvio}
+                  soloSinEnvio={soloSinEnvio} setSoloSinEnvio={setSoloSinEnvio}
+                  soloOfertas={soloOfertas} setSoloOfertas={setSoloOfertas}
+                />
           } />
 
           <Route path="/product/:id" element={<ProductDetail favorites={favorites} toggleFavorite={toggleFavorite} user={user} addToCart={addToCart} pedirLogin={pedirLogin} />} />

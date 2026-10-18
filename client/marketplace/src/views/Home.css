@@ -21,11 +21,35 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.filtros-header-principal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 .filtros-titulo {
   font-size: 16px;
   font-weight: 800;
   color: #111827;
   text-transform: uppercase;
+  margin: 0;
+}
+
+.btn-limpiar {
+  background: none;
+  border: none;
+  color: #16a34a;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-limpiar:hover {
+  background-color: #e7f1f7;
 }
 
 .filtro-grupo {
