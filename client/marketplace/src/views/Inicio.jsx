@@ -4,7 +4,7 @@ import HeroCarousel from '../components/HeroCarousel'
 import ProductRow from '../components/ProductRow'
 import { getArbolCategorias } from '../api/categorias'
 import { getProductos } from '../api/productos'
-import fotoCampo from '../assets/paisaje-agroindustrial.jpg'
+import fotoCampo from '../assets/paisaje-agropecuario.jpg'
 import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
 import './Inicio.css'
@@ -87,7 +87,7 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
       icono: iconoCategoria(cat.nombre),
     })),
     {
-      titulo: 'Publicá gratis',
+      titulo: 'Publicá tus productos',
       texto: 'Vendé tu maquinaria o tus insumos a compradores de todo el país.',
       boton: user ? 'Publicar producto' : 'Crear cuenta',
       link: user ? '/publicar' : '/login',

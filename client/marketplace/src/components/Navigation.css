@@ -131,7 +131,6 @@
   color: var(--verde);
 }
 
-/* CATEGORIAS: fila blanca debajo del buscador, como la de Agrofy */
 .header-categories-bar {
   background-color: var(--verde-barra);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
@@ -147,178 +146,43 @@
   justify-content: space-between;
 }
 
-.categories-list {
+.categories-list-dynamic {
   display: flex;
   align-items: center;
-  gap: 20px;
-  height: 100%;
+  gap: 24px;
 }
 
-.categories-badge {
-  background-color: #ffffff;
-  color: #14532d;
-  border: none;
-  font-weight: 800;
-  font-size: 11px;
-  text-transform: uppercase;
-  padding: 5px 10px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.categories-badge::before {
-  content: "\f0c9";
-  font-family: "Font Awesome 6 Free";
-  font-weight: 900;
-  font-size: 12px;
-}
-
-.categories-badge:hover,
-.categories-badge.abierto {
-  background-color: #dcfce7;
-}
-
-.categories-separador {
-  width: 1px;
-  height: 22px;
-  background-color: rgba(255, 255, 255, 0.25);
-}
-
-/* MENU DESPLEGABLE DE CATEGORIAS: raices a la izquierda, hijas a la derecha */
-.cat-menu-container {
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.cat-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  display: flex;
-  background-color: #ffffff;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  min-height: 220px;
-  z-index: 60;
-  overflow: hidden;
-}
-
-.cat-dropdown ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.cat-dropdown-raices {
-  width: 220px;
-  padding: 8px 0 !important;
-  background-color: #f8f9fa;
-  border-right: 1px solid #f1f3f5;
-}
-
-.cat-dropdown-raices button {
-  width: 100%;
-  background: none;
-  border: none;
-  text-align: left;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--texto);
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cat-dropdown-raices button i {
-  font-size: 10px;
-  color: var(--texto-tenue);
-}
-
-.cat-dropdown-raices button.activa {
-  background-color: #ffffff;
-  color: var(--verde);
-}
-
-.cat-dropdown-raices button.activa i {
-  color: var(--verde);
-}
-
-.cat-dropdown-subs {
-  width: 260px;
-  padding: 14px 20px;
-}
-
-.cat-dropdown-titulo {
-  background: none;
-  border: none;
-  padding: 0 0 10px;
-  margin-bottom: 6px;
-  width: 100%;
-  text-align: left;
-  border-bottom: 1px solid #f1f3f5;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--texto);
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.cat-dropdown-titulo span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--link);
-}
-
-.cat-dropdown-subs li button {
-  background: none;
-  border: none;
-  padding: 7px 0;
-  font-size: 13px;
-  color: var(--texto-secundario);
-  cursor: pointer;
-  text-align: left;
-}
-
-.cat-dropdown-subs li button:hover {
-  color: var(--verde);
-}
-
-.cat-dropdown-vacio {
-  font-size: 13px;
-  color: var(--texto-tenue);
-  line-height: 1.5;
-}
-
-.category-item {
-  background: none;
-  border: none;
+.cat-title-static {
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-main-item {
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600; 
+  font-size: 14px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s ease;
   padding: 0;
 }
 
-.category-item:hover {
-  color: #bbf7d0;
+.cat-main-item:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.category-item.active-cat {
-  color: #bbf7d0;
+.cat-main-item.active {
+  color: #ffffff;
 }
 
-/* "Publicar gratis": caja verde llena al lado del perfil */
 .btn-publish {
   margin-left: 12px;
   background-color: var(--verde);
@@ -361,9 +225,10 @@
 }
 
 .subcat-label {
+  font-family: inherit;
   color: #bbf7d0;
-  font-weight: 800;
-  font-size: 11px;
+  font-weight: 700;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -371,13 +236,14 @@
 }
 
 .subcat-pill {
+  font-family: inherit; /* Hereda tu fuente global */
   background-color: #166534;
   color: #ffffff;
   border: 1px solid transparent;
-  padding: 4px 14px;
+  padding: 5px 14px;
   border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -566,7 +432,8 @@
 .notif-footer:hover {
   background-color: #f9fafb;
 }
-/* Celular: el buscador baja a su propia fila, como en la app de Agrofy */
+
+/* Celular: el buscador baja a su propia fila */
 @media (max-width: 768px) {
   .header-top {
     height: auto;
@@ -600,30 +467,5 @@
     padding: 0 16px;
     overflow-x: auto;
     gap: 16px;
-  }
-
-  .categories-list {
-    flex-shrink: 0;
-  }
-
-}
-
-/* En celular la barra se desliza de costado y recortaria el menu: lo sacamos
-   del flujo y lo mostramos a todo el ancho, una columna debajo de la otra. */
-@media (max-width: 768px) {
-  .cat-dropdown {
-    position: fixed;
-    top: auto;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    border-radius: 0;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-
-  .cat-dropdown-raices,
-  .cat-dropdown-subs {
-    width: 100%;
   }
 }

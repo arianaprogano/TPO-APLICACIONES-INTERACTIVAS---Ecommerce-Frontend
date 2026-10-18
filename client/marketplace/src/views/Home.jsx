@@ -150,16 +150,17 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
           </section>
 
           <section className="filtro-grupo">
-            <header className="filtro-header" onClick={() => setOpenAnio(!openAnio)}>
-              <h4>Año</h4>
-              <i className={`fa-solid fa-chevron-down ${openAnio ? 'rotado' : ''}`}></i>
+            <header className="filtro-header" onClick={() => setOpenOfertas(!openOfertas)}>
+              <h4>Ofertas</h4>
+              <i className={`fa-solid fa-chevron-down ${openOfertas ? 'rotado' : ''}`}></i>
             </header>
 
-            {openAnio && (
-              <div className="filtro-rango">
-                <input type="number" min="1900" placeholder="Desde" value={rango.anioDesde} onChange={(e) => cambiarRango('anioDesde', e.target.value)} aria-label="Año desde" />
-                <span>—</span>
-                <input type="number" min="1900" placeholder="Hasta" value={rango.anioHasta} onChange={(e) => cambiarRango('anioHasta', e.target.value)} aria-label="Año hasta" />
+            {openOfertas && (
+              <div className="filtro-opciones">
+                <label>
+                  <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(!soloOfertas)} />
+                  Solo productos en oferta
+                </label>
               </div>
             )}
           </section>
@@ -193,20 +194,20 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
           </section>
 
           <section className="filtro-grupo">
-            <header className="filtro-header" onClick={() => setOpenOfertas(!openOfertas)}>
-              <h4>Ofertas</h4>
-              <i className={`fa-solid fa-chevron-down ${openOfertas ? 'rotado' : ''}`}></i>
+            <header className="filtro-header" onClick={() => setOpenAnio(!openAnio)}>
+              <h4>Año</h4>
+              <i className={`fa-solid fa-chevron-down ${openAnio ? 'rotado' : ''}`}></i>
             </header>
 
-            {openOfertas && (
-              <div className="filtro-opciones">
-                <label>
-                  <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(!soloOfertas)} />
-                  Solo productos en oferta
-                </label>
+            {openAnio && (
+              <div className="filtro-rango">
+                <input type="number" min="1900" placeholder="Desde" value={rango.anioDesde} onChange={(e) => cambiarRango('anioDesde', e.target.value)} aria-label="Año desde" />
+                <span>—</span>
+                <input type="number" min="1900" placeholder="Hasta" value={rango.anioHasta} onChange={(e) => cambiarRango('anioHasta', e.target.value)} aria-label="Año hasta" />
               </div>
             )}
           </section>
+
         </aside>
 
         <main className="main-productos">
@@ -245,4 +246,4 @@ export const Home = ({ user, addToCart, searchTerm, selectedCategory, selectedSu
   )
 }
 
-export default Home;
+export default Home

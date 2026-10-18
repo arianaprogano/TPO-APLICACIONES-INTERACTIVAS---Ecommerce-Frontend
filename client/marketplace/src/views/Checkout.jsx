@@ -34,7 +34,7 @@ function Checkout({ cart, onCompraRealizada, user }) {
     return (
       <div className="error-overlay">
         <div className="error-modal">
-          <div className="error-icon-box" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+          <div className="error-icon-box" style={{ backgroundColor: '#16a34a', color: '#ffffff', boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)' }}>
             <i className="fa-solid fa-check"></i>
           </div>
           <h2 className="error-title">¡Compra Exitosa!</h2>
@@ -50,7 +50,7 @@ function Checkout({ cart, onCompraRealizada, user }) {
               </li>
             ))}
           </ul>
-          <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={() => navigate('/mis-compras')}>Ir a Mis Compras</button>
+          <button className="error-btn" style={{ backgroundColor: '#16a34a', color: '#ffffff' }} onClick={() => navigate('/mis-compras')}>Ir a Mis Compras</button>
         </div>
       </div>
     )
@@ -126,8 +126,8 @@ function Checkout({ cart, onCompraRealizada, user }) {
                   <h3 className="paquete-title">Paquete {index + 1}</h3>
                   {esEnvio ? (
                     <p className="paquete-subtitle" style={{ color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
-                      Envío a domicilio
-                      {entrega.provinciaEntrega && ` · ${entrega.localidadEntrega || ''} ${nombreProvincia(entrega.provinciaEntrega)}`}
+                     Envío a domicilio
+                    {entrega.provinciaEntrega && ` · ${entrega.direccionEntrega ? entrega.direccionEntrega + ', ' : ''}${entrega.localidadEntrega ? entrega.localidadEntrega + ', ' : ''}${nombreProvincia(entrega.provinciaEntrega)}`}
                     </p>
                   ) : (
                     <p className="paquete-subtitle" style={{ color: '#4b5563', fontWeight: 'bold', marginTop: '2px' }}>

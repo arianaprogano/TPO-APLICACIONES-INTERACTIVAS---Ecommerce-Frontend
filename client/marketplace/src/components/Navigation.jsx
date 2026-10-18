@@ -16,28 +16,15 @@ function Navigation({
   const navigate = useNavigate()
   const location = useLocation()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isCatMenuOpen, setIsCatMenuOpen] = useState(false)
-  const [hoverCat, setHoverCat] = useState(null)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
 
-  // Elegir una categoria (o subcategoria) desde el menu lleva al listado.
+  // Al hacer clic en una categoría de la barra, vamos directo a sus productos
   const elegirCategoria = (cat, sub = '') => {
     setSelectedCategory(cat)
     setSelectedSubcategory(sub)
-    setIsCatMenuOpen(false)
     navigate('/productos')
   }
 
-  // Accesos rapidos ("Ofertas", "Más vistos"...): listado completo con ese orden.
-  const irAlListado = (query) => {
-    setSearchTerm('')
-    setSelectedCategory('')
-    setSelectedSubcategory('')
-    navigate(`/productos${query}`)
-  }
-
-  // Al salir App limpia la vista del carrito y la wishlist; lo guardado en el
-  // backend no se toca, asi el usuario lo encuentra al volver a entrar.
   const handleLogout = () => {
     setUser(null)
     setIsDropdownOpen(false)
@@ -51,18 +38,17 @@ function Navigation({
     setIsNotifOpen(false)
   }
 
-  // Categorias raiz con sus hijas, tal como estan cargadas en el backend.
+  // Categorías dinámicas desde el backend
   const [categorias, setCategorias] = useState([])
   useEffect(() => {
     getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
   }, [])
+  
   const categoriaActiva = categorias.find(c => c.id === selectedCategory)
-  const categoriaMenu = categorias.find(c => c.id === hoverCat) || categorias[0]
   const enListado = location.pathname === '/productos'
   const canPublish = user && user.role === 'cliente'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
-  // Notificaciones del backend: el contador se pide seguido (es liviano) y la
-  // lista recien al abrir la campanita.
+  
   const [notifications, setNotifications] = useState([])
   const [noLeidas, setNoLeidas] = useState(0)
 
@@ -74,7 +60,6 @@ function Navigation({
     }
     const actualizarContador = () => contarNoLeidas().then(setNoLeidas).catch(() => {})
     actualizarContador()
-    // Cada 20 s: es por donde se enteran de todo, mensajes del chat incluidos.
     const timer = setInterval(actualizarContador, 20000)
     return () => clearInterval(timer)
   }, [user])
@@ -201,10 +186,9 @@ function Navigation({
               <button className="action-login-btn" onClick={() => navigate('/login')}><i className="fa-regular fa-circle-user"></i> <span>Ingresar</span></button>
             )}
 
-            {/* Como en Agrofy: a la vista de todos. Sin sesion lleva al login. */}
             {(!user || canPublish) && (
               <button className="btn-publish" onClick={() => navigate(user ? '/publicar' : '/login')}>
-                Publicar gratis
+                Publicar Producto
               </button>
             )}
           </nav>
@@ -213,60 +197,22 @@ function Navigation({
         {user?.role !== 'despachante' && (
           <nav className="header-categories-bar">
             <div className="categories-container">
-              <div className="categories-list">
-                <div className="cat-menu-container" onMouseLeave={() => setIsCatMenuOpen(false)}>
+              <div className="categories-list-dynamic">
+                
+                <span className="cat-title-static">
+                  <i className="fa-solid fa-bars"></i> CATEGORÍAS:
+                </span>
+
+                {categorias.map(cat => (
                   <button
-                    className={`categories-badge ${isCatMenuOpen ? 'abierto' : ''}`}
-                    onClick={() => setIsCatMenuOpen(!isCatMenuOpen)}
-                    aria-expanded={isCatMenuOpen}
+                    key={cat.id}
+                    className={`cat-main-item ${selectedCategory === cat.id ? 'active' : ''}`}
+                    onClick={() => elegirCategoria(cat.id)}
                   >
-                    Categorías
+                    {cat.nombre}
                   </button>
+                ))}
 
-                  {isCatMenuOpen && categorias.length > 0 && (
-                    <div className="cat-dropdown">
-                      <ul className="cat-dropdown-raices">
-                        {categorias.map(cat => (
-                          <li key={cat.id}>
-                            <button
-                              className={categoriaMenu?.id === cat.id ? 'activa' : ''}
-                              onMouseEnter={() => setHoverCat(cat.id)}
-                              onClick={() => elegirCategoria(cat.id)}
-                            >
-                              {cat.nombre}
-                              {cat.subcategorias.length > 0 && <i className="fa-solid fa-chevron-right"></i>}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-
-                      {categoriaMenu && (
-                        <div className="cat-dropdown-subs">
-                          <button className="cat-dropdown-titulo" onClick={() => elegirCategoria(categoriaMenu.id)}>
-                            {categoriaMenu.nombre} <span>Ver todo</span>
-                          </button>
-                          {categoriaMenu.subcategorias.length > 0 ? (
-                            <ul>
-                              {categoriaMenu.subcategorias.map(sub => (
-                                <li key={sub.id}>
-                                  <button onClick={() => elegirCategoria(categoriaMenu.id, sub.id)}>{sub.nombre}</button>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="cat-dropdown-vacio">{categoriaMenu.descripcion || 'Sin subcategorías.'}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <span className="categories-separador"></span>
-
-                <button className="category-item" onClick={() => irAlListado('?ofertas=1')}>Ofertas</button>
-                <button className="category-item" onClick={() => irAlListado('?orden=vistos')}>Más vistos</button>
-                <button className="category-item" onClick={() => irAlListado('?orden=vendidos')}>Más vendidos</button>
               </div>
             </div>
           </nav>
@@ -275,7 +221,7 @@ function Navigation({
         {user?.role !== 'despachante' && enListado && categoriaActiva?.subcategorias.length > 0 && (
           <nav className="header-subcategories-bar">
             <div className="subcategories-container">
-              <div className="subcat-label"><i className="fa-solid fa-angle-right"></i> {categoriaActiva.nombre.toUpperCase()}:</div>
+              <div className="subcat-label">{categoriaActiva.nombre.toUpperCase()}:</div>
               {categoriaActiva.subcategorias.map(sub => (
                 <button key={sub.id} className={`subcat-pill ${selectedSubcategory === sub.id ? 'active-pill' : ''}`} onClick={() => setSelectedSubcategory(selectedSubcategory === sub.id ? '' : sub.id)}>{sub.nombre}</button>
               ))}
