@@ -9,6 +9,9 @@ import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
 import './Inicio.css'
 
+// ¡Agregamos el hook de avisos para frenar al Admin!
+import { useAvisos } from '../components/avisosContext' 
+
 // Icono para cada categoria raiz cuando no hay foto para el banner.
 const iconoCategoria = (nombre = '') => {
   const n = nombre.toLowerCase()
@@ -31,6 +34,8 @@ const fotoCategoria = (nombre = '') => {
 // mas vistos y mas vendidos. El listado con filtros vive en /productos.
 function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
   const navigate = useNavigate()
+  const { error: avisarError } = useAvisos() // Instanciamos la función de error
+  
   const [categorias, setCategorias] = useState([])
   const [porCategoria, setPorCategoria] = useState({})
   const [ofertas, setOfertas] = useState([])
@@ -70,6 +75,18 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     navigate(`/productos${query}`)
   }
 
+  // --- LÓGICA DE CONTROL PARA EL ADMIN ---
+  const handlePublicarClick = () => {
+    if (user && user.rol === 'ADMIN') {
+      // El Admin no viaja a ningún lado y le sale el aviso rojo de error
+      avisarError('Los administradores no publican productos. Gestioná el catálogo desde el Panel.')
+    } else if (user) {
+      navigate('/publicar')
+    } else {
+      navigate('/login')
+    }
+  }
+
   const slides = [
     {
       titulo: 'El mercado del agro, en un solo lugar',
@@ -90,7 +107,8 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
       titulo: 'Publicá tus productos',
       texto: 'Vendé tu maquinaria o tus insumos a compradores de todo el país.',
       boton: user ? 'Publicar producto' : 'Crear cuenta',
-      link: user ? '/publicar' : '/login',
+      // En lugar de pasar un link vacío, interceptamos el click con nuestra nueva función
+      onClick: handlePublicarClick, 
       icono: 'fa-bullhorn',
     },
   ]
@@ -110,9 +128,18 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
           </button>
         </div>
 
-        <ProductRow titulo="Ofertas" subtitulo="Productos con descuento" productos={ofertas} onVerTodos={() => verListado('?ofertas=1')} {...filaProps} />
-        <ProductRow titulo="Más vistos" subtitulo="Lo que más están mirando" productos={masVistos} onVerTodos={() => verListado('?orden=vistos')} {...filaProps} />
-        <ProductRow titulo="Más vendidos" subtitulo="Los preferidos de los productores" productos={masVendidos} onVerTodos={() => verListado('?orden=vendidos')} {...filaProps} />
+        {/* --- RECUADROS BLANCOS --- */}
+        <div className="inicio-recuadro">
+          <ProductRow titulo="Ofertas" subtitulo="Productos con descuento" productos={ofertas} onVerTodos={() => verListado('?ofertas=1')} {...filaProps} />
+        </div>
+
+        <div className="inicio-recuadro">
+          <ProductRow titulo="Más vistos" subtitulo="Lo que más están mirando" productos={masVistos} onVerTodos={() => verListado('?orden=vistos')} {...filaProps} />
+        </div>
+
+        <div className="inicio-recuadro">
+          <ProductRow titulo="Más vendidos" subtitulo="Los preferidos de los productores" productos={masVendidos} onVerTodos={() => verListado('?orden=vendidos')} {...filaProps} />
+        </div>
       </div>
     </div>
   )

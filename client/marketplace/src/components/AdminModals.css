@@ -117,3 +117,31 @@
   align-items: center;
   gap: 8px;
 }
+
+/* --- MODAL DE CONFIRMACIÓN (Ícono Verde) --- */
+.success-icon-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: #16a34a;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+}
+
+.success-icon-inner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon-inner i {
+  color: #16a34a;
+  font-size: 26px;
+}

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import UserForm from '../components/UserForm'
-import CategoryForm from '../components/CategoryForm'
 import FotoConToken from '../components/FotoConToken'
+import AdminModals from '../components/AdminModals'
 import {
   cambiarRol, darDeBajaCategoria, darDeBajaProducto, darDeBajaUsuario, destacarProducto,
   getCategorias, getCategoriasInactivas, getFotosPendientes, getHistorialDestacados, getTodasLasOrdenes,
@@ -53,13 +52,12 @@ function AdminPanel({ user }) {
   const [busquedaUsuario, setBusquedaUsuario] = useState('')
   const [busquedaCategoria, setBusquedaCategoria] = useState('')
   const [busquedaProducto, setBusquedaProducto] = useState('')
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [categoriaEditando, setCategoriaEditando] = useState(undefined)
-  
-  // --- ESTADOS PARA MODALES PROPIOS ---
   const [userToDelete, setUserToDelete] = useState(null)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
-  const [roleChange, setRoleChange] = useState(null) // Guardará { usuario, nuevoRol }
+  const [roleChange, setRoleChange] = useState(null) 
 
   const avisar = (mensaje) => avisarError(mensaje)
 
@@ -78,7 +76,7 @@ function AdminPanel({ user }) {
     setError('')
     setVerBajas(false)
     cargar[activeTab]().catch(err => setError(err.message))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [activeTab])
 
   // --- Ordenes ---
@@ -202,7 +200,7 @@ function AdminPanel({ user }) {
   })
 
   const segmento = (activos, bajas) => (
-    <div className="panel-segmento">
+    <div className="panel-segmento" style={{ marginRight: 0 }}>
       <button className={!verBajas ? 'active' : ''} onClick={() => setVerBajas(false)}>
         {activos} ({activeTab === 'usuarios' ? usuarios?.length ?? 0 : categorias?.length ?? 0})
       </button>
@@ -231,15 +229,32 @@ function AdminPanel({ user }) {
 
   return (
     <div className="panel-container">
-      <nav className="panel-tabs">
-        <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Gestión de Órdenes</button>
-        <button className={activeTab === 'productos' ? 'active' : ''} onClick={() => setActiveTab('productos')}>
-          Productos {fotos?.length > 0 && <span className="panel-tab-contador">{fotos.length}</span>}
-        </button>
-        <button className={activeTab === 'destacados' ? 'active' : ''} onClick={() => setActiveTab('destacados')}>Destacados</button>
-        <button className={activeTab === 'usuarios' ? 'active' : ''} onClick={() => setActiveTab('usuarios')}>Gestión de Usuarios</button>
-        <button className={activeTab === 'categorias' ? 'active' : ''} onClick={() => setActiveTab('categorias')}>Gestión de Categorías</button>
-      </nav>
+      
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', marginBottom: '24px' }}>
+        <nav className="panel-tabs" style={{ borderBottom: 'none', marginBottom: 0 }}>
+          <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Gestión de Órdenes</button>
+          <button className={activeTab === 'productos' ? 'active' : ''} onClick={() => setActiveTab('productos')}>
+            Productos {fotos?.length > 0 && <span className="panel-tab-contador">{fotos.length}</span>}
+          </button>
+          <button className={activeTab === 'destacados' ? 'active' : ''} onClick={() => setActiveTab('destacados')}>Destacados</button>
+          <button className={activeTab === 'usuarios' ? 'active' : ''} onClick={() => setActiveTab('usuarios')}>Gestión de Usuarios</button>
+          <button className={activeTab === 'categorias' ? 'active' : ''} onClick={() => setActiveTab('categorias')}>Gestión de Categorías</button>
+        </nav>
+        
+        {/* BOTONES "A LA MANO" */}
+        <div style={{ display: 'flex', gap: '12px', paddingBottom: '4px' }}>
+          {activeTab === 'usuarios' && (
+            <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
+              <i className="fa-solid fa-user-plus"></i> NUEVO USUARIO
+            </button>
+          )}
+          {activeTab === 'categorias' && (
+            <button className="btn-new-user" onClick={() => setCategoriaEditando(null)}>
+              <i className="fa-solid fa-folder-plus"></i> NUEVA CATEGORÍA
+            </button>
+          )}
+        </div>
+      </header>
 
       {activeTab === 'ordenes' && (
         <main className="panel-content">
@@ -397,15 +412,13 @@ function AdminPanel({ user }) {
 
       {activeTab === 'usuarios' && (
         <section className="users-section">
+          {/* El botón de crear ya no está acá, está en el header global */}
           <header className="users-toolbar">
             <div className="search-bar">
               <i className="fa-solid fa-search"></i>
               <input type="text" placeholder="Buscar por email, usuario o rol..." value={busquedaUsuario} onChange={e => setBusquedaUsuario(e.target.value)} />
             </div>
             {segmento('Activos', 'Dados de baja')}
-            <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
-              <i className="fa-solid fa-user-plus"></i> NUEVO USUARIO
-            </button>
           </header>
 
           {verBajas ? (
@@ -489,15 +502,13 @@ function AdminPanel({ user }) {
 
       {activeTab === 'categorias' && (
         <section className="users-section">
+          {/* El botón de crear ya no está acá, está en el header global */}
           <header className="users-toolbar">
             <div className="search-bar">
               <i className="fa-solid fa-search"></i>
               <input type="text" placeholder="Buscar categoría..." value={busquedaCategoria} onChange={e => setBusquedaCategoria(e.target.value)} />
             </div>
             {segmento('Activas', 'Dadas de baja')}
-            <button className="btn-new-user" onClick={() => setCategoriaEditando(null)}>
-              <i className="fa-solid fa-folder-plus"></i> NUEVA CATEGORÍA
-            </button>
           </header>
 
           {verBajas ? (
@@ -564,127 +575,15 @@ function AdminPanel({ user }) {
         </section>
       )}
 
-      {destacando && (
-        <div className="modal-overlay">
-          <form className="user-modal-content" style={{ maxWidth: '420px' }} onSubmit={guardarDestacado}>
-            <header className="user-modal-header">
-              <div className="modal-title-with-icon"><i className="fa-solid fa-star"></i> Destacar producto</div>
-              <button type="button" className="close-modal-btn" onClick={() => setDestacando(null)}><i className="fa-solid fa-xmark"></i></button>
-            </header>
-            <div className="user-modal-body">
-              <p style={{ fontSize: '14px', color: '#374151' }}><strong>{destacando.producto.title}</strong> de {destacando.producto.vendedor?.nombreUsuario}</p>
-              <div className="user-modal-grid">
-                <div className="form-group">
-                  <label htmlFor="nivel-destacado">NIVEL</label>
-                  <select id="nivel-destacado" value={destacando.nivel} onChange={e => setDestacando({ ...destacando, nivel: e.target.value })}>
-                    {Object.entries(NIVELES_DESTACADO).map(([clave, nombre]) => <option key={clave} value={clave}>{nombre}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="meses-destacado">MESES</label>
-                  <input id="meses-destacado" type="number" min="1" max="24" value={destacando.meses} disabled={destacando.nivel === 'NINGUNO'}
-                    onChange={e => setDestacando({ ...destacando, meses: Number(e.target.value) })} />
-                </div>
-              </div>
-              <p style={{ fontSize: '12px', color: '#6b7280' }}>Los destacados salen primero en el catálogo. &ldquo;Sin destacar&rdquo; le saca la visibilidad.</p>
-            </div>
-            <footer className="user-modal-footer">
-              <button type="button" className="btn-cancelar" onClick={() => setDestacando(null)}>Cancelar</button>
-              <button type="submit" className="btn-guardar"><i className="fa-solid fa-check"></i> Guardar</button>
-            </footer>
-          </form>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <UserForm
-            onClose={() => setIsModalOpen(false)}
-            onSave={() => { setIsModalOpen(false); cargar.usuarios() }}
-          />
-        </div>
-      )}
-
-      {categoriaEditando !== undefined && (
-        <div className="modal-overlay">
-          <CategoryForm
-            categoria={categoriaEditando}
-            raices={raices}
-            onClose={() => setCategoriaEditando(undefined)}
-            onSave={() => { setCategoriaEditando(undefined); cargar.categorias() }}
-          />
-        </div>
-      )}
-
-      {/* --- MODAL CAMBIO DE ROL (Con el ícono idéntico al de tu imagen: borde verde, fondo blanco, ícono verde) --- */}
-      {roleChange && (
-        <div className="error-overlay" onClick={() => setRoleChange(null)}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box" style={{ 
-              backgroundColor: 'white', 
-              color: '#16a34a', 
-              border: '14px solid #16a34a', 
-              boxShadow: '0 8px 24px rgba(22, 163, 74, 0.4)' 
-            }}>
-              <i className="fa-solid fa-question"></i>
-            </div>
-            <h2 className="error-title">¿Confirmás?</h2>
-            <p className="error-text">
-              ¿Cambiar a <strong>{roleChange.usuario.nombreUsuario}</strong> de {ROLES[roleChange.usuario.rol]} a {ROLES[roleChange.nuevoRol]}?
-            </p>
-            <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setRoleChange(null)}>Cancelar</button>
-              <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={confirmarCambioRol}>Confirmar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {userToDelete && (
-        <div className="error-overlay" onClick={() => setUserToDelete(null)}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-user"></i>
-            </div>
-            <h2 className="error-title">¿Eliminar Usuario?</h2>
-            <p className="error-text">
-              ¿Estás seguro de dar de baja a <strong>{userToDelete.nombreUsuario}</strong>?
-              <br /><br />
-              {userToDelete.rol?.toUpperCase() === 'DESPACHANTE' && (
-                "Este usuario ya no podrá gestionar el estado de los envíos."
-              )}
-              {userToDelete.rol?.toUpperCase() === 'ADMIN' && (
-                "Este usuario perderá el acceso al Panel de Administración."
-              )}
-              {userToDelete.rol?.toUpperCase() === 'CLIENTE' && (
-                "Sus publicaciones saldrán del catálogo y de los carritos. Las órdenes se conservan."
-              )}
-            </p>
-            <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setUserToDelete(null)}>Cancelar</button>
-              <button className="error-btn" onClick={confirmarEliminarUsuario}>Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {categoryToDelete && (
-        <div className="error-overlay" onClick={() => setCategoryToDelete(null)}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-folder-minus"></i>
-            </div>
-            <h2 className="error-title">¿Eliminar Categoría?</h2>
-            <p className="error-text">
-              ¿Eliminar <strong>{categoryToDelete.nombre}</strong>? Solo se puede si no tiene subcategorías ni productos.
-            </p>
-            <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setCategoryToDelete(null)}>Cancelar</button>
-              <button className="error-btn" onClick={confirmarEliminarCategoria}>Eliminar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminModals 
+        destacando={destacando} setDestacando={setDestacando} guardarDestacado={guardarDestacado} NIVELES_DESTACADO={NIVELES_DESTACADO}
+        isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} cargar={cargar}
+        categoriaEditando={categoriaEditando} setCategoriaEditando={setCategoriaEditando} raices={raices}
+        roleChange={roleChange} setRoleChange={setRoleChange} confirmarCambioRol={confirmarCambioRol} ROLES={ROLES}
+        userToDelete={userToDelete} setUserToDelete={setUserToDelete} confirmarEliminarUsuario={confirmarEliminarUsuario}
+        categoryToDelete={categoryToDelete} setCategoryToDelete={setCategoryToDelete} confirmarEliminarCategoria={confirmarEliminarCategoria}
+      />
+      
     </div>
   )
 }
