@@ -103,7 +103,17 @@ function AdminPanel({ user }) {
 
   const bajaOReactivar = async (producto) => {
     const reactivar = producto.activo === false
-    if (!reactivar && !(await confirmar(`¿Dar de baja "${producto.title}"? Sale del catálogo y de los carritos.`))) return
+    
+    if (!reactivar) {
+      const ok = await confirmar({
+        titulo: '¿Eliminar producto?',
+        texto: `"${producto.title}" sale del catálogo y de los carritos.`,
+        ok: 'Eliminar',
+        peligro: true,
+      })
+      if (!ok) return
+    }
+
     try {
       if (reactivar) await reactivarProducto(producto.id)
       else await darDeBajaProducto(producto.id)

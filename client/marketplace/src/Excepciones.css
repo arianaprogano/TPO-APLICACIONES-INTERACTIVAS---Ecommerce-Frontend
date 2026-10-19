@@ -71,3 +71,42 @@
 .error-btn:hover {
   opacity: 0.9;
 }
+
+/* =========================================
+   ESTILOS PARA EL MODAL DE ÉXITO
+   ========================================= */
+
+.success-icon-box {
+  width: 75px;
+  height: 75px;
+  background-color: #16a34a; 
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 24px auto;
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.3); 
+}
+
+.success-icon-box i {
+  font-size: 38px;
+  color: white;
+}
+
+.success-btn {
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  width: 100%;
+  text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+
+.success-btn:hover {
+  opacity: 0.9;
+}

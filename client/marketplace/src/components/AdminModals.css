@@ -118,30 +118,31 @@
   gap: 8px;
 }
 
-/* --- MODAL DE CONFIRMACIÓN (Ícono Verde) --- */
+/* --- MODAL DE CONFIRMACIÓN (Ícono Naranja) --- */
 .success-icon-box {
-  width: 72px;
-  height: 72px;
+  width: 75px;
+  height: 75px;
+  background-color: #f59e0b; /* Naranja base */
   border-radius: 50%;
-  background-color: #16a34a;
-  margin: 0 auto 20px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+  align-items: center;
+  margin: 0 auto 24px auto;
+  box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3); /* Sombra naranja */
 }
 
 .success-icon-inner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Eliminamos el círculo blanco interior para que sea todo sólido */
+  display: contents;
 }
 
 .success-icon-inner i {
-  color: #16a34a;
-  font-size: 26px;
+  font-size: 38px;
+  color: white; /* Icono blanco puro */
+}
+
+.panel-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
 }

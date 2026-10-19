@@ -80,9 +80,10 @@ export default function AdminModals({
       {roleChange && (
         <div className="error-overlay" onClick={() => setRoleChange(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Cambiado a icono de alerta */}
             <div className="success-icon-box">
               <div className="success-icon-inner">
-                <i className="fa-solid fa-question"></i>
+                <i className="fa-solid fa-triangle-exclamation"></i>
               </div>
             </div>
             <h2 className="error-title">¿Confirmás?</h2>
@@ -90,7 +91,7 @@ export default function AdminModals({
               ¿Cambiar a <strong>{roleChange.usuario.nombreUsuario}</strong> de {ROLES[roleChange.usuario.rol]} a {ROLES[roleChange.nuevoRol]}?
             </p>
             <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setRoleChange(null)}>Cancelar</button>
+              <button className="error-btn btn-cancel-panel" style={{ backgroundColor: '#e5e7eb', color: '#111827' }} onClick={() => setRoleChange(null)}>Cancelar</button>
               <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={confirmarCambioRol}>Confirmar</button>
             </div>
           </div>
@@ -100,8 +101,11 @@ export default function AdminModals({
       {userToDelete && (
         <div className="error-overlay" onClick={() => setUserToDelete(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-user"></i>
+            {/* Icono naranja */}
+            <div className="success-icon-box">
+              <div className="success-icon-inner">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+              </div>
             </div>
             <h2 className="error-title">¿Eliminar Usuario?</h2>
             <p className="error-text">
@@ -112,7 +116,7 @@ export default function AdminModals({
               {userToDelete.rol?.toUpperCase() === 'CLIENTE' && "Sus publicaciones saldrán del catálogo y de los carritos. Las órdenes se conservan."}
             </p>
             <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setUserToDelete(null)}>Cancelar</button>
+              <button className="error-btn btn-cancel-panel" style={{ backgroundColor: '#e5e7eb', color: '#111827' }} onClick={() => setUserToDelete(null)}>Cancelar</button>
               <button className="error-btn" onClick={confirmarEliminarUsuario}>Eliminar</button>
             </div>
           </div>
@@ -122,15 +126,18 @@ export default function AdminModals({
       {categoryToDelete && (
         <div className="error-overlay" onClick={() => setCategoryToDelete(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-icon-box">
-              <i className="fa-solid fa-folder-minus"></i>
+            {/* Icono naranja */}
+            <div className="success-icon-box">
+              <div className="success-icon-inner">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+              </div>
             </div>
             <h2 className="error-title">¿Eliminar Categoría?</h2>
             <p className="error-text">
               ¿Eliminar <strong>{categoryToDelete.nombre}</strong>? Solo se puede si no tiene subcategorías ni productos.
             </p>
             <div className="panel-modal-actions">
-              <button className="error-btn btn-cancel-panel" onClick={() => setCategoryToDelete(null)}>Cancelar</button>
+              <button className="error-btn btn-cancel-panel" style={{ backgroundColor: '#e5e7eb', color: '#111827' }} onClick={() => setCategoryToDelete(null)}>Cancelar</button>
               <button className="error-btn" onClick={confirmarEliminarCategoria}>Eliminar</button>
             </div>
           </div>

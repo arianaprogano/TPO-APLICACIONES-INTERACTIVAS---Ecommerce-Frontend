@@ -6,19 +6,16 @@ import { crearProducto, subirFoto } from '../api/productos'
 import '../components/ProductForm.css'
 import './PublicarProducto.css'
 
-const ANIO_MAXIMO = new Date().getFullYear() + 1
+// Ajustado al año actual para que coincida con la regla del backend
+const AÑO_MAXIMO = new Date().getFullYear()
 
 const formularioVacio = {
   nombre: '', idCategoria: '', idSubcategoria: '', condicion: '', anio: '',
   precio: '', descuento: '', stock: '1',
-  // admiteEnvio arranca sin elegir: el vendedor tiene que decidirlo.
   provincia: '', ubicacion: '', admiteEnvio: null, aceptaOfertas: false,
   descripcion: '',
 }
 
-// Publicar es en dos pasos, igual que en el backend: primero se crea el
-// producto (queda en BORRADOR) y despues se suben las fotos de a una. La IA
-// revisa cada foto; la primera que entra deja el producto PUBLICADO.
 function PublicarProducto() {
   const navigate = useNavigate()
   const [categorias, setCategorias] = useState([])
@@ -26,7 +23,6 @@ function PublicarProducto() {
   const [fotos, setFotos] = useState([])
   const [errores, setErrores] = useState({})
   const [error, setError] = useState('')
-  // formulario -> subiendo -> listo
   const [paso, setPaso] = useState('formulario')
   const [progreso, setProgreso] = useState('')
   const [resultado, setResultado] = useState(null)
@@ -35,14 +31,12 @@ function PublicarProducto() {
     getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
   }, [])
 
-  // Las previsualizaciones usan URLs temporales del navegador: se libera cada
-  // una al quitarla y las que quedan al salir de la pagina.
   const fotosRef = useRef(fotos)
   fotosRef.current = fotos
   useEffect(() => () => fotosRef.current.forEach(f => URL.revokeObjectURL(f.url)), [])
 
   const categoria = categorias.find(c => String(c.id) === String(form.idCategoria))
-  // Editar un campo borra su error, asi el aviso no queda colgado.
+  
   const set = (campo, valor) => {
     setForm(prev => ({ ...prev, [campo]: valor }))
     setErrores(prev => ({ ...prev, [campo]: undefined }))
@@ -65,7 +59,15 @@ function PublicarProducto() {
     if (!form.nombre.trim()) e.nombre = 'El título es obligatorio'
     if (!form.idCategoria) e.idCategoria = 'Elegí una categoría'
     if (!form.condicion) e.condicion = 'Indicá si es nuevo o usado'
-    if (!form.anio) e.anio = 'Indicá el año'
+    
+    // --- VALIDACIÓN FRONTEND PARA EL AÑO ---
+    // Atajamos el error antes del backend para que siempre salga abajo del campo
+    if (!form.anio) {
+      e.anio = 'Indicá el año'
+    } else if (Number(form.anio) < 1900 || Number(form.anio) > AÑO_MAXIMO) {
+      e.anio = `El año tiene que estar entre 1900 y ${AÑO_MAXIMO}`
+    }
+
     if (!form.precio || Number(form.precio) <= 0) e.precio = 'El precio tiene que ser mayor a cero'
     if (form.stock === '' || Number(form.stock) < 0) e.stock = 'El stock no puede ser negativo'
     if (form.descuento !== '' && (Number(form.descuento) < 0 || Number(form.descuento) > 100)) e.descuento = 'Entre 0 y 100'
@@ -81,7 +83,7 @@ function PublicarProducto() {
     const encontrados = validar()
     setErrores(encontrados)
     if (Object.keys(encontrados).length > 0) {
-      setError('Revisá los campos marcados.')
+      setError('Hay datos inválidos en el pedido')
       return
     }
 
@@ -93,7 +95,7 @@ function PublicarProducto() {
         nombre: form.nombre.trim(),
         idCategoria: Number(form.idSubcategoria || form.idCategoria),
         condicion: form.condicion,
-        anio: Number(form.anio),
+        anio: Number(form.anio), 
         precio: Number(form.precio),
         descuento: form.descuento === '' ? 0 : Number(form.descuento),
         stock: Number(form.stock),
@@ -105,14 +107,25 @@ function PublicarProducto() {
       }))
     } catch (err) {
       setPaso('formulario')
-      setError(err.message)
-      setErrores(err.campos || {})
+      
+      // Si por algún motivo se nos escapa un error del backend, lo transformamos
+      let mensajeGlobal = err.message
+      let camposConError = err.campos || {}
+
+      if (mensajeGlobal && mensajeGlobal.includes('anio tiene que estar entre')) {
+        camposConError.anio = mensajeGlobal.replace('anio', 'año')
+        mensajeGlobal = 'Hay datos inválidos en el pedido'
+      }
+
+      if (camposConError.anio && camposConError.anio.includes('anio')) {
+        camposConError.anio = camposConError.anio.replace('anio', 'año')
+      }
+
+      setError(mensajeGlobal)
+      setErrores(camposConError)
       return
     }
 
-    // Las fotos de a una y en orden: la primera queda como principal. La
-    // subida no espera a la IA: el backend la revisa en segundo plano y avisa
-    // con una notificacion, asi que esto tarda lo que tarda subir el archivo.
     const fotosSubidas = []
     for (let i = 0; i < fotos.length; i++) {
       setProgreso(`Subiendo foto ${i + 1} de ${fotos.length}...`)
@@ -218,7 +231,7 @@ function PublicarProducto() {
             </div>
             <div className="form-group">
               <label htmlFor="anio">Año</label>
-              <input id="anio" type="number" min={1900} max={ANIO_MAXIMO} placeholder={String(new Date().getFullYear())} value={form.anio} onChange={e => set('anio', e.target.value)} />
+              <input id="anio" type="number" min={1900} max={AÑO_MAXIMO} placeholder={String(new Date().getFullYear())} value={form.anio} onChange={e => set('anio', e.target.value)} />
               {campoError('anio')}
             </div>
           </div>

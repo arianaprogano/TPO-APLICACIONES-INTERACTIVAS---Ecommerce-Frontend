@@ -34,6 +34,8 @@
 .hero-texto {
   max-width: 520px;
   color: #ffffff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .hero-titulo {
@@ -42,6 +44,8 @@
   line-height: 1.15;
   margin-bottom: 12px;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .hero-bajada {
@@ -49,6 +53,13 @@
   font-weight: 500;
   margin-bottom: 22px;
   color: #e9ecef;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  /* Limita la descripción a 3 líneas máximo si el texto es muy extenso */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .hero-boton {
