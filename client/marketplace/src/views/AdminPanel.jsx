@@ -30,14 +30,9 @@ const ESTADOS_PUBLICACION = {
 
 const ROLES = { ADMIN: 'Administrador', CLIENTE: 'Cliente', DESPACHANTE: 'Despachante' }
 
-// Cada pestaña trae sus datos del backend la primera vez que se abre, y cada
-// accion actualiza con lo que el backend devuelve. Los errores (por ejemplo,
-// borrar una categoria que todavia tiene productos) se muestran tal cual.
 function AdminPanel({ user }) {
   const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
-  // ?tab= permite llegar directo a una pestaña, por ejemplo desde el aviso de
-  // fotos pendientes.
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'ordenes')
   useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
@@ -52,7 +47,6 @@ function AdminPanel({ user }) {
   const [categorias, setCategorias] = useState(null)
   const [usuariosInactivos, setUsuariosInactivos] = useState(null)
   const [categoriasInactivas, setCategoriasInactivas] = useState(null)
-  // En Usuarios y Categorias: false muestra los activos, true los dados de baja.
   const [verBajas, setVerBajas] = useState(false)
   const [error, setError] = useState('')
 
@@ -61,8 +55,11 @@ function AdminPanel({ user }) {
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [categoriaEditando, setCategoriaEditando] = useState(undefined)
+  
+  // --- ESTADOS PARA MODALES PROPIOS ---
   const [userToDelete, setUserToDelete] = useState(null)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
+  const [roleChange, setRoleChange] = useState(null) // Guardará { usuario, nuevoRol }
 
   const avisar = (mensaje) => avisarError(mensaje)
 
@@ -74,11 +71,9 @@ function AdminPanel({ user }) {
     productos: () => Promise.all([getFotosPendientes().then(setFotos), getTodosLosProductos().then(setProductos)]),
     destacados: () => getHistorialDestacados().then(setDestacados),
     usuarios: () => Promise.all([getUsuarios().then(setUsuarios), getUsuariosInactivos().then(setUsuariosInactivos)]),
-    categorias: () => Promise.all([getCCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
+    categorias: () => Promise.all([getCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
   }
 
-  // Se recarga solo al cambiar de pestaña: cargar se arma en cada render y
-  // ponerlo como dependencia dispararia un pedido por render.
   useEffect(() => {
     setError('')
     setVerBajas(false)
@@ -92,7 +87,6 @@ function AdminPanel({ user }) {
     try {
       const actualizada = await marcarOrdenPagada(orden.id)
       setOrdenes(prev => prev.map(o => o.id === actualizada.id ? actualizada : o))
-      // Al pagarse nace el envio: se recarga para mostrarlo.
       cargar.ordenes()
     } catch (err) {
       avisar(err.message)
@@ -104,7 +98,6 @@ function AdminPanel({ user }) {
     if (!aprobada && !(await confirmar(`¿Rechazar la foto de "${foto.nombreProducto}"? Se elimina.`))) return
     try {
       await revisarFoto(foto.id, aprobada)
-      // Aprobar puede publicar el producto: se recargan las dos listas.
       await cargar.productos()
     } catch (err) {
       avisar(err.message)
@@ -123,7 +116,6 @@ function AdminPanel({ user }) {
     }
   }
 
-  // Visibilidad paga: el admin la registra porque la plata se cobra por afuera.
   const guardarDestacado = async (e) => {
     e.preventDefault()
     try {
@@ -136,13 +128,14 @@ function AdminPanel({ user }) {
   }
 
   // --- Usuarios ---
-  const cambiarRolUsuario = async (usuario, rol) => {
-    if (!(await confirmar(`¿Cambiar a ${usuario.nombreUsuario} de ${ROLES[usuario.rol]} a ${ROLES[rol]}?`))) return
+  const confirmarCambioRol = async () => {
     try {
-      const actualizado = await cambiarRol(usuario.id, rol)
+      const actualizado = await cambiarRol(roleChange.usuario.id, roleChange.nuevoRol)
       setUsuarios(prev => prev.map(u => u.id === actualizado.id ? actualizado : u))
     } catch (err) {
       avisar(err.message)
+    } finally {
+      setRoleChange(null)
     }
   }
 
@@ -191,7 +184,6 @@ function AdminPanel({ user }) {
   }
 
   const raices = (categorias ?? []).filter(c => c.idCategoriaPadre == null)
-  // Cada principal seguida de sus subcategorias, para leer el arbol de corrido.
   const categoriasOrdenadas = raices.flatMap(r => [r, ...(categorias ?? []).filter(c => c.idCategoriaPadre === r.id)])
   const categoriasFiltradas = categoriasOrdenadas.filter(c =>
     c.nombre.toLowerCase().includes(busquedaCategoria.toLowerCase()) ||
@@ -202,7 +194,6 @@ function AdminPanel({ user }) {
     c.nombre.toLowerCase().includes(busquedaCategoria.toLowerCase()) ||
     (c.nombreCategoriaPadre ?? '').toLowerCase().includes(busquedaCategoria.toLowerCase())
   )
-  // Una subcategoria no se puede reactivar mientras su padre siga de baja.
   const padreDeBaja = (c) => (categoriasInactivas ?? []).find(p => p.id === c.idCategoriaPadre)
 
   const usuariosInactivosFiltrados = (usuariosInactivos ?? []).filter(u => {
@@ -210,7 +201,6 @@ function AdminPanel({ user }) {
     return u.mail.toLowerCase().includes(q) || u.nombreUsuario.toLowerCase().includes(q) || u.rol.toLowerCase().includes(q)
   })
 
-  // Selector "Activos / Dados de baja" de Usuarios y Categorias.
   const segmento = (activos, bajas) => (
     <div className="panel-segmento">
       <button className={!verBajas ? 'active' : ''} onClick={() => setVerBajas(false)}>
@@ -232,7 +222,6 @@ function AdminPanel({ user }) {
     (p.vendedor?.nombreUsuario ?? '').toLowerCase().includes(busquedaProducto.toLowerCase())
   )
 
-  // Fila de "cargando / error / vacio" comun a todas las tablas.
   const filaEstado = (datos, colSpan, vacio) => {
     if (error) return <tr><td colSpan={colSpan} className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
     if (datos === null) return <tr><td colSpan={colSpan} className="empty-state">Cargando...</td></tr>
@@ -473,7 +462,7 @@ function AdminPanel({ user }) {
                           {soyYo ? (
                             <span className={`badge-role ${u.rol.toLowerCase()}`}>{ROLES[u.rol]}</span>
                           ) : (
-                            <select className="panel-select-rol" value={u.rol} onChange={e => cambiarRolUsuario(u, e.target.value)}>
+                            <select className="panel-select-rol" value={u.rol} onChange={e => setRoleChange({ usuario: u, nuevoRol: e.target.value })}>
                               {Object.entries(ROLES).map(([clave, nombre]) => <option key={clave} value={clave}>{nombre}</option>)}
                             </select>
                           )}
@@ -627,6 +616,30 @@ function AdminPanel({ user }) {
         </div>
       )}
 
+      {/* --- MODAL CAMBIO DE ROL (Con el ícono idéntico al de tu imagen: borde verde, fondo blanco, ícono verde) --- */}
+      {roleChange && (
+        <div className="error-overlay" onClick={() => setRoleChange(null)}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="error-icon-box" style={{ 
+              backgroundColor: 'white', 
+              color: '#16a34a', 
+              border: '14px solid #16a34a', 
+              boxShadow: '0 8px 24px rgba(22, 163, 74, 0.4)' 
+            }}>
+              <i className="fa-solid fa-question"></i>
+            </div>
+            <h2 className="error-title">¿Confirmás?</h2>
+            <p className="error-text">
+              ¿Cambiar a <strong>{roleChange.usuario.nombreUsuario}</strong> de {ROLES[roleChange.usuario.rol]} a {ROLES[roleChange.nuevoRol]}?
+            </p>
+            <div className="panel-modal-actions">
+              <button className="error-btn btn-cancel-panel" onClick={() => setRoleChange(null)}>Cancelar</button>
+              <button className="error-btn" style={{ backgroundColor: '#16a34a' }} onClick={confirmarCambioRol}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {userToDelete && (
         <div className="error-overlay" onClick={() => setUserToDelete(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
@@ -637,13 +650,13 @@ function AdminPanel({ user }) {
             <p className="error-text">
               ¿Estás seguro de dar de baja a <strong>{userToDelete.nombreUsuario}</strong>?
               <br /><br />
-              {userToDelete.rol === 'DESPACHANTE' && (
+              {userToDelete.rol?.toUpperCase() === 'DESPACHANTE' && (
                 "Este usuario ya no podrá gestionar el estado de los envíos."
               )}
-              {userToDelete.rol === 'ADMIN' && (
+              {userToDelete.rol?.toUpperCase() === 'ADMIN' && (
                 "Este usuario perderá el acceso al Panel de Administración."
               )}
-              {userToDelete.rol === 'CLIENTE' && (
+              {userToDelete.rol?.toUpperCase() === 'CLIENTE' && (
                 "Sus publicaciones saldrán del catálogo y de los carritos. Las órdenes se conservan."
               )}
             </p>
