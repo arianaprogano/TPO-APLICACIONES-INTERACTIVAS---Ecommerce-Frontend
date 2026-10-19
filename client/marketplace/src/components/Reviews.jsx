@@ -2,33 +2,26 @@ import { useState } from 'react'
 import "../views/PanelStyles.css"
 
 function Reviews({ orden, onClose, onSave }) {
-  // Estado para la cantidad de estrellas (del 1 al 5)
   const [rating, setRating] = useState(0)
-  // Estado para el hover interactivo de las estrellas
   const [hoverRating, setHoverRating] = useState(0)
-  // Estado para el texto del comentario
   const [comentario, setComentario] = useState('')
-  // Estado para errores
   const [error, setError] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Validación: Sí o sí tiene que elegir al menos 1 estrella
     if (rating === 0) {
       setError('Por favor, selecciona una calificación (de 1 a 5 estrellas).')
       return
     }
 
-    // Armamos el "paquete" de datos que iría al backend
     const nuevaResena = {
       productoId: orden.productoId,
       estrellas: rating,
       texto: comentario,
-      fecha: new Date().toLocaleDateString() // Fecha de hoy
+      fecha: new Date().toLocaleDateString()
     }
 
-    // Le avisamos al componente padre (MisCompras) que terminamos
     onSave(orden.id, nuevaResena)
   }
 
@@ -51,7 +44,6 @@ function Reviews({ orden, onClose, onSave }) {
 
           {error && <div style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>{error}</div>}
 
-          {/* SELECTOR INTERACTIVO DE ESTRELLAS */}
           <div className="form-group" style={{ textAlign: 'center', margin: '15px 0' }}>
             <label style={{ display: 'block', marginBottom: '8px' }}>PUNTUACIÓN</label>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', cursor: 'pointer' }}>

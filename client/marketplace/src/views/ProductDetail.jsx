@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getProducto, getSimilares } from '../api/productos'
-import { getResenasDeProducto, NIVELES_VENDEDOR } from '../api/resenas'
+import { crearResena, getResenasDeProducto, NIVELES_VENDEDOR } from '../api/resenas'
+import { getMisCompras } from '../api/ordenes' 
+import { getMisEnvios } from '../api/envios' 
 import ProductRow from '../components/ProductRow'
 import OfertaModal from '../components/OfertaModal'
+import Reviews from '../components/Reviews' 
 import { useAvisos } from '../components/avisosContext'
 import './ProductDetail.css'
 
@@ -21,6 +24,11 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
   const [todasLasResenas, setTodasLasResenas] = useState(null)
   const [ofertando, setOfertando] = useState(false)
 
+  // Estados para la lógica de reseñas
+  const [comprasEntregadas, setComprasEntregadas] = useState([])
+  const [miResena, setMiResena] = useState(null)
+  const [mostrarModalResena, setMostrarModalResena] = useState(false)
+
   useEffect(() => {
     let cancelado = false
     setLoading(true)
@@ -28,18 +36,54 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
     setQuantity(1)
     setFotoActiva(0)
     setTodasLasResenas(null)
+    setMiResena(null)
+    setComprasEntregadas([])
+
     getSimilares(id).then(lista => { if (!cancelado) setSimilares(lista) }).catch(() => setSimilares([]))
+
     getProducto(id)
-      .then(p => { if (!cancelado) setProduct(p) })
+      .then(async (p) => {
+        if (cancelado) return
+        setProduct(p)
+
+        if (user) {
+            try {
+                const [misOrdenes, misEnvios, resenasProducto] = await Promise.all([
+                    getMisCompras().catch(() => []),
+                    getMisEnvios().catch(() => []),
+                    getResenasDeProducto(id).catch(() => [])
+                ])
+
+                const resenaDelUsuario = resenasProducto.find(r => r.autor === user.username)
+                setMiResena(resenaDelUsuario || null)
+                setTodasLasResenas(resenasProducto)
+
+                const enviosPorOrden = Object.fromEntries(misEnvios.map(e => [e.idOrden, e]))
+                
+                const ordenesConEsteProducto = misOrdenes.filter(orden => 
+                    orden.items.some(item => String(item.idProducto) === String(id))
+                )
+
+                const ordenesEntregadas = ordenesConEsteProducto.filter(orden => 
+                    enviosPorOrden[orden.id]?.estado === 'ENTREGADO'
+                )
+
+                setComprasEntregadas(ordenesEntregadas)
+
+            } catch (err) {
+                console.error("Error al cargar datos del usuario para reseñas:", err)
+            }
+        }
+      })
       .catch(err => {
         if (cancelado) return
         setProduct(null)
-        // 404 es "no existe"; cualquier otra cosa se muestra tal cual.
         if (err.status !== 404) setError(err.message)
       })
       .finally(() => { if (!cancelado) setLoading(false) })
+      
     return () => { cancelado = true }
-  }, [id])
+  }, [id, user])
 
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>Buscando producto...</div>
@@ -68,10 +112,8 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
   }
 
   const isFavorite = favorites.includes(product.id)
-  
-  const esMiProducto = Boolean(user && product.vendedor?.nombreUsuario === user.username);
-  
-  const esAdmin = user?.role?.toLowerCase() === 'admin';
+  const esMiProducto = Boolean(user && product.vendedor?.nombreUsuario === user.username)
+  const esAdmin = user?.role?.toLowerCase() === 'admin'
   
   const handleQuantityChange = (delta) => {
     let newQ = quantity + delta
@@ -86,14 +128,12 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
 
   const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
 
-  // Ofertar solo tiene sentido si el vendedor lo permite y no es tuyo.
   const puedeOfertar = product.aceptaOfertas && !esMiProducto && product.stock > 0 && (!user || user.role === 'cliente')
   const abrirOferta = () => {
     if (!user) return pedirLogin('Iniciá sesión para hacer una oferta.')
     setOfertando(true)
   }
 
-  // La ficha trae solo las ultimas reseñas; "ver todas" pide el resto.
   const resenas = todasLasResenas ?? product.reviews
   const hayMasResenas = !todasLasResenas && product.cantidadResenas > product.reviews.length
   const verTodasLasResenas = () =>
@@ -102,11 +142,43 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
   const nivelVendedor = NIVELES_VENDEDOR[product.vendedor?.nivel]
 
   const renderStars = (rating) => {
-    const stars = [];
+    const stars = []
     for (let i = 1; i <= 5; i++) {
-      stars.push(<i key={i} className={i <= rating ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ color: i <= rating ? '#f97316' : '#d1d5db' }}></i>);
+      stars.push(<i key={i} className={i <= rating ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ color: i <= rating ? '#f97316' : '#d1d5db' }}></i>)
     }
-    return stars;
+    return stars
+  }
+
+  const handleReviewAction = () => {
+      if(!user) return pedirLogin("Iniciá sesión para dejar una opinión")
+      setMostrarModalResena(true)
+  }
+  
+  // Tomamos la primera orden entregada para armar la reseña
+  const datosParaResena = comprasEntregadas.length > 0 ? { id: comprasEntregadas[0].id, productoId: product.id, productoTitulo: product.title } : null
+
+  const handleReviewSaved = async (ordenId, reseñaData) => {
+    try {
+      // Solo creamos reseñas nuevas
+      await crearResena({
+        idOrden: ordenId,
+        idProducto: reseñaData.productoId,
+        puntaje: reseñaData.estrellas,
+        comentario: reseñaData.texto,
+      })
+
+      setMostrarModalResena(false)
+
+      const resenasActualizadas = await getResenasDeProducto(product.id)
+      setTodasLasResenas(resenasActualizadas)
+      
+      const resenaDelUsuario = resenasActualizadas.find(r => r.autor === user?.username)
+      setMiResena(resenaDelUsuario || null)
+
+      exito('Tu opinión se publicó correctamente.', { titulo: '¡Gracias por opinar!' })
+    } catch (err) {
+      avisarError(err.message)
+    }
   }
 
   return (
@@ -222,7 +294,6 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
               </button>
             )}
 
-
             <div className="pd-location">
               <i className="fa-solid fa-location-dot"></i> {product.location}
               {product.conEnvio && <span className="pd-envio"><i className="fa-solid fa-truck-fast"></i> Con envío</span>}
@@ -260,9 +331,21 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
           </section>
 
           <section className="product-reviews-section">
-            <h3 className="reviews-title" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '10px', marginBottom: '16px' }}>
-              Opiniones de los usuarios
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', paddingBottom: '10px', marginBottom: '16px' }}>
+                <h3 className="reviews-title" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0 }}>
+                Opiniones de los usuarios
+                </h3>
+                
+                {/* Acá está la magia: SOLO si no hay miResena Y hay compras entregadas */}
+                {(!miResena && comprasEntregadas.length > 0) && (
+                    <button 
+                        onClick={handleReviewAction}
+                        className="btn-opinar"
+                    >
+                        <i className="fa-solid fa-star"></i> Opinar sobre este producto
+                    </button>
+                )}
+            </div>
             
             {resenas && resenas.length > 0 ? (
               resenas.map(review => (
@@ -307,6 +390,16 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
             exito('Te avisamos con una notificación cuando el vendedor responda. La podés seguir en "Mis Ofertas".', { titulo: '¡Oferta enviada!' })
           }}
         />
+      )}
+
+      {mostrarModalResena && datosParaResena && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <Reviews
+            orden={datosParaResena} 
+            onClose={() => setMostrarModalResena(false)}
+            onSave={handleReviewSaved}
+          />
+        </div>
       )}
     </div>
   )

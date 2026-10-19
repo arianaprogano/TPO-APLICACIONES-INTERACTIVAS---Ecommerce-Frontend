@@ -500,3 +500,22 @@
     font-size: 32px;
   }
 }
+
+.btn-opinar {
+  background-color: #f97316;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-opinar:hover {
+  background-color: #ea580c;
+}

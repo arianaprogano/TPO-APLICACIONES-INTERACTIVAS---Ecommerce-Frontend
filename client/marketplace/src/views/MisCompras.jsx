@@ -13,24 +13,17 @@ const ESTADOS = {
   CANCELADA: { texto: 'Cancelada', color: '#ef4444', icono: 'fa-xmark' },
 }
 
-// Las ordenes salen de GET /ordenes/mis-compras. Cada orden es de un solo
-// vendedor pero puede tener varios productos, y la opinion se deja por
-// producto: por eso el boton va en cada renglon y no en la orden.
 function MisCompras({ user }) {
   const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
 
   const [compras, setCompras] = useState([])
-  // Envio de cada orden pagada, por id de orden.
   const [envios, setEnvios] = useState({})
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [productoAReseñar, setProductoAReseñar] = useState(null)
-  // "idOrden-idProducto" de lo que ya se califico en esta sesion.
   const [reseñados, setReseñados] = useState(new Set())
 
-  // El backend no tiene "mis reseñas": para no ofrecer "Opinar" sobre algo
-  // ya calificado, se miran las reseñas de los productos ya entregados.
   const marcarYaReseñados = async (ordenes, enviosPorOrden) => {
     const entregadas = ordenes.filter(o => enviosPorOrden[o.id]?.estado === 'ENTREGADO')
     const productos = [...new Set(entregadas.flatMap(o => o.items.map(i => i.idProducto)))]
@@ -56,10 +49,8 @@ function MisCompras({ user }) {
       .catch(err => setError(err.message))
       .finally(() => setCargando(false))
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { cargar() }, [])
 
-  // En las entregas a coordinar no hay despachante: lo confirma el comprador.
   const confirmarRecepcion = async (envio) => {
     if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
     try {
@@ -141,7 +132,6 @@ function MisCompras({ user }) {
                 const estado = ESTADOS[compra.estado] ?? { texto: compra.estado, color: '#6b7280', icono: 'fa-circle' }
                 const envio = envios[compra.id]
                 const estadoEnvio = envio && ESTADOS_ENVIO[envio.estado]
-                // Se opina recien cuando el producto llego: es lo que exige el backend.
                 const puedeOpinar = envio?.estado === 'ENTREGADO'
                 return (
                   <tr key={compra.id}>
@@ -154,27 +144,43 @@ function MisCompras({ user }) {
                       {compra.items.map(item => {
                         const clave = `${compra.id}-${item.idProducto}`
                         return (
-                          <div key={item.id} style={{ marginBottom: '8px' }}>
-                            <strong style={{ cursor: 'pointer', color: '#16a34a' }} onClick={() => navigate(`/product/${item.idProducto}`)}>
-                              {item.nombre}
-                            </strong>
-                            <span style={{ fontSize: '13px', color: '#4b5563' }}> × {item.cantidad} · {formatMoney(item.total)}</span>
+                          <div key={item.id} style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div>
+                              <strong style={{ cursor: 'pointer', color: '#16a34a' }} onClick={() => navigate(`/product/${item.idProducto}`)}>
+                                {item.nombre}
+                              </strong>
+                              <span style={{ fontSize: '13px', color: '#4b5563' }}> × {item.cantidad} · {formatMoney(item.total)}</span>
+                            </div>
+                            
                             {puedeOpinar && (
                               reseñados.has(clave) ? (
-                                <span style={{ marginLeft: '8px', color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}>Ya opinaste</span>
+                                <span style={{ marginLeft: '12px', color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}>Ya opinaste</span>
                               ) : (
                                 <button
                                   onClick={() => setProductoAReseñar({ id: compra.id, productoId: item.idProducto, productoTitulo: item.nombre })}
-                                  style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#f97316', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
+                                  style={{ 
+                                    marginLeft: '16px', 
+                                    backgroundColor: '#f97316', 
+                                    color: '#ffffff', 
+                                    border: 'none', 
+                                    padding: '6px 12px', 
+                                    borderRadius: '6px', 
+                                    fontWeight: 'bold', 
+                                    cursor: 'pointer', 
+                                    fontSize: '12px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
                                 >
-                                  <i className="fa-solid fa-star"></i> Opinar
+                                  <i className="fa-solid fa-star" style={{ color: '#ffffff' }}></i> Opinar
                                 </button>
                               )
                             )}
                           </div>
                         )
                       })}
-                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>Total: {formatMoney(compra.total)}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827', marginTop: '4px' }}>Total: {formatMoney(compra.total)}</div>
                     </td>
                     <td style={{ fontSize: '13px', color: '#4b5563' }}>
                       {compra.metodoEntrega === 'DESPACHO' ? (
