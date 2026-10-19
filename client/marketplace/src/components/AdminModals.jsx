@@ -8,7 +8,8 @@ export default function AdminModals({
   categoriaEditando, setCategoriaEditando, raices,
   roleChange, setRoleChange, confirmarCambioRol, ROLES,
   userToDelete, setUserToDelete, confirmarEliminarUsuario,
-  categoryToDelete, setCategoryToDelete, confirmarEliminarCategoria
+  categoryToDelete, setCategoryToDelete, confirmarEliminarCategoria,
+  setCategorias // Recibimos la función
 }) {
   return (
     <>
@@ -52,7 +53,27 @@ export default function AdminModals({
 
       {categoriaEditando !== undefined && (
         <div className="modal-overlay">
-          <CategoryForm categoria={categoriaEditando} raices={raices} onClose={() => setCategoriaEditando(undefined)} onSave={() => { setCategoriaEditando(undefined); cargar.categorias() }} />
+          <CategoryForm 
+            categoria={categoriaEditando} 
+            raices={raices} 
+            onClose={() => setCategoriaEditando(undefined)} 
+            
+            // --- ACÁ ACTUALIZAMOS VISUALMENTE Y GRITAMOS AL SISTEMA ---
+            onSave={(resultado, accion) => { 
+              setCategoriaEditando(undefined); 
+              
+              if (accion === 'crear' && resultado) {
+                setCategorias(prev => [...(prev ?? []), resultado]);
+              } else if (accion === 'editar' && resultado) {
+                setCategorias(prev => (prev ?? []).map(c => c.id === resultado.id ? resultado : c));
+              }
+              
+              cargar.categorias(); 
+              
+              // El grito
+              window.dispatchEvent(new Event('categoriasCambiadas'));
+            }} 
+          />
         </div>
       )}
 

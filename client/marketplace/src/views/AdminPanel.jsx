@@ -76,7 +76,6 @@ function AdminPanel({ user }) {
     setError('')
     setVerBajas(false)
     cargar[activeTab]().catch(err => setError(err.message))
-  
   }, [activeTab])
 
   // --- Ordenes ---
@@ -142,6 +141,7 @@ function AdminPanel({ user }) {
       await darDeBajaUsuario(userToDelete.id)
       setUsuarios(prev => prev.filter(u => u.id !== userToDelete.id))
       setUsuariosInactivos(prev => [...(prev ?? []), { ...userToDelete, activo: false }])
+      cargar.usuarios()
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -152,7 +152,9 @@ function AdminPanel({ user }) {
   const reactivarUnUsuario = async (usuario) => {
     try {
       await reactivarUsuario(usuario.id)
-      await cargar.usuarios()
+      setUsuariosInactivos(prev => prev.filter(u => u.id !== usuario.id))
+      setUsuarios(prev => [...(prev ?? []), { ...usuario, activo: true }])
+      cargar.usuarios()
       exito(`${usuario.nombreUsuario} puede volver a iniciar sesión. Sus publicaciones siguen dadas de baja: las reactiva cada una desde Productos.`, { titulo: 'Usuario reactivado' })
     } catch (err) {
       avisar(err.message)
@@ -163,7 +165,16 @@ function AdminPanel({ user }) {
   const reactivarUnaCategoria = async (categoria) => {
     try {
       await reactivarCategoria(categoria.id)
-      await cargar.categorias()
+      
+      // Actualización visual en el panel
+      setCategoriasInactivas(prev => prev.filter(c => c.id !== categoria.id))
+      setCategorias(prev => [...(prev ?? []), { ...categoria, activo: true }])
+      
+      cargar.categorias()
+      
+      // AVISAMOS A TODO EL SISTEMA (Header, Inicio, etc)
+      window.dispatchEvent(new Event('categoriasCambiadas'))
+      
       exito(`"${categoria.nombre}" vuelve a estar disponible para publicar.`, { titulo: 'Categoría reactivada' })
     } catch (err) {
       avisar(err.message)
@@ -173,7 +184,16 @@ function AdminPanel({ user }) {
   const confirmarEliminarCategoria = async () => {
     try {
       await darDeBajaCategoria(categoryToDelete.id)
-      await cargar.categorias()
+      
+      // Actualización visual en el panel
+      setCategorias(prev => prev.filter(c => c.id !== categoryToDelete.id))
+      setCategoriasInactivas(prev => [...(prev ?? []), { ...categoryToDelete, activo: false }])
+      
+      cargar.categorias()
+      
+      // AVISAMOS A TODO EL SISTEMA
+      window.dispatchEvent(new Event('categoriasCambiadas'))
+      
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -229,7 +249,6 @@ function AdminPanel({ user }) {
 
   return (
     <div className="panel-container">
-      
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', marginBottom: '24px' }}>
         <nav className="panel-tabs" style={{ borderBottom: 'none', marginBottom: 0 }}>
           <button className={activeTab === 'ordenes' ? 'active' : ''} onClick={() => setActiveTab('ordenes')}>Gestión de Órdenes</button>
@@ -241,7 +260,6 @@ function AdminPanel({ user }) {
           <button className={activeTab === 'categorias' ? 'active' : ''} onClick={() => setActiveTab('categorias')}>Gestión de Categorías</button>
         </nav>
         
-        {/* BOTONES "A LA MANO" */}
         <div style={{ display: 'flex', gap: '12px', paddingBottom: '4px' }}>
           {activeTab === 'usuarios' && (
             <button className="btn-new-user" onClick={() => setIsModalOpen(true)}>
@@ -256,6 +274,7 @@ function AdminPanel({ user }) {
         </div>
       </header>
 
+      {/* --- CÓDIGO DE LAS PESTAÑAS (Órdenes, Productos, Destacados, Usuarios, Categorías) --- */}
       {activeTab === 'ordenes' && (
         <main className="panel-content">
           <table className="panel-table">
@@ -412,7 +431,6 @@ function AdminPanel({ user }) {
 
       {activeTab === 'usuarios' && (
         <section className="users-section">
-          {/* El botón de crear ya no está acá, está en el header global */}
           <header className="users-toolbar">
             <div className="search-bar">
               <i className="fa-solid fa-search"></i>
@@ -502,7 +520,6 @@ function AdminPanel({ user }) {
 
       {activeTab === 'categorias' && (
         <section className="users-section">
-          {/* El botón de crear ya no está acá, está en el header global */}
           <header className="users-toolbar">
             <div className="search-bar">
               <i className="fa-solid fa-search"></i>
@@ -582,6 +599,7 @@ function AdminPanel({ user }) {
         roleChange={roleChange} setRoleChange={setRoleChange} confirmarCambioRol={confirmarCambioRol} ROLES={ROLES}
         userToDelete={userToDelete} setUserToDelete={setUserToDelete} confirmarEliminarUsuario={confirmarEliminarUsuario}
         categoryToDelete={categoryToDelete} setCategoryToDelete={setCategoryToDelete} confirmarEliminarCategoria={confirmarEliminarCategoria}
+        setCategorias={setCategorias} 
       />
       
     </div>

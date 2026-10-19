@@ -14,7 +14,6 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Una categoria no puede quedar debajo de si misma.
   const posiblesPadres = raices.filter(r => r.id !== categoria?.id)
 
   const handleSubmit = async (e) => {
@@ -31,8 +30,11 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
       idCategoriaPadre: form.idCategoriaPadre ? Number(form.idCategoriaPadre) : null,
     }
     try {
-      await (categoria ? editarCategoria(categoria.id, datos) : crearCategoria(datos))
-      onSave()
+      // 1. CAPTURAMOS EL RESULTADO DE LA API (el objeto nuevo o modificado)
+      const resultado = await (categoria ? editarCategoria(categoria.id, datos) : crearCategoria(datos))
+      
+      // 2. LO MANDAMOS AL PANEL INDICANDO QUÉ ACCIÓN HICIMOS
+      onSave(resultado, categoria ? 'editar' : 'crear')
     } catch (err) {
       setError(err.message)
     } finally {

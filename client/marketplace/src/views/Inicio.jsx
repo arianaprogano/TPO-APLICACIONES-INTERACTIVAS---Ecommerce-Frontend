@@ -2,27 +2,35 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import HeroCarousel from '../components/HeroCarousel'
 import ProductRow from '../components/ProductRow'
-import { getArbolCategorias } from '../api/categorias'
+import { getArbolCategorias } from '../api/categorias' 
 import { getProductos } from '../api/productos'
 import fotoCampo from '../assets/paisaje-agropecuario.jpg'
 import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
 import './Inicio.css'
 
-// ¡Agregamos el hook de avisos para frenar al Admin!
 import { useAvisos } from '../components/avisosContext' 
 
-// Icono para cada categoria raiz cuando no hay foto para el banner.
 const iconoCategoria = (nombre = '') => {
   const n = nombre.toLowerCase()
+  
+  // Maquinaria y vehículos
   if (n.includes('maquin') || n.includes('tractor')) return 'fa-tractor'
-  if (n.includes('semill') || n.includes('insumo')) return 'fa-seedling'
-  if (n.includes('vehic') || n.includes('camion')) return 'fa-truck-pickup'
+  if (n.includes('vehic') || n.includes('camion') || n.includes('pick')) return 'fa-truck-pickup'
+  
+  // Herramientas
+  if (n.includes('herramient') || n.includes('taller')) return 'fa-hammer'
+  
+  // Insumos y semillas
+  if (n.includes('semill') || n.includes('insumo') || n.includes('agrotox') || n.includes('fertil')) return 'fa-seedling'
+  
+  // Ganadería (usando el caballo para máxima compatibilidad)
+  if (n.includes('ganad') || n.includes('animal') || n.includes('bovin') || n.includes('vac')) return 'fa-horse'
+  
+  // Por defecto
   return 'fa-leaf'
 }
 
-// Foto fija del banner para las categorias que tienen una en assets. Las
-// demas usan la foto de alguno de sus productos, o el icono si no hay.
 const fotoCategoria = (nombre = '') => {
   const n = nombre.toLowerCase()
   if (n.includes('vehic') || n.includes('camion')) return fotoCamioneta
@@ -30,11 +38,9 @@ const fotoCategoria = (nombre = '') => {
   return null
 }
 
-// Portada: banner rotativo, acceso al catalogo completo y filas de ofertas,
-// mas vistos y mas vendidos. El listado con filtros vive en /productos.
 function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
   const navigate = useNavigate()
-  const { error: avisarError } = useAvisos() // Instanciamos la función de error
+  const { error: avisarError } = useAvisos() 
   
   const [categorias, setCategorias] = useState([])
   const [porCategoria, setPorCategoria] = useState({})
@@ -44,21 +50,25 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // Si alguna fila falla, que no tire abajo el resto de la portada.
-    const lista = (promesa) => promesa.catch(() => [])
+    const cargarTodo = () => {
+      const lista = (promesa) => promesa.catch(() => [])
 
-    getArbolCategorias()
-      .then(async (raices) => {
-        setCategorias(raices)
-        // Los productos de cada categoria solo se usan para la foto de su banner.
-        const productos = await Promise.all(raices.map(c => lista(getProductos({ idCategoria: c.id }))))
-        setPorCategoria(Object.fromEntries(raices.map((c, i) => [c.id, productos[i]])))
-      })
-      .catch(err => setError(err.message))
+      getArbolCategorias()
+        .then(async (raices) => {
+          setCategorias(raices)
+          const productos = await Promise.all(raices.map(c => lista(getProductos({ idCategoria: c.id }))))
+          setPorCategoria(Object.fromEntries(raices.map((c, i) => [c.id, productos[i]])))
+        })
+        .catch(err => setError(err.message))
 
-    lista(getProductos({ enOferta: true })).then(setOfertas)
-    lista(getProductos({ orden: 'vistos' })).then(setMasVistos)
-    lista(getProductos({ orden: 'vendidos' })).then(setMasVendidos)
+      lista(getProductos({ enOferta: true })).then(setOfertas)
+      lista(getProductos({ orden: 'vistos' })).then(setMasVistos)
+      lista(getProductos({ orden: 'vendidos' })).then(setMasVendidos)
+    }
+
+    cargarTodo()
+    window.addEventListener('categoriasCambiadas', cargarTodo)
+    return () => window.removeEventListener('categoriasCambiadas', cargarTodo)
   }, [])
 
   const verCategoria = (idCategoria) => {
@@ -75,10 +85,8 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     navigate(`/productos${query}`)
   }
 
-  // --- LÓGICA DE CONTROL PARA EL ADMIN ---
   const handlePublicarClick = () => {
-    if (user && user.rol === 'ADMIN') {
-      // El Admin no viaja a ningún lado y le sale el aviso rojo de error
+    if (user && (user.rol === 'ADMIN' || user.role === 'admin')) {
       avisarError('Los administradores no publican productos. Gestioná el catálogo desde el Panel.')
     } else if (user) {
       navigate('/publicar')
@@ -107,7 +115,6 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
       titulo: 'Publicá tus productos',
       texto: 'Vendé tu maquinaria o tus insumos a compradores de todo el país.',
       boton: user ? 'Publicar producto' : 'Crear cuenta',
-      // En lugar de pasar un link vacío, interceptamos el click con nuestra nueva función
       onClick: handlePublicarClick, 
       icono: 'fa-bullhorn',
     },
@@ -128,7 +135,6 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
           </button>
         </div>
 
-        {/* --- RECUADROS BLANCOS --- */}
         <div className="inicio-recuadro">
           <ProductRow titulo="Ofertas" subtitulo="Productos con descuento" productos={ofertas} onVerTodos={() => verListado('?ofertas=1')} {...filaProps} />
         </div>

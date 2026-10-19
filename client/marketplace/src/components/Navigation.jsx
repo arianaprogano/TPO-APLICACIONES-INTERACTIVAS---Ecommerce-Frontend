@@ -38,11 +38,24 @@ function Navigation({
     setIsNotifOpen(false)
   }
 
-  // Categorías dinámicas desde el backend
+  // --- ACÁ METIMOS LA MAGIA DE ESCUCHAR LOS CAMBIOS ---
   const [categorias, setCategorias] = useState([])
+  
   useEffect(() => {
-    getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
+    const traerCategorias = () => {
+      getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
+    }
+    
+    // 1. Cargar al principio
+    traerCategorias()
+    
+    // 2. Quedarse escuchando el "grito" del administrador
+    window.addEventListener('categoriasCambiadas', traerCategorias)
+    
+    // 3. Limpieza
+    return () => window.removeEventListener('categoriasCambiadas', traerCategorias)
   }, [])
+  // ---------------------------------------------------
   
   const categoriaActiva = categorias.find(c => c.id === selectedCategory)
   const enListado = location.pathname === '/productos'
