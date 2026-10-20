@@ -16,7 +16,6 @@ function PostCard({
   const formatMoney = (amount) =>
     '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0);
 
-  // Baja logica en el backend: sale del catalogo y de los carritos.
   const handleDeleteAdmin = async (e) => {
     e.stopPropagation()
     const ok = await confirmar({
@@ -34,7 +33,6 @@ function PostCard({
     }
   }
 
-  // Desde la tarjeta se suma una unidad sin entrar a la ficha.
   const agregar = (e) => {
     e.stopPropagation()
     onAddToCart({ id, title }, 1)
@@ -123,11 +121,18 @@ function PostCard({
 
         <div className="card-footer-info">
           <div className="card-stock">{disponible ? 'Disponible' : 'Sin stock'}</div>
-          {conEnvio && (
-             <div className="envio-gratis-badge">
+          
+          {/* DOBLE CONDICIÓN DE ENVÍO */}
+          {conEnvio ? (
+             <div className="envio-gratis-badge" style={{ color: '#16a34a' }}>
                 <i className="fa-solid fa-truck-fast"></i> Con envío
              </div>
+          ) : (
+             <div className="envio-gratis-badge" style={{ color: '#6b7280' }}>
+                <i className="fa-solid fa-handshake"></i> Retiro a acordar
+             </div>
           )}
+
         </div>
 
         {puedeAgregar && (

@@ -6,7 +6,6 @@ import { crearProducto, subirFoto } from '../api/productos'
 import '../components/ProductForm.css'
 import './PublicarProducto.css'
 
-// Ajustado al año actual para que coincida con la regla del backend
 const AÑO_MAXIMO = new Date().getFullYear()
 
 const formularioVacio = {
@@ -60,8 +59,7 @@ function PublicarProducto() {
     if (!form.idCategoria) e.idCategoria = 'Elegí una categoría'
     if (!form.condicion) e.condicion = 'Indicá si es nuevo o usado'
     
-    // --- VALIDACIÓN FRONTEND PARA EL AÑO ---
-    // Atajamos el error antes del backend para que siempre salga abajo del campo
+
     if (!form.anio) {
       e.anio = 'Indicá el año'
     } else if (Number(form.anio) < 1900 || Number(form.anio) > AÑO_MAXIMO) {
@@ -70,7 +68,13 @@ function PublicarProducto() {
 
     if (!form.precio || Number(form.precio) <= 0) e.precio = 'El precio tiene que ser mayor a cero'
     if (form.stock === '' || Number(form.stock) < 0) e.stock = 'El stock no puede ser negativo'
-    if (form.descuento !== '' && (Number(form.descuento) < 0 || Number(form.descuento) > 100)) e.descuento = 'Entre 0 y 100'
+    
+    if (form.descuento !== '') {
+      if (Number(form.descuento) < 0 || Number(form.descuento) > 99) {
+        e.descuento = 'El descuento máximo permitido es 99%'
+      }
+    }
+
     if (!form.provincia) e.provincia = 'Elegí la provincia'
     if (form.admiteEnvio === null) e.admiteEnvio = 'Indicá si hacés envíos'
     if (fotos.length === 0) e.fotos = 'Subí al menos una foto: sin foto el producto no se publica'
@@ -108,7 +112,6 @@ function PublicarProducto() {
     } catch (err) {
       setPaso('formulario')
       
-      // Si por algún motivo se nos escapa un error del backend, lo transformamos
       let mensajeGlobal = err.message
       let camposConError = err.campos || {}
 
@@ -247,7 +250,8 @@ function PublicarProducto() {
             </div>
             <div className="form-group">
               <label htmlFor="descuento">Descuento (%)</label>
-              <input id="descuento" type="number" min="0" max="100" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
+              {/* Le pusimos max="99" como freno visual */}
+              <input id="descuento" type="number" min="0" max="99" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
               {campoError('descuento')}
             </div>
             <div className="form-group">

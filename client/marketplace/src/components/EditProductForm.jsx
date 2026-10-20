@@ -31,7 +31,7 @@ const desdeProducto = (p) => {
 const ESTADOS_FOTO = { APROBADA: 'Aprobada', EN_REVISION: 'En revisión', RECHAZADA: 'Rechazada' }
 
 function EditProductForm({ onClose, producto, onSave }) {
-  const { confirmar } = useAvisos()
+  const { confirmar, error } = useAvisos() // Importamos el método error de tu contexto
   const [categorias, setCategorias] = useState([])
   const [form, setForm] = useState(() => desdeProducto(producto))
   const [errores, setErrores] = useState({})
@@ -98,6 +98,13 @@ function EditProductForm({ onClose, producto, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // FRENO DE SEGURIDAD PARA EL DESCUENTO: No permitir vender a 0 pesos
+    if (Number(form.descuento) >= 100) {
+      error('El descuento máximo permitido es del 99%.') // Cartel rojo desde tu avisosContext
+      return // Frenamos la ejecución acá
+    }
+
     if (!form.nombre.trim() || !form.precio || form.stock === '' || !form.anio || !form.provincia || !form.idCategoria) {
       setEditError('Completá título, categoría, año, precio, stock y provincia.')
       return
@@ -186,7 +193,8 @@ function EditProductForm({ onClose, producto, onSave }) {
             </div>
             <div className="form-group">
               <label htmlFor="edit-descuento">DESCUENTO (%)</label>
-              <input id="edit-descuento" type="number" min="0" max="100" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
+              {/* Le pusimos max="99" como freno visual */}
+              <input id="edit-descuento" type="number" min="0" max="99" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
               {campoError('descuento')}
               {form.precio && Number(form.descuento) > 0 && (
                 <span className="publicar-nota" style={{ marginTop: '4px' }}>

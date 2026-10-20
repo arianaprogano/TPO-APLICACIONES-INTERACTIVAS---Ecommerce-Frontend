@@ -296,7 +296,17 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
 
             <div className="pd-location">
               <i className="fa-solid fa-location-dot"></i> {product.location}
-              {product.conEnvio && <span className="pd-envio"><i className="fa-solid fa-truck-fast"></i> Con envío</span>}
+              
+              {/* DOBLE CONDICIÓN DE ENVÍO */}
+              {product.conEnvio ? (
+                 <span className="pd-envio" style={{ color: '#16a34a', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className="fa-solid fa-truck-fast"></i> Con envío
+                 </span>
+              ) : (
+                 <span className="pd-envio" style={{ color: '#6b7280', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <i className="fa-solid fa-handshake"></i> Retiro a acordar
+                 </span>
+              )}
             </div>
 
             {product.vendedor && (

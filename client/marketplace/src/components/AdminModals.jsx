@@ -9,7 +9,7 @@ export default function AdminModals({
   roleChange, setRoleChange, confirmarCambioRol, ROLES,
   userToDelete, setUserToDelete, confirmarEliminarUsuario,
   categoryToDelete, setCategoryToDelete, confirmarEliminarCategoria,
-  setCategorias // Recibimos la función
+  setCategorias
 }) {
   return (
     <>
@@ -57,8 +57,6 @@ export default function AdminModals({
             categoria={categoriaEditando} 
             raices={raices} 
             onClose={() => setCategoriaEditando(undefined)} 
-            
-            // --- ACÁ ACTUALIZAMOS VISUALMENTE Y GRITAMOS AL SISTEMA ---
             onSave={(resultado, accion) => { 
               setCategoriaEditando(undefined); 
               
@@ -69,8 +67,6 @@ export default function AdminModals({
               }
               
               cargar.categorias(); 
-              
-              // El grito
               window.dispatchEvent(new Event('categoriasCambiadas'));
             }} 
           />
@@ -80,11 +76,8 @@ export default function AdminModals({
       {roleChange && (
         <div className="error-overlay" onClick={() => setRoleChange(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Cambiado a icono de alerta */}
-            <div className="success-icon-box">
-              <div className="success-icon-inner">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-              </div>
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ffffff', fontSize: '32px' }}></i>
             </div>
             <h2 className="error-title">¿Confirmás?</h2>
             <p className="error-text">
@@ -101,11 +94,8 @@ export default function AdminModals({
       {userToDelete && (
         <div className="error-overlay" onClick={() => setUserToDelete(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Icono naranja */}
-            <div className="success-icon-box">
-              <div className="success-icon-inner">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-              </div>
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ffffff', fontSize: '32px' }}></i>
             </div>
             <h2 className="error-title">¿Eliminar Usuario?</h2>
             <p className="error-text">
@@ -126,11 +116,8 @@ export default function AdminModals({
       {categoryToDelete && (
         <div className="error-overlay" onClick={() => setCategoryToDelete(null)}>
           <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Icono naranja */}
-            <div className="success-icon-box">
-              <div className="success-icon-inner">
-                <i className="fa-solid fa-triangle-exclamation"></i>
-              </div>
+            <div style={{ width: '64px', height: '64px', backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ffffff', fontSize: '32px' }}></i>
             </div>
             <h2 className="error-title">¿Eliminar Categoría?</h2>
             <p className="error-text">
