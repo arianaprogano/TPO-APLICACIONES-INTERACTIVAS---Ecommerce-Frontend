@@ -433,7 +433,6 @@
   background-color: #f9fafb;
 }
 
-/* Celular: el buscador baja a su propia fila */
 @media (max-width: 768px) {
   .header-top {
     height: auto;

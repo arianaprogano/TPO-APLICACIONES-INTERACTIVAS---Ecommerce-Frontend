@@ -20,7 +20,6 @@ function Navigation({
   const notifRef = useRef(null)
   const userMenuRef = useRef(null)
 
-  // Si hay un menu abierto, un clic afuera de el lo cierra.
   useEffect(() => {
     if (!isNotifOpen && !isDropdownOpen) return
     const cerrarSiEsAfuera = (e) => {
@@ -31,7 +30,6 @@ function Navigation({
     return () => document.removeEventListener('mousedown', cerrarSiEsAfuera)
   }, [isNotifOpen, isDropdownOpen])
 
-  // Al hacer clic en una categoría de la barra, vamos directo a sus productos
   const elegirCategoria = (cat, sub = '') => {
     setSelectedCategory(cat)
     setSelectedSubcategory(sub)
@@ -59,16 +57,12 @@ function Navigation({
       getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
     }
     
-    // 1. Cargar al principio
     traerCategorias()
     
-    // 2. Quedarse escuchando el "grito" del administrador
     window.addEventListener('categoriasCambiadas', traerCategorias)
     
-    // 3. Limpieza
     return () => window.removeEventListener('categoriasCambiadas', traerCategorias)
   }, [])
-  // ---------------------------------------------------
   
   const categoriaActiva = categorias.find(c => c.id === selectedCategory)
   const enListado = location.pathname === '/productos'

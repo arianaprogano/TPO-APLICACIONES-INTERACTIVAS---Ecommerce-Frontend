@@ -73,7 +73,6 @@
   border-color: #16a34a;
 }
 
-/* Estilo para cuando no se está editando */
 .input-readonly {
   background-color: #f9fafb !important;
   color: #4b5563 !important;

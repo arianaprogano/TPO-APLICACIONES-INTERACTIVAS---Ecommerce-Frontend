@@ -12,8 +12,6 @@ function Checkout({ cart, onCompraRealizada, user }) {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [ordenesCreadas, setOrdenesCreadas] = useState(null)
-
-  // Mismo criterio que el backend: se despacha lo que admite envio.
   const seDespacha = (item) => item.conEnvio
 
   const agruparPaquetes = () => {

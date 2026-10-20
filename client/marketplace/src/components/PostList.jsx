@@ -13,9 +13,6 @@ function PostList({ user, addToCart, orden, searchTerm, selectedCategory, select
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [misIds, setMisIds] = useState(new Set())
-
-  // Condicion: el backend acepta una sola. Con las dos tildadas es lo mismo
-  // que no filtrar.
   const condicion = conditions.length === 1 ? (conditions[0] === 'Nuevo' ? 'NUEVO' : 'USADO') : undefined
 
   const filtros = {
@@ -33,13 +30,10 @@ function PostList({ user, addToCart, orden, searchTerm, selectedCategory, select
   }
   const claveFiltros = JSON.stringify(filtros)
 
-  // Cualquier cambio de filtro vuelve a la primera pagina.
   useEffect(() => { setPagina(0) }, [claveFiltros])
 
   useEffect(() => {
     let cancelado = false
-    // Espera a que se deje de tipear antes de pedir, para no mandar un
-    // request por cada letra del buscador o de los rangos.
     const timer = setTimeout(async () => {
       setCargando(true)
       setError('')
@@ -58,7 +52,6 @@ function PostList({ user, addToCart, orden, searchTerm, selectedCategory, select
     }
   }, [claveFiltros, pagina])
 
-  // Para marcar "Mi Producto": el catalogo no trae el vendedor de cada item.
   useEffect(() => {
     if (user?.role !== 'cliente') {
       setMisIds(new Set())

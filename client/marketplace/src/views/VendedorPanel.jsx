@@ -28,14 +28,12 @@ const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amo
 function VendedorPanel() {
   const { error: avisarError, exito, confirmar, toast } = useAvisos()
   const navigate = useNavigate()
-  // Las notificaciones abren una pestaña puntual (?tab=ordenes).
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'publicaciones')
   useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
 
   const [publicaciones, setPublicaciones] = useState([])
   const [ventas, setVentas] = useState([])
-  // Envio de cada venta pagada, por id de orden.
   const [envios, setEnvios] = useState({})
   const [dashboard, setDashboard] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -126,7 +124,6 @@ function VendedorPanel() {
     }
   }
 
-  // Despachar genera el numero de seguimiento que despues carga el despachante.
   const despachar = async (envio) => {
     if (!(await confirmar(`¿Despachar la orden #${envio.idOrden}? Se genera el número de seguimiento para la etiqueta.`))) return
     try {
@@ -141,7 +138,6 @@ function VendedorPanel() {
     }
   }
 
-  // Las dadas de baja van a su propia pestaña, para poder reactivarlas.
   const activas = publicaciones.filter(p => p.activo !== false)
   const inactivas = publicaciones.filter(p => p.activo === false)
   const listaVisible = activeTab === 'inactivas' ? inactivas : activas

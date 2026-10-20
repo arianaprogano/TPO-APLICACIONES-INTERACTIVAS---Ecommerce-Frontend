@@ -5,8 +5,6 @@ import { getProductosDeVendedor } from '../api/productos'
 import { getCalificacionVendedor, NIVELES_VENDEDOR } from '../api/resenas'
 import './PerfilVendedor.css'
 
-// Pagina publica de un vendedor: su reputacion (promedio, reseñas, nivel) y
-// todo lo que tiene publicado.
 function PerfilVendedor({ user, favorites, toggleFavorite, addToCart }) {
   const { nombreUsuario } = useParams()
   const navigate = useNavigate()

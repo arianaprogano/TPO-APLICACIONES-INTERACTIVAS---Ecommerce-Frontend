@@ -10,7 +10,6 @@ function HeroCarousel({ slides }) {
   const navigate = useNavigate()
   const [actual, setActual] = useState(0)
 
-  // Avanza solo; se reinicia cada vez que el usuario cambia de slide a mano.
   useEffect(() => {
     if (slides.length < 2) return
     const timer = setInterval(() => setActual(i => (i + 1) % slides.length), INTERVALO_MS)

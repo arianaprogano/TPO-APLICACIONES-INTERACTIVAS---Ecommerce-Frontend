@@ -2,9 +2,6 @@ import { useState } from 'react'
 import { crearCategoria, editarCategoria } from '../api/admin'
 import './AdminModals.css'
 
-// En el backend una subcategoria es una categoria mas, que apunta a su padre.
-// Por eso el formulario no lleva una lista de subcategorias: para crear una se
-// elige la categoria padre.
 function CategoryForm({ onClose, onSave, categoria, raices }) {
   const [form, setForm] = useState({
     nombre: categoria?.nombre ?? '',
@@ -30,10 +27,7 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
       idCategoriaPadre: form.idCategoriaPadre ? Number(form.idCategoriaPadre) : null,
     }
     try {
-      // 1. CAPTURAMOS EL RESULTADO DE LA API (el objeto nuevo o modificado)
       const resultado = await (categoria ? editarCategoria(categoria.id, datos) : crearCategoria(datos))
-      
-      // 2. LO MANDAMOS AL PANEL INDICANDO QUÉ ACCIÓN HICIMOS
       onSave(resultado, categoria ? 'editar' : 'crear')
     } catch (err) {
       setError(err.message)

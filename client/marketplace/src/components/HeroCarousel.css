@@ -55,7 +55,6 @@
   color: #e9ecef;
   overflow-wrap: anywhere;
   word-break: break-word;
-  /* Limita la descripción a 3 líneas máximo si el texto es muy extenso */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

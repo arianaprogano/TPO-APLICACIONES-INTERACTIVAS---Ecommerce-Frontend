@@ -3,11 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { AvisosContext } from './avisosContext'
 import './Avisos.css'
 
-// Todos los mensajes al usuario pasan por aca, sin popups del navegador:
-//   error(texto)            modal rojo con cruz
-//   exito(texto, opciones)  modal verde con tilde (opciones.titulo, opciones.destacado)
-//   confirmar(opciones)     modal con Cancelar / Confirmar; devuelve una promesa con true o false
-//   toast(texto, accion)    cartel chico abajo que se va solo (accion: { texto, ruta })
 export function AvisosProvider({ children }) {
   const navigate = useNavigate()
   const [modal, setModal] = useState(null)
@@ -22,7 +17,6 @@ export function AvisosProvider({ children }) {
     setModal({ tipo: 'exito', titulo, texto, destacado })
   }, [])
 
-  // Acepta un texto suelto o { titulo, texto, ok, peligro }.
   const confirmar = useCallback((opciones) => {
     const { titulo = '¿Confirmás?', texto, ok = 'Confirmar', peligro = false } =
       typeof opciones === 'string' ? { texto: opciones } : opciones

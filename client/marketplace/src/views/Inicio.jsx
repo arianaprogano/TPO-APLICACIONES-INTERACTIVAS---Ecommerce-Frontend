@@ -14,20 +14,12 @@ import { useAvisos } from '../components/avisosContext'
 const iconoCategoria = (nombre = '') => {
   const n = nombre.toLowerCase()
   
-  // Maquinaria y vehículos
   if (n.includes('maquin') || n.includes('tractor')) return 'fa-tractor'
   if (n.includes('vehic') || n.includes('camion') || n.includes('pick')) return 'fa-truck-pickup'
-  
-  // Herramientas
   if (n.includes('herramient') || n.includes('taller')) return 'fa-hammer'
-  
-  // Insumos y semillas
   if (n.includes('semill') || n.includes('insumo') || n.includes('agrotox') || n.includes('fertil')) return 'fa-seedling'
-  
-  // Ganadería (usando el caballo para máxima compatibilidad)
   if (n.includes('ganad') || n.includes('animal') || n.includes('bovin') || n.includes('vac')) return 'fa-horse'
-  
-  // Por defecto
+
   return 'fa-leaf'
 }
 

@@ -6,9 +6,6 @@ import FotoConToken from './FotoConToken'
 import './ProductForm.css'
 import { useAvisos } from '../components/avisosContext'
 
-// El PUT del backend reemplaza el producto entero, asi que el formulario
-// arranca con todos los datos actuales y manda todos de vuelta. Las fotos y
-// el estado de publicacion se manejan aparte, desde el panel.
 const desdeProducto = (p) => {
   const cat = p.categoria
   return {
@@ -31,24 +28,19 @@ const desdeProducto = (p) => {
 const ESTADOS_FOTO = { APROBADA: 'Aprobada', EN_REVISION: 'En revisión', RECHAZADA: 'Rechazada' }
 
 function EditProductForm({ onClose, producto, onSave }) {
-  const { confirmar, error } = useAvisos() // Importamos el método error de tu contexto
+  const { confirmar, error } = useAvisos()
   const [categorias, setCategorias] = useState([])
   const [form, setForm] = useState(() => desdeProducto(producto))
   const [errores, setErrores] = useState({})
   const [editError, setEditError] = useState('')
   const [guardando, setGuardando] = useState(false)
-  // Todas las fotos, tambien las que estan en revision o rechazadas: el
-  // vendedor tiene que ver que paso con cada una.
+  
   const [fotos, setFotos] = useState(null)
   const [subiendo, setSubiendo] = useState(0)
-  // Si cambiaron las fotos, al cerrar el panel se recarga (el estado del
-  // producto puede haber cambiado).
   const [fotosCambiaron, setFotosCambiaron] = useState(false)
 
   const cargarFotos = () => getFotosDeProducto(producto.id).then(setFotos).catch(() => setFotos([]))
 
-  // Las fotos se suben y se borran al instante (no esperan a "Guardar
-  // cambios"): son otro endpoint y el PUT del producto no las toca.
   const borrarFoto = async (foto) => {
     const aprobadas = (fotos ?? []).filter(f => f.estadoVerificacion === 'APROBADA')
     const esLaUltimaVisible = foto.estadoVerificacion === 'APROBADA' && aprobadas.length === 1
@@ -87,7 +79,6 @@ function EditProductForm({ onClose, producto, onSave }) {
   useEffect(() => {
     getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
     cargarFotos()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const categoria = categorias.find(c => String(c.id) === form.idCategoria)
@@ -99,10 +90,9 @@ function EditProductForm({ onClose, producto, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // FRENO DE SEGURIDAD PARA EL DESCUENTO: No permitir vender a 0 pesos
     if (Number(form.descuento) >= 100) {
-      error('El descuento máximo permitido es del 99%.') // Cartel rojo desde tu avisosContext
-      return // Frenamos la ejecución acá
+      error('El descuento máximo permitido es del 99%.')
+      return
     }
 
     if (!form.nombre.trim() || !form.precio || form.stock === '' || !form.anio || !form.provincia || !form.idCategoria) {
@@ -193,7 +183,6 @@ function EditProductForm({ onClose, producto, onSave }) {
             </div>
             <div className="form-group">
               <label htmlFor="edit-descuento">DESCUENTO (%)</label>
-              {/* Le pusimos max="99" como freno visual */}
               <input id="edit-descuento" type="number" min="0" max="99" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
               {campoError('descuento')}
               {form.precio && Number(form.descuento) > 0 && (

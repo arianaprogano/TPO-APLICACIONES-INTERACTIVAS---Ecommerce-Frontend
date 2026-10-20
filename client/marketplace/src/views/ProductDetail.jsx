@@ -24,7 +24,6 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
   const [todasLasResenas, setTodasLasResenas] = useState(null)
   const [ofertando, setOfertando] = useState(false)
 
-  // Estados para la lógica de reseñas
   const [comprasEntregadas, setComprasEntregadas] = useState([])
   const [miResena, setMiResena] = useState(null)
   const [mostrarModalResena, setMostrarModalResena] = useState(false)
@@ -154,12 +153,11 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
       setMostrarModalResena(true)
   }
   
-  // Tomamos la primera orden entregada para armar la reseña
   const datosParaResena = comprasEntregadas.length > 0 ? { id: comprasEntregadas[0].id, productoId: product.id, productoTitulo: product.title } : null
 
   const handleReviewSaved = async (ordenId, reseñaData) => {
     try {
-      // Solo creamos reseñas nuevas
+  
       await crearResena({
         idOrden: ordenId,
         idProducto: reseñaData.productoId,
@@ -346,7 +344,6 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
                 Opiniones de los usuarios
                 </h3>
                 
-                {/* Acá está la magia: SOLO si no hay miResena Y hay compras entregadas */}
                 {(!miResena && comprasEntregadas.length > 0) && (
                     <button 
                         onClick={handleReviewAction}

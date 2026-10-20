@@ -1,8 +1,6 @@
 import PostCard from './PostCard'
 import './ProductRow.css'
 
-// Fila horizontal de productos con titulo y "Ver todos", como las de la
-// portada de Agrofy. Si no hay productos no se muestra.
 function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites, toggleFavorite, addToCart, misIds }) {
   if (!productos || productos.length === 0) return null
 

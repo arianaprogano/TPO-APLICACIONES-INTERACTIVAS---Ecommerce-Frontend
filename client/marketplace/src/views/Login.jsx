@@ -7,7 +7,6 @@ const registroVacio = { nombre: '', apellido: '', nombreUsuario: '', mail: '', c
 
 function Login({ setUser }) {
   const navigate = useNavigate()
-  // Si llego aca por querer comprar o guardar algo, despues de entrar vuelve ahi.
   const { desde, motivo } = useLocation().state ?? {}
   const [modo, setModo] = useState('login')
   const [credenciales, setCredenciales] = useState({ mail: '', contrasena: '' })

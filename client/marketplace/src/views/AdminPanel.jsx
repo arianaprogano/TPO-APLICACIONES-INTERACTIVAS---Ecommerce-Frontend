@@ -195,13 +195,11 @@ function AdminPanel({ user }) {
     try {
       await darDeBajaCategoria(categoryToDelete.id)
       
-      // Actualización visual en el panel
       setCategorias(prev => prev.filter(c => c.id !== categoryToDelete.id))
       setCategoriasInactivas(prev => [...(prev ?? []), { ...categoryToDelete, activo: false }])
       
       cargar.categorias()
       
-      // AVISAMOS A TODO EL SISTEMA
       window.dispatchEvent(new Event('categoriasCambiadas'))
       
     } catch (err) {
@@ -284,7 +282,6 @@ function AdminPanel({ user }) {
         </div>
       </header>
 
-      {/* --- CÓDIGO DE LAS PESTAÑAS (Órdenes, Productos, Destacados, Usuarios, Categorías) --- */}
       {activeTab === 'ordenes' && (
         <main className="panel-content">
           <table className="panel-table">

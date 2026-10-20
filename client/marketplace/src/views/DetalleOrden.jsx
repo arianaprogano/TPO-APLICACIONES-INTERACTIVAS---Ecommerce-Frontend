@@ -12,14 +12,11 @@ const ESTADOS_ORDEN = {
   CANCELADA: { texto: 'Cancelada', color: '#ef4444' },
 }
 
-// Pasos del seguimiento segun como se entrega.
 const PASOS = {
   DESPACHO: ['PENDIENTE', 'DESPACHADO', 'EN_TRANSITO', 'ENTREGADO'],
   COORDINAR: ['PENDIENTE', 'ENTREGADO'],
 }
 
-// Detalle de una orden (GET /ordenes/{id}): la ven su comprador, su vendedor y
-// el admin. Si ya se pago, muestra tambien el seguimiento del envio.
 function DetalleOrden({ user }) {
   const { id } = useParams()
   const navigate = useNavigate()
