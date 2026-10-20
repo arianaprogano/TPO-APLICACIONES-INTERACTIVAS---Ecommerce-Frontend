@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import logoImg from '../assets/logo.png' 
 import { getArbolCategorias } from '../api/categorias'
@@ -17,6 +17,19 @@ function Navigation({
   const location = useLocation()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const notifRef = useRef(null)
+  const userMenuRef = useRef(null)
+
+  // Si hay un menu abierto, un clic afuera de el lo cierra.
+  useEffect(() => {
+    if (!isNotifOpen && !isDropdownOpen) return
+    const cerrarSiEsAfuera = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotifOpen(false)
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setIsDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', cerrarSiEsAfuera)
+    return () => document.removeEventListener('mousedown', cerrarSiEsAfuera)
+  }, [isNotifOpen, isDropdownOpen])
 
   // Al hacer clic en una categoría de la barra, vamos directo a sus productos
   const elegirCategoria = (cat, sub = '') => {
@@ -128,7 +141,7 @@ function Navigation({
             )}
 
             {user && (
-              <div className="notif-menu-container">
+              <div className="notif-menu-container" ref={notifRef}>
                 <button className="action-btn btn-bell" title="Notificaciones" onClick={abrirNotificaciones}>
                   <i className="fa-regular fa-bell"></i>
                   {noLeidas > 0 && <span className="badge-counter notif-badge">{noLeidas > 9 ? '9+' : noLeidas}</span>}
@@ -163,7 +176,7 @@ function Navigation({
             )}
 
             {user ? (
-              <div className="user-menu-container">
+              <div className="user-menu-container" ref={userMenuRef}>
                 <button className="action-btn user-logged-in" title={user.username} aria-label="Mi cuenta" onClick={() => { setIsDropdownOpen(!isDropdownOpen); setIsNotifOpen(false); }}>
                   <i className="fa-regular fa-circle-user"></i>
                 </button>

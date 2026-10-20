@@ -186,18 +186,6 @@ function VendedorPanel() {
               </section>
 
               <section className="dashboard-bloque">
-                <h3><i className="fa-solid fa-chart-line"></i> Rendimiento</h3>
-                <div className="dashboard-tiles">
-                  <div className="dashboard-tile"><strong>{dashboard.rendimiento.visitas}</strong><span>Visitas a tus publicaciones</span></div>
-                  <div className="dashboard-tile"><strong>{/* El backend ya la manda en porcentaje (ej. 3.57) */}
-                    {dashboard.rendimiento.conversion != null ? `${dashboard.rendimiento.conversion.toFixed(1)}%` : '—'}</strong><span>Conversión (ventas / visitas)</span></div>
-                  <div className="dashboard-tile"><strong>{dashboard.rendimiento.guardadosEnWishlist}</strong><span>Guardados en listas de deseos</span></div>
-                  <div className="dashboard-tile"><strong>{dashboard.rendimiento.masVendido?.nombre ?? '—'}</strong><span>Más vendido{dashboard.rendimiento.masVendido ? ` (${dashboard.rendimiento.masVendido.cantidad})` : ''}</span></div>
-                  <div className="dashboard-tile"><strong>{dashboard.rendimiento.masVisto?.nombre ?? '—'}</strong><span>Más visto{dashboard.rendimiento.masVisto ? ` (${dashboard.rendimiento.masVisto.cantidad})` : ''}</span></div>
-                </div>
-              </section>
-
-              <section className="dashboard-bloque">
                 <h3><i className="fa-solid fa-star"></i> Reputación</h3>
                 <div className="dashboard-tiles">
                   <div className="dashboard-tile"><strong>{dashboard.reputacion.promedio != null ? `${dashboard.reputacion.promedio.toFixed(1)} ★` : '—'}</strong><span>Promedio</span></div>

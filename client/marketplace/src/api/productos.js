@@ -108,8 +108,7 @@ export const getFotosDeProducto = async (idProducto) => {
 // Baja de una foto. Si era la ultima aprobada, el producto vuelve a BORRADOR.
 export const eliminarFoto = (idFoto) => api.put(`/fotos/${idFoto}/baja`)
 
-// Tablero del vendedor: lo que requiere accion, la plata, el rendimiento y la
-// reputacion.
+// Tablero del vendedor: lo que requiere accion, la plata y la reputacion.
 export const getDashboard = () => api.get('/dashboard')
 
 // Incluye borradores y pausados, no los dados de baja. Paginado como el

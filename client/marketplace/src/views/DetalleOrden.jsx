@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getOrden, nombreProvincia } from '../api/ordenes'
 import { ESTADOS_ENVIO, getMisEnvios, getTodosLosEnvios } from '../api/envios'
-import ChatOrden from '../components/ChatOrden'
 import './DetalleOrden.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
@@ -20,8 +19,7 @@ const PASOS = {
 }
 
 // Detalle de una orden (GET /ordenes/{id}): la ven su comprador, su vendedor y
-// el admin. Si ya se pago, muestra tambien el seguimiento del envio y el chat
-// para coordinar la entrega.
+// el admin. Si ya se pago, muestra tambien el seguimiento del envio.
 function DetalleOrden({ user }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -96,8 +94,6 @@ function DetalleOrden({ user }) {
           </>
         )}
       </section>
-
-      {orden.estado === 'PAGADA' && <ChatOrden orden={orden} user={user} />}
     </div>
   )
 }
