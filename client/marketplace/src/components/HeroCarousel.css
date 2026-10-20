@@ -1,5 +1,3 @@
-/* Banner oscuro de ancho completo, texto a la izquierda y visual a la
-   derecha, como el carrusel de la portada de Agrofy. */
 .hero {
   position: relative;
   width: 100%;
@@ -19,7 +17,6 @@
   gap: 40px;
 }
 
-/* Solo si el usuario no pidio menos movimiento en su sistema. */
 @media (prefers-reduced-motion: no-preference) {
   .hero-slide {
     animation: heroEntrada 0.5s ease-out;
