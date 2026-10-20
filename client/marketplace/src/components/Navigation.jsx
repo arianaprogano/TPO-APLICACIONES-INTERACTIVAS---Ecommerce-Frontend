@@ -114,7 +114,7 @@ function Navigation({
 
           {user?.role !== 'despachante' && (
             <form className="header-search" onSubmit={(e) => { e.preventDefault(); navigate('/productos') }}>
-              <input type="text" placeholder="Buscar maquinaria, tractor, insumos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <input type="text" placeholder="Busca el producto que necesites" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               <i className="fa-solid fa-search"></i>
             </form>
           )}

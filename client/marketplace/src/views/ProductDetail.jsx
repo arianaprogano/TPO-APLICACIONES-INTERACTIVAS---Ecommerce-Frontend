@@ -313,7 +313,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
                   </div>
                 )}
                 <button className="pd-vendedor-link" onClick={() => navigate(`/vendedor/${product.vendedor.nombreUsuario}`)}>
-                  Ver más productos del vendedor <i className="fa-solid fa-chevron-right"></i>
+                  Ver perfil del Vendedor <i className="fa-solid fa-chevron-right"></i>
                 </button>
               </section>
             )}

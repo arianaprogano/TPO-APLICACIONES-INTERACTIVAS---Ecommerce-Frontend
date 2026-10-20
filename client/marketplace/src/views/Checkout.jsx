@@ -39,7 +39,7 @@ function Checkout({ cart, onCompraRealizada, user }) {
           </div>
           <h2 className="error-title">¡Compra Exitosa!</h2>
           <p className="error-text">
-            Se {ordenesCreadas.length === 1 ? 'generó 1 orden' : `generaron ${ordenesCreadas.length} órdenes`}, una por vendedor y forma de entrega.
+            Se {ordenesCreadas.length === 1 ? 'generó 1 orden' : `generaron ${ordenesCreadas.length} órdenes`}.
             Quedan pendientes de pago.
           </p>
           <ul className="checkout-ordenes-creadas">

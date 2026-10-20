@@ -3,7 +3,7 @@ import './ProductRow.css'
 
 // Fila horizontal de productos con titulo y "Ver todos", como las de la
 // portada de Agrofy. Si no hay productos no se muestra.
-function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites, toggleFavorite, addToCart }) {
+function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites, toggleFavorite, addToCart, misIds }) {
   if (!productos || productos.length === 0) return null
 
   return (
@@ -45,6 +45,7 @@ function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites,
             precioOriginal={post.precioOriginal}
             nivelDestacado={post.nivelDestacado}
             esAdmin={user?.role === 'admin'}
+            esMiProducto={misIds?.has(post.id)} 
           />
         ))}
       </div>

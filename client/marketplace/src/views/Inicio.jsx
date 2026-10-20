@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import HeroCarousel from '../components/HeroCarousel'
 import ProductRow from '../components/ProductRow'
 import { getArbolCategorias } from '../api/categorias' 
-import { getProductos } from '../api/productos'
+import { getProductos, getMisPublicaciones } from '../api/productos' // <-- Agregamos getMisPublicaciones
 import fotoCampo from '../assets/paisaje-agropecuario.jpg'
 import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
@@ -48,6 +48,9 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
   const [masVistos, setMasVistos] = useState([])
   const [masVendidos, setMasVendidos] = useState([])
   const [error, setError] = useState('')
+  
+
+  const [misIds, setMisIds] = useState(new Set())
 
   useEffect(() => {
     const cargarTodo = () => {
@@ -70,6 +73,17 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     window.addEventListener('categoriasCambiadas', cargarTodo)
     return () => window.removeEventListener('categoriasCambiadas', cargarTodo)
   }, [])
+
+
+  useEffect(() => {
+    if (!user || (user.role !== 'cliente' && user.rol !== 'CLIENTE')) {
+      setMisIds(new Set())
+      return
+    }
+    getMisPublicaciones()
+      .then((mios) => setMisIds(new Set(mios.map((p) => p.id))))
+      .catch(() => setMisIds(new Set()))
+  }, [user])
 
   const verCategoria = (idCategoria) => {
     setSearchTerm('')
@@ -120,7 +134,7 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     },
   ]
 
-  const filaProps = { user, favorites, toggleFavorite, addToCart }
+  const filaProps = { user, favorites, toggleFavorite, addToCart, misIds }
 
   return (
     <div className="inicio">
