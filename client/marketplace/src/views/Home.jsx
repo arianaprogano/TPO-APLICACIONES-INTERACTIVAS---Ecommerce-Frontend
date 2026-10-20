@@ -20,7 +20,7 @@ const Home = ({
   const [openCondition, setOpenCondition] = useState(true)
   const [openLocation, setOpenLocation] = useState(true)
   const [openPrecio, setOpenPrecio] = useState(true)
-  const [openAnio, setOpenAnio] = useState(false)
+  const [openAnio, setOpenAnio] = useState(true)
   const [openEnvio, setOpenEnvio] = useState(true)
   const [openOfertasMenu, setOpenOfertasMenu] = useState(true)
 
@@ -127,7 +127,7 @@ const Home = ({
 
           <section className="filtro-grupo">
             <header className="filtro-header" onClick={() => setOpenOfertasMenu(!openOfertasMenu)}>
-              <h4>Ofertas</h4>
+              <h4>Promociones</h4>
               <i className={`fa-solid fa-chevron-down ${openOfertasMenu ? 'rotado' : ''}`}></i>
             </header>
 
@@ -135,7 +135,7 @@ const Home = ({
               <div className="filtro-opciones">
                 <label>
                   <input type="checkbox" checked={soloOfertas} onChange={() => setSoloOfertas(prev => !prev)} />
-                  Solo productos en oferta
+                  Solo productos con descuento
                 </label>
               </div>
             )}

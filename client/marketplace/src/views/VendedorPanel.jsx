@@ -321,7 +321,12 @@ function VendedorPanel() {
                   const estadoEnvio = envio && ESTADOS_ENVIO[envio.estado]
                   return (
                     <tr key={v.id}>
-                      <td><button className="panel-link" style={{ fontSize: '14px' }} onClick={() => navigate(`/orden/${v.id}`)}>#{v.id}</button></td>
+                      <td>
+                        {/* ACÁ ESTÁ EL NUEVO BOTÓN PARA EL VENDEDOR */}
+                        <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${v.id}`)}>
+                          <i className="fa-solid fa-eye"></i> Orden #{v.id}
+                        </button>
+                      </td>
                       <td>{v.fecha}</td>
                       <td>
                         <strong>{v.comprador?.nombreUsuario}</strong>

@@ -136,9 +136,14 @@ function MisCompras({ user }) {
                 return (
                   <tr key={compra.id}>
                     <td>
-                      <div style={{ fontWeight: 'bold' }}>{compra.fecha}</div>
-                      <button className="panel-link" onClick={() => navigate(`/orden/${compra.id}`)}>#{compra.id} · Ver detalle</button>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>Vendedor: {compra.vendedor?.nombreUsuario}</div>
+                      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{compra.fecha}</div>
+                      
+                      {/* ACÁ CAMBIAMOS EL TEXTO */}
+                      <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${compra.id}`)}>
+                        <i className="fa-solid fa-eye"></i> Orden #{compra.id}
+                      </button>
+
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Vendedor: {compra.vendedor?.nombreUsuario}</div>
                     </td>
                     <td>
                       {compra.items.map(item => {

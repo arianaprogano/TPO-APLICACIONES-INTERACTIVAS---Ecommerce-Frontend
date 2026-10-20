@@ -7,7 +7,8 @@ import './PostCard.css'
 function PostCard({
   id, title, price, image, condition, anio, rating, sales, disponible, location,
   isFavorite, onToggleFavorite, conEnvio, enOferta, porcentajeDescuento, precioOriginal,
-  esMiProducto, esAdmin, nivelDestacado, onAddToCart
+  esMiProducto, esAdmin, nivelDestacado, onAddToCart, 
+  activo, estadoPublicacion
 }) {
   const navigate = useNavigate()
   const { error, confirmar } = useAvisos()
@@ -38,7 +39,12 @@ function PostCard({
     onAddToCart({ id, title }, 1)
   }
 
-  const puedeAgregar = onAddToCart && disponible && !esMiProducto && !esAdmin
+
+  const noEstaALaVenta = activo === false || estadoPublicacion === 'PAUSADO' || estadoPublicacion === 'BORRADOR'
+  
+  const esClienteComprando = onAddToCart && !esMiProducto && !esAdmin
+
+  const sePuedeComprar = disponible && !noEstaALaVenta
 
   if (isDeleted) return null;
 
@@ -67,7 +73,7 @@ function PostCard({
         </button>
       )}
 
-      {enOferta && (
+      {enOferta && !noEstaALaVenta && (
         <div className="badge-oferta-flotante">
           {porcentajeDescuento}% OFF
         </div>
@@ -89,7 +95,7 @@ function PostCard({
       <div className="card-content">
         <div className="card-header-meta">
           <span className="badge-condition">{condition}{anio ? ` · ${anio}` : ''}</span>
-          {nivelDestacado && nivelDestacado !== 'NINGUNO' && (
+          {nivelDestacado && nivelDestacado !== 'NINGUNO' && !noEstaALaVenta && (
             <span className="badge-destacado-card"><i className="fa-solid fa-star"></i> Destacado</span>
           )}
         </div>
@@ -105,7 +111,7 @@ function PostCard({
         )}
 
         <div className="card-price-container">
-           {enOferta && (
+           {enOferta && !noEstaALaVenta && (
              <span className="precio-tachado">{formatMoney(precioOriginal)}</span>
            )}
           <div className="card-price">
@@ -120,9 +126,10 @@ function PostCard({
         )}
 
         <div className="card-footer-info">
-          <div className="card-stock">{disponible ? 'Disponible' : 'Sin stock'}</div>
+          <div className="card-stock" style={noEstaALaVenta ? { color: '#ef4444', fontWeight: 'bold' } : {}}>
+            {noEstaALaVenta ? 'No está a la venta' : (disponible ? 'Disponible' : 'Sin stock')}
+          </div>
           
-          {/* DOBLE CONDICIÓN DE ENVÍO */}
           {conEnvio ? (
              <div className="envio-gratis-badge" style={{ color: '#16a34a' }}>
                 <i className="fa-solid fa-truck-fast"></i> Con envío
@@ -132,13 +139,24 @@ function PostCard({
                 <i className="fa-solid fa-handshake"></i> Retiro a acordar
              </div>
           )}
-
         </div>
 
-        {puedeAgregar && (
-          <button className="card-agregar" onClick={agregar}>
-            <i className="fa-solid fa-cart-plus"></i> Agregar al carrito
-          </button>
+        {/* REEMPLAZO DEL BOTÓN POR UNO NEUTRALIZADO SI NO HAY STOCK */}
+        {esClienteComprando && (
+          sePuedeComprar ? (
+            <button className="card-agregar" onClick={agregar}>
+              <i className="fa-solid fa-cart-plus"></i> Agregar al carrito
+            </button>
+          ) : (
+            <button 
+              className="card-agregar" 
+              disabled 
+              style={{ backgroundColor: '#e5e7eb', color: '#6b7280', cursor: 'not-allowed' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <i className="fa-solid fa-ban"></i> Producto no disponible
+            </button>
+          )
         )}
       </div>
     </div>

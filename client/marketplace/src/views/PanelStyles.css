@@ -64,6 +64,12 @@
   font-size: 14px;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
+  
+
+  max-width: 300px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .empty-state {
@@ -580,6 +586,7 @@
   border: 1px solid #fed7aa;
 }
 
+
 .fila-dada-de-baja td {
   color: #9ca3af;
 }
@@ -659,4 +666,25 @@
 
 .btn-opinar:hover {
   background-color: #ea580c;
+}
+
+.btn-ver-detalle {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+
+.btn-ver-detalle:hover {
+  background-color: #15803d;
+  transform: translateY(-1px);
 }

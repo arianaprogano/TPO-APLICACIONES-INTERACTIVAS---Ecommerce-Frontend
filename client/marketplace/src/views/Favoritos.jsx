@@ -28,7 +28,7 @@ function Favoritos({ wishlist, user, toggleFavorite, clearFavorites, addToCart }
         {wishlist.length > 0 ? (
           wishlist.map(post => (
             <PostCard
-              key={post.idItem}
+              key={post.idItem || post.id}
               id={post.id}
               title={post.title}
               price={post.price}

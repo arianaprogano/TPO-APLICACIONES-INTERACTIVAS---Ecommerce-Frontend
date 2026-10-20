@@ -142,7 +142,7 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
         </div>
 
         <div className="inicio-recuadro">
-          <ProductRow titulo="Ofertas" subtitulo="Productos con descuento" productos={ofertas} onVerTodos={() => verListado('?ofertas=1')} {...filaProps} />
+          <ProductRow titulo="Promociones" subtitulo="Productos con descuento" productos={ofertas} onVerTodos={() => verListado('?ofertas=1')} {...filaProps} />
         </div>
 
         <div className="inicio-recuadro">

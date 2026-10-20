@@ -114,6 +114,11 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
   const esMiProducto = Boolean(user && product.vendedor?.nombreUsuario === user.username)
   const esAdmin = user?.role?.toLowerCase() === 'admin'
   
+  // --- LÓGICA DE ESTADO TOLERANTE (Misma que en PostCard) ---
+  const noEstaALaVenta = product.activo === false || product.estadoPublicacion === 'PAUSADO' || product.estadoPublicacion === 'BORRADOR'
+
+  const sePuedeComprar = product.stock > 0 && !noEstaALaVenta
+  
   const handleQuantityChange = (delta) => {
     let newQ = quantity + delta
     if (newQ < 1) newQ = 1
@@ -127,7 +132,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
 
   const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
 
-  const puedeOfertar = product.aceptaOfertas && !esMiProducto && product.stock > 0 && (!user || user.role === 'cliente')
+  const puedeOfertar = product.aceptaOfertas && !esMiProducto && sePuedeComprar && (!user || user.role === 'cliente')
   const abrirOferta = () => {
     if (!user) return pedirLogin('Iniciá sesión para hacer una oferta.')
     setOfertando(true)
@@ -231,7 +236,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
               )}
             </header>
 
-            <h1 className="product-title">{product.title}</h1>
+            <h1 className="product-title" style={noEstaALaVenta ? { color: '#6b7280' } : {}}>{product.title}</h1>
             
             <div className="product-rating">
               <span className="star-icon"><i className="fa-solid fa-star"></i></span>
@@ -240,7 +245,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
             </div>
 
             <div className="product-price-section">
-              {product.enOferta && (
+              {product.enOferta && !noEstaALaVenta && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                   <span className="pd-precio-tachado">
                     {formatMoney(product.precioOriginal)}
@@ -250,38 +255,45 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
                   </span>
                 </div>
               )}
-              <div className="product-price">{formatMoney(product.price)}</div>
-              {product.stock > 0 ? (
+              <div className="product-price" style={noEstaALaVenta ? { color: '#6b7280' } : {}}>{formatMoney(product.price)}</div>
+              
+              {/* MENSAJE DE ESTADO DE VENTA / STOCK */}
+              {sePuedeComprar ? (
                 <div className="product-stock-green">Stock disponible: {product.stock}</div>
               ) : (
-                <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>Agotado</div>
+                <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>
+                  {noEstaALaVenta ? 'No está a la venta' : 'Agotado'}
+                </div>
               )}
             </div>
 
-            <section className="payment-box">
-              <h4 className="payment-title">Medios de pago y financiación</h4>
-              <ul className="payment-list">
-                <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito.</li>
-                <li><i className="fa-solid fa-check"></i> 6 cuotas sin interés bancarias.</li>
-                <li><i className="fa-solid fa-check"></i> Descuento por transferencia bancaria.</li>
-              </ul>
-            </section>
+            {/* SI SE PUEDE COMPRAR, MOSTRAMOS LOS PAGOS Y EL BOTÓN DE AGREGAR */}
+            {sePuedeComprar ? (
+              <>
+                <section className="payment-box">
+                  <h4 className="payment-title">Medios de pago y financiación</h4>
+                  <ul className="payment-list">
+                    <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito.</li>
+                    <li><i className="fa-solid fa-check"></i> 6 cuotas sin interés bancarias.</li>
+                    <li><i className="fa-solid fa-check"></i> Descuento por transferencia bancaria.</li>
+                  </ul>
+                </section>
 
-            {product.stock > 0 ? (
-              <div className="product-actions-row">
-                <div className="qty-selector">
-                  <button onClick={() => handleQuantityChange(-1)}>-</button>
-                  <span>{quantity}</span>
-                  <button onClick={() => handleQuantityChange(1)}>+</button>
+                <div className="product-actions-row">
+                  <div className="qty-selector">
+                    <button onClick={() => handleQuantityChange(-1)}>-</button>
+                    <span>{quantity}</span>
+                    <button onClick={() => handleQuantityChange(1)}>+</button>
+                  </div>
+                  <button className="btn-add-cart" onClick={handleAddToCartClick}>
+                    AGREGAR AL CARRITO
+                  </button>
                 </div>
-                <button className="btn-add-cart" onClick={handleAddToCartClick}>
-                  AGREGAR AL CARRITO
-                </button>
-              </div>
+              </>
             ) : (
                <div className="product-actions-row">
-                <button disabled style={{ flex: 1, backgroundColor: '#d1d5db', color: '#6b7280', border: 'none', borderRadius: '6px', fontWeight: 'bold', padding: '12px' }}>
-                  SIN STOCK
+                <button disabled style={{ flex: 1, backgroundColor: '#d1d5db', color: '#6b7280', border: 'none', borderRadius: '6px', fontWeight: 'bold', padding: '12px', cursor: 'not-allowed' }}>
+                  <i className="fa-solid fa-ban"></i> {noEstaALaVenta ? 'PRODUCTO NO DISPONIBLE' : 'SIN STOCK'}
                 </button>
               </div>
             )}
@@ -297,7 +309,7 @@ function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin 
               
               {/* DOBLE CONDICIÓN DE ENVÍO */}
               {product.conEnvio ? (
-                 <span className="pd-envio" style={{ color: '#16a34a', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                 <span className="pd-envio" style={{ color: noEstaALaVenta ? '#9ca3af' : '#16a34a', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <i className="fa-solid fa-truck-fast"></i> Con envío
                  </span>
               ) : (
