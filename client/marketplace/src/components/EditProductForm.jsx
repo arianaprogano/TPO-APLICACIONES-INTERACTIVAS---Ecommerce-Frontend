@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { getArbolCategorias } from '../api/categorias'
+import { useDispatch, useSelector } from 'react-redux'
+import { actualizarPublicacion } from '../redux/slice/productosSlice'
 import { PROVINCIAS } from '../api/ordenes'
-import { actualizarProducto, eliminarFoto, getFotosDeProducto, subirFoto } from '../api/productos'
+import { eliminarFoto, getFotosDeProducto, subirFoto } from '../api/productos'
 import FotoConToken from './FotoConToken'
 import './ProductForm.css'
 import { useAvisos } from '../components/avisosContext'
@@ -9,19 +10,11 @@ import { useAvisos } from '../components/avisosContext'
 const desdeProducto = (p) => {
   const cat = p.categoria
   return {
-    nombre: p.title ?? '',
-    idCategoria: String(cat?.idCategoriaPadre ?? cat?.id ?? ''),
-    idSubcategoria: cat?.idCategoriaPadre ? String(cat.id) : '',
-    condicion: p.condition === 'Nuevo' ? 'NUEVO' : 'USADO',
-    anio: String(p.anio ?? ''),
-    precio: String(p.precioOriginal ?? ''),
-    descuento: String(p.porcentajeDescuento ?? 0),
-    stock: String(p.stock ?? 0),
-    provincia: p.provincia ?? '',
-    ubicacion: p.location ?? '',
-    admiteEnvio: Boolean(p.conEnvio),
-    aceptaOfertas: Boolean(p.aceptaOfertas),
-    descripcion: p.body ?? '',
+    nombre: p.title ?? '', idCategoria: String(cat?.idCategoriaPadre ?? cat?.id ?? ''),
+    idSubcategoria: cat?.idCategoriaPadre ? String(cat.id) : '', condicion: p.condition === 'Nuevo' ? 'NUEVO' : 'USADO',
+    anio: String(p.anio ?? ''), precio: String(p.precioOriginal ?? ''), descuento: String(p.porcentajeDescuento ?? 0),
+    stock: String(p.stock ?? 0), provincia: p.provincia ?? '', ubicacion: p.location ?? '',
+    admiteEnvio: Boolean(p.conEnvio), aceptaOfertas: Boolean(p.aceptaOfertas), descripcion: p.body ?? '',
   }
 }
 
@@ -29,7 +22,9 @@ const ESTADOS_FOTO = { APROBADA: 'Aprobada', EN_REVISION: 'En revisión', RECHAZ
 
 function EditProductForm({ onClose, producto, onSave }) {
   const { confirmar, error } = useAvisos()
-  const [categorias, setCategorias] = useState([])
+  const dispatch = useDispatch()
+  const categorias = useSelector(state => state.ui.categorias)
+  
   const [form, setForm] = useState(() => desdeProducto(producto))
   const [errores, setErrores] = useState({})
   const [editError, setEditError] = useState('')
@@ -41,95 +36,74 @@ function EditProductForm({ onClose, producto, onSave }) {
 
   const cargarFotos = () => getFotosDeProducto(producto.id).then(setFotos).catch(() => setFotos([]))
 
+  useEffect(() => { cargarFotos() }, [])
+
   const borrarFoto = async (foto) => {
     const aprobadas = (fotos ?? []).filter(f => f.estadoVerificacion === 'APROBADA')
     const esLaUltimaVisible = foto.estadoVerificacion === 'APROBADA' && aprobadas.length === 1
     const ok = await confirmar({
       titulo: '¿Borrar esta foto?',
-      texto: esLaUltimaVisible ? 'Es la última foto aprobada: el producto vuelve a borrador y sale del catálogo hasta que se apruebe otra.' : undefined,
-      ok: 'Borrar',
-      peligro: true,
+      texto: esLaUltimaVisible ? 'Es la última foto aprobada: el producto vuelve a borrador y sale del catálogo.' : undefined,
+      ok: 'Borrar', peligro: true,
     })
     if (!ok) return
-    try {
-      await eliminarFoto(foto.id)
-      setFotos(prev => prev.filter(f => f.id !== foto.id))
-      setFotosCambiaron(true)
-    } catch (err) {
-      setEditError(err.message)
-    }
+    
+    eliminarFoto(foto.id)
+      .then(() => {
+        setFotos(prev => prev.filter(f => f.id !== foto.id))
+        setFotosCambiaron(true)
+      })
+      .catch(err => setEditError(err.message || 'Error al eliminar foto'))
   }
 
-  const agregarFotos = async (e) => {
+  const agregarFotos = (e) => {
     const archivos = Array.from(e.target.files)
     e.target.value = null
     if (archivos.length === 0) return
     setSubiendo(archivos.length)
-    try {
-      for (const archivo of archivos) await subirFoto(producto.id, archivo)
-      setFotosCambiaron(true)
-      await cargarFotos()
-    } catch (err) {
-      setEditError(err.message)
-    } finally {
-      setSubiendo(0)
-    }
+    
+    Promise.allSettled(archivos.map(archivo => subirFoto(producto.id, archivo)))
+      .then(() => {
+        setFotosCambiaron(true)
+        return cargarFotos()
+      })
+      .catch(err => setEditError(err.message || 'Error subiendo fotos'))
+      .finally(() => setSubiendo(0))
   }
-
-  useEffect(() => {
-    getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
-    cargarFotos()
-  }, [])
 
   const categoria = categorias.find(c => String(c.id) === form.idCategoria)
-  const set = (campo, valor) => {
-    setForm(prev => ({ ...prev, [campo]: valor }))
-    setErrores(prev => ({ ...prev, [campo]: undefined }))
-  }
+  const set = (campo, valor) => { setForm(prev => ({ ...prev, [campo]: valor })); setErrores(prev => ({ ...prev, [campo]: undefined })) }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    
-    if (Number(form.descuento) >= 100) {
-      error('El descuento máximo permitido es del 99%.')
-      return
-    }
-
+    if (Number(form.descuento) >= 100) return error('El descuento máximo permitido es del 99%.')
     if (!form.nombre.trim() || !form.precio || form.stock === '' || !form.anio || !form.provincia || !form.idCategoria) {
-      setEditError('Completá título, categoría, año, precio, stock y provincia.')
-      return
+      return setEditError('Completá título, categoría, año, precio, stock y provincia.')
     }
 
     setEditError('')
     setGuardando(true)
-    try {
-      const actualizado = await actualizarProducto(producto.id, {
-        nombre: form.nombre.trim(),
-        idCategoria: Number(form.idSubcategoria || form.idCategoria),
-        condicion: form.condicion,
-        anio: Number(form.anio),
-        precio: Number(form.precio),
-        descuento: form.descuento === '' ? 0 : Number(form.descuento),
-        stock: Number(form.stock),
-        provincia: form.provincia,
-        ubicacion: form.ubicacion.trim(),
-        admiteEnvio: form.admiteEnvio,
-        aceptaOfertas: form.aceptaOfertas,
-        descripcion: form.descripcion.trim(),
-      })
-      onSave(actualizado)
-    } catch (err) {
-      setEditError(err.message)
-      setErrores(err.campos || {})
-    } finally {
-      setGuardando(false)
+    
+    const datos = {
+      nombre: form.nombre.trim(), idCategoria: Number(form.idSubcategoria || form.idCategoria),
+      condicion: form.condicion, anio: Number(form.anio), precio: Number(form.precio),
+      descuento: form.descuento === '' ? 0 : Number(form.descuento), stock: Number(form.stock),
+      provincia: form.provincia, ubicacion: form.ubicacion.trim(),
+      admiteEnvio: form.admiteEnvio, aceptaOfertas: form.aceptaOfertas, descripcion: form.descripcion.trim(),
     }
+
+    dispatch(actualizarPublicacion({ id: producto.id, datos }))
+      .unwrap()
+      .then(actualizado => onSave(actualizado))
+      .catch(err => { setEditError(err.message || 'Error guardando'); setErrores(err.campos || {}) })
+      .finally(() => setGuardando(false))
   }
 
   const campoError = (campo) => errores[campo] && <span className="publicar-error-campo">{errores[campo]}</span>
 
   return (
     <div className="publish-modal-content" style={{ maxWidth: '620px' }}>
+      {/* HTML IDENTICO AL ORIGINAL, CON LAS VARIABLES FORMATEADAS CORRECTAMENTE */}
       <header className="publish-modal-header">
         <div className="modal-title-with-icon">
           <i className="fa-solid fa-pen-to-square" style={{ color: '#16a34a' }}></i> Editar Producto

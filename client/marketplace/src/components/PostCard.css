@@ -94,7 +94,7 @@
 
 .card-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 900; /* Título en negrita fuerte, consistente con la gestión del admin */
   color: #111827;
   margin-bottom: 6px;
   line-height: 1.3;

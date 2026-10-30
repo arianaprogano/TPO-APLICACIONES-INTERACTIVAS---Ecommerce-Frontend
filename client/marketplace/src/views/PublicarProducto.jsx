@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getArbolCategorias } from '../api/categorias'
+import { useDispatch, useSelector } from 'react-redux'
+import { crearPublicacionCompleta } from '../redux/slice/productosSlice'
 import { PROVINCIAS } from '../api/ordenes'
-import { crearProducto, subirFoto } from '../api/productos'
 import '../components/ProductForm.css'
 import './PublicarProducto.css'
 
@@ -17,7 +17,10 @@ const formularioVacio = {
 
 function PublicarProducto() {
   const navigate = useNavigate()
-  const [categorias, setCategorias] = useState([])
+  const dispatch = useDispatch()
+  
+  const categorias = useSelector(state => state.ui.categorias)
+  
   const [form, setForm] = useState(formularioVacio)
   const [fotos, setFotos] = useState([])
   const [errores, setErrores] = useState({})
@@ -25,10 +28,6 @@ function PublicarProducto() {
   const [paso, setPaso] = useState('formulario')
   const [progreso, setProgreso] = useState('')
   const [resultado, setResultado] = useState(null)
-
-  useEffect(() => {
-    getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
-  }, [])
 
   const fotosRef = useRef(fotos)
   fotosRef.current = fotos
@@ -59,7 +58,6 @@ function PublicarProducto() {
     if (!form.idCategoria) e.idCategoria = 'Elegí una categoría'
     if (!form.condicion) e.condicion = 'Indicá si es nuevo o usado'
     
-
     if (!form.anio) {
       e.anio = 'Indicá el año'
     } else if (Number(form.anio) < 1900 || Number(form.anio) > AÑO_MAXIMO) {
@@ -69,19 +67,17 @@ function PublicarProducto() {
     if (!form.precio || Number(form.precio) <= 0) e.precio = 'El precio tiene que ser mayor a cero'
     if (form.stock === '' || Number(form.stock) < 0) e.stock = 'El stock no puede ser negativo'
     
-    if (form.descuento !== '') {
-      if (Number(form.descuento) < 0 || Number(form.descuento) > 99) {
-        e.descuento = 'El descuento máximo permitido es 99%'
-      }
+    if (form.descuento !== '' && (Number(form.descuento) < 0 || Number(form.descuento) > 99)) {
+      e.descuento = 'El descuento máximo permitido es 99%'
     }
 
     if (!form.provincia) e.provincia = 'Elegí la provincia'
     if (form.admiteEnvio === null) e.admiteEnvio = 'Indicá si hacés envíos'
-    if (fotos.length === 0) e.fotos = 'Subí al menos una foto: sin foto el producto no se publica'
+    if (fotos.length === 0) e.fotos = 'Subí al menos una foto'
     return e
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
     const encontrados = validar()
@@ -92,56 +88,40 @@ function PublicarProducto() {
     }
 
     setPaso('subiendo')
-    setProgreso('Creando la publicación...')
-    let producto
-    try {
-      ({ producto } = await crearProducto({
-        nombre: form.nombre.trim(),
-        idCategoria: Number(form.idSubcategoria || form.idCategoria),
-        condicion: form.condicion,
-        anio: Number(form.anio), 
-        precio: Number(form.precio),
-        descuento: form.descuento === '' ? 0 : Number(form.descuento),
-        stock: Number(form.stock),
-        provincia: form.provincia,
-        ubicacion: form.ubicacion.trim(),
-        admiteEnvio: form.admiteEnvio,
-        aceptaOfertas: form.aceptaOfertas,
-        descripcion: form.descripcion.trim(),
-      }))
-    } catch (err) {
-      setPaso('formulario')
-      
-      let mensajeGlobal = err.message
-      let camposConError = err.campos || {}
-
-      if (mensajeGlobal && mensajeGlobal.includes('anio tiene que estar entre')) {
-        camposConError.anio = mensajeGlobal.replace('anio', 'año')
-        mensajeGlobal = 'Hay datos inválidos en el pedido'
-      }
-
-      if (camposConError.anio && camposConError.anio.includes('anio')) {
-        camposConError.anio = camposConError.anio.replace('anio', 'año')
-      }
-
-      setError(mensajeGlobal)
-      setErrores(camposConError)
-      return
+    setProgreso('Creando la publicación y subiendo fotos...')
+    
+    const datosListos = {
+      nombre: form.nombre.trim(),
+      idCategoria: Number(form.idSubcategoria || form.idCategoria),
+      condicion: form.condicion,
+      anio: Number(form.anio), 
+      precio: Number(form.precio),
+      descuento: form.descuento === '' ? 0 : Number(form.descuento),
+      stock: Number(form.stock),
+      provincia: form.provincia,
+      ubicacion: form.ubicacion.trim(),
+      admiteEnvio: form.admiteEnvio,
+      aceptaOfertas: form.aceptaOfertas,
+      descripcion: form.descripcion.trim(),
     }
 
-    const fotosSubidas = []
-    for (let i = 0; i < fotos.length; i++) {
-      setProgreso(`Subiendo foto ${i + 1} de ${fotos.length}...`)
-      try {
-        await subirFoto(producto.id, fotos[i].file)
-        fotosSubidas.push({ nombre: fotos[i].file.name, ok: true })
-      } catch (err) {
-        fotosSubidas.push({ nombre: fotos[i].file.name, ok: false, mensaje: err.message })
-      }
-    }
-
-    setResultado({ producto, fotos: fotosSubidas })
-    setPaso('listo')
+    dispatch(crearPublicacionCompleta({ datos: datosListos, fotos }))
+      .unwrap()
+      .then((res) => {
+        setResultado(res)
+        setPaso('listo')
+      })
+      .catch((err) => {
+        setPaso('formulario')
+        let mensajeGlobal = err.message || 'Error al publicar'
+        let camposConError = err.campos || {}
+        if (mensajeGlobal.includes('anio tiene que estar entre')) {
+          camposConError.anio = mensajeGlobal.replace('anio', 'año')
+          mensajeGlobal = 'Hay datos inválidos en el pedido'
+        }
+        setError(mensajeGlobal)
+        setErrores(camposConError)
+      })
   }
 
   if (paso === 'subiendo') {
@@ -156,7 +136,7 @@ function PublicarProducto() {
   }
 
   if (paso === 'listo') {
-    const subidas = resultado.fotos.filter(f => f.ok).length
+    const subidas = resultado.fotosProcesadas.filter(f => f.ok).length
     return (
       <div className="publicar-container">
         <div className="publicar-card publicar-estado">
@@ -164,19 +144,9 @@ function PublicarProducto() {
           <h2>{subidas > 0 ? '¡Se subió todo!' : 'No se pudo subir ninguna foto'}</h2>
           <p>
             {subidas > 0
-              ? `"${resultado.producto.nombre}" está en revisión. Te avisamos con una notificación cuando termine: si se aprueba alguna foto, se publica sola.`
-              : 'El producto quedó como borrador. Podés subir fotos desde Mis Publicaciones › Editar publicación.'}
+              ? `"${resultado.producto.nombre}" está en revisión. Te avisamos con una notificación cuando termine.`
+              : 'El producto quedó como borrador.'}
           </p>
-
-          <ul className="publicar-fotos-resultado">
-            {resultado.fotos.map((f, i) => (
-              <li key={i} className={f.ok ? 'foto-en_revision' : 'foto-rechazada'}>
-                <span>{f.nombre}</span>
-                <strong>{f.ok ? 'En revisión' : 'No se subió'}</strong>
-                {f.mensaje && <small>{f.mensaje}</small>}
-              </li>
-            ))}
-          </ul>
 
           <div className="publicar-acciones">
             <button className="btn-guardar" onClick={() => navigate('/vendedor')}>Ir a Mis publicaciones</button>
@@ -194,7 +164,7 @@ function PublicarProducto() {
       <form className="publicar-card" onSubmit={handleSubmit} noValidate>
         <header className="publicar-header">
           <h1><i className="fa-solid fa-box-open"></i> Publicar producto</h1>
-          <p>Completá los datos de lo que querés vender. Con la primera foto aprobada se publica.</p>
+          <p>Completá los datos de lo que querés vender.</p>
         </header>
 
         {error && <div className="publicar-error">{error}</div>}
@@ -250,7 +220,6 @@ function PublicarProducto() {
             </div>
             <div className="form-group">
               <label htmlFor="descuento">Descuento (%)</label>
-              {/* Le pusimos max="99" como freno visual */}
               <input id="descuento" type="number" min="0" max="99" placeholder="0" value={form.descuento} onChange={e => set('descuento', e.target.value)} />
               {campoError('descuento')}
             </div>
@@ -260,11 +229,6 @@ function PublicarProducto() {
               {campoError('stock')}
             </div>
           </div>
-          {form.precio && Number(form.descuento) > 0 && (
-            <p className="publicar-nota">
-              Precio final: $ {new Intl.NumberFormat('es-AR').format(Math.round(Number(form.precio) * (100 - Number(form.descuento)) / 100))}
-            </p>
-          )}
         </section>
 
         <section className="publicar-seccion">
@@ -291,19 +255,19 @@ function PublicarProducto() {
               <label className={`entrega-opcion ${form.admiteEnvio === true ? 'elegida' : ''}`}>
                 <input type="radio" name="publicar-entrega" checked={form.admiteEnvio === true} onChange={() => set('admiteEnvio', true)} />
                 <i className="fa-solid fa-truck-fast"></i>
-                <span><strong>Sí, con envío</strong><small>Se despacha a domicilio, siempre</small></span>
+                <span><strong>Sí, con envío</strong></span>
               </label>
               <label className={`entrega-opcion ${form.admiteEnvio === false ? 'elegida' : ''}`}>
                 <input type="radio" name="publicar-entrega" checked={form.admiteEnvio === false} onChange={() => set('admiteEnvio', false)} />
                 <i className="fa-solid fa-handshake"></i>
-                <span><strong>No, sin envío</strong><small>Retiro o entrega a coordinar</small></span>
+                <span><strong>No, sin envío</strong></span>
               </label>
             </div>
             {campoError('admiteEnvio')}
           </div>
           <label className="publicar-check">
             <input type="checkbox" checked={form.aceptaOfertas} onChange={e => set('aceptaOfertas', e.target.checked)} />
-            <span><strong>Acepto ofertas</strong> — los compradores pueden proponerte otro precio.</span>
+            <span><strong>Acepto ofertas</strong></span>
           </label>
         </section>
 
@@ -333,7 +297,7 @@ function PublicarProducto() {
         <section className="publicar-seccion">
           <h2>Descripción</h2>
           <div className="form-group">
-            <textarea rows="5" maxLength={255} placeholder="Estado, horas de uso, características..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
+            <textarea rows="5" maxLength={255} placeholder="Estado, horas de uso..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)}></textarea>
             <span className="publicar-contador">{form.descripcion.length}/255</span>
             {campoError('descripcion')}
           </div>

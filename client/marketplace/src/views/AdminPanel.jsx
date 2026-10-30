@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { 
+  fetchTodasLasOrdenes, pagarOrdenAdmin, fetchTodosLosProductos, fetchFotosPendientes, 
+  resolverFotoAdmin, bajaProductoAdmin, reactivarProductoAdmin, destacarProductoAdmin, 
+  fetchCategorias, bajaCategoriaAdmin, reactivarCategoriaAdmin, 
+  fetchUsuarios, cambiarRolAdmin, bajaUsuarioAdmin, reactivarUsuarioAdmin,
+  fetchDestacados 
+} from '../redux/slice/adminSlice'
+import { getTodosLosEnvios } from '../api/envios'
 import FotoConToken from '../components/FotoConToken'
 import AdminModals from '../components/AdminModals'
-import {
-  cambiarRol, darDeBajaCategoria, darDeBajaProducto, darDeBajaUsuario, destacarProducto,
-  getCategorias, getCategoriasInactivas, getFotosPendientes, getHistorialDestacados, getTodasLasOrdenes,
-  getTodosLosProductos, getUsuarios, getUsuariosInactivos, marcarOrdenPagada, NIVELES_DESTACADO,
-  reactivarCategoria, reactivarProducto, reactivarUsuario, revisarFoto,
-} from '../api/admin'
 import { nombreProvincia } from '../api/ordenes'
-import { ESTADOS_ENVIO, getTodosLosEnvios } from '../api/envios'
+import { ESTADOS_ENVIO } from '../api/envios'
+import { NIVELES_DESTACADO } from '../api/admin'
 import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
@@ -32,20 +36,24 @@ const ROLES = { ADMIN: 'Administrador', CLIENTE: 'Cliente', DESPACHANTE: 'Despac
 function AdminPanel({ user }) {
   const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'ordenes')
+  
   useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
 
-  const [ordenes, setOrdenes] = useState(null)
+  const { 
+    ordenes, productos, fotosPendientes: fotos, destacados, usuarios: usuariosObj, 
+    categorias: categoriasObj, loading, error: reduxError 
+  } = useSelector(state => state.admin)
+
+  const usuarios = usuariosObj?.activos || []
+  const usuariosInactivos = usuariosObj?.inactivos || []
+  const categorias = categoriasObj?.activas || []
+  const categoriasInactivas = categoriasObj?.inactivas || []
+
   const [enviosPorOrden, setEnviosPorOrden] = useState({})
-  const [destacados, setDestacados] = useState(null)
   const [destacando, setDestacando] = useState(null)
-  const [fotos, setFotos] = useState(null)
-  const [productos, setProductos] = useState(null)
-  const [usuarios, setUsuarios] = useState(null)
-  const [categorias, setCategorias] = useState(null)
-  const [usuariosInactivos, setUsuariosInactivos] = useState(null)
-  const [categoriasInactivas, setCategoriasInactivas] = useState(null)
   const [verBajas, setVerBajas] = useState(false)
   const [error, setError] = useState('')
 
@@ -62,83 +70,76 @@ function AdminPanel({ user }) {
   const avisar = (mensaje) => avisarError(mensaje)
 
   const cargar = {
-    ordenes: () => Promise.all([
-      getTodasLasOrdenes().then(setOrdenes),
-      getTodosLosEnvios().then(lista => setEnviosPorOrden(Object.fromEntries(lista.map(e => [e.idOrden, e])))),
-    ]),
-    productos: () => Promise.all([getFotosPendientes().then(setFotos), getTodosLosProductos().then(setProductos)]),
-    destacados: () => getHistorialDestacados().then(setDestacados),
-    usuarios: () => Promise.all([getUsuarios().then(setUsuarios), getUsuariosInactivos().then(setUsuariosInactivos)]),
-    categorias: () => Promise.all([getCategorias().then(setCategorias), getCategoriasInactivas().then(setCategoriasInactivas)]),
+    ordenes: () => {
+      dispatch(fetchTodasLasOrdenes())
+      getTodosLosEnvios().then(lista => setEnviosPorOrden(Object.fromEntries(lista.map(e => [e.idOrden, e]))))
+    },
+    productos: () => { dispatch(fetchFotosPendientes()); dispatch(fetchTodosLosProductos()); },
+    destacados: () => dispatch(fetchDestacados()),
+    usuarios: () => dispatch(fetchUsuarios()),
+    categorias: () => dispatch(fetchCategorias()),
   }
 
   useEffect(() => {
     setError('')
     setVerBajas(false)
-    cargar[activeTab]().catch(err => setError(err.message))
-  }, [activeTab])
+    if (activeTab === 'ordenes') cargar.ordenes()
+    else if (activeTab === 'productos') cargar.productos()
+    else if (activeTab === 'destacados') cargar.destacados()
+    else if (activeTab === 'usuarios') cargar.usuarios()
+    else if (activeTab === 'categorias') cargar.categorias()
+  }, [activeTab, dispatch])
 
   // --- Ordenes ---
   const marcarPagada = async (orden) => {
     if (!(await confirmar(`¿Confirmás que se acreditó el pago de la orden #${orden.id} (${formatMoney(orden.total)})?`))) return
-    try {
-      const actualizada = await marcarOrdenPagada(orden.id)
-      setOrdenes(prev => prev.map(o => o.id === actualizada.id ? actualizada : o))
-      cargar.ordenes()
-    } catch (err) {
-      avisar(err.message)
-    }
+    dispatch(pagarOrdenAdmin(orden.id)).unwrap().catch(err => avisar(err.message))
   }
 
   // --- Fotos y productos ---
   const resolverFoto = async (foto, aprobada) => {
     if (!aprobada && !(await confirmar(`¿Rechazar la foto de "${foto.nombreProducto}"? Se elimina.`))) return
-    try {
-      await revisarFoto(foto.id, aprobada)
-      await cargar.productos()
-    } catch (err) {
-      avisar(err.message)
-    }
+    dispatch(resolverFotoAdmin({ idFoto: foto.id, aprobada }))
+      .unwrap()
+      .then(() => cargar.productos())
+      .catch(err => avisar(err.message))
   }
 
   const bajaOReactivar = async (producto) => {
     const reactivar = producto.activo === false
-    
     if (!reactivar) {
       const ok = await confirmar({
-        titulo: '¿Eliminar producto?',
+        titulo: '¿Dar de baja producto?',
         texto: `"${producto.title}" sale del catálogo y de los carritos.`,
-        ok: 'Eliminar',
+        ok: 'Dar de baja',
         peligro: true,
       })
       if (!ok) return
     }
 
-    try {
-      if (reactivar) await reactivarProducto(producto.id)
-      else await darDeBajaProducto(producto.id)
-      await cargar.productos()
-    } catch (err) {
-      avisar(err.message)
-    }
+    const accion = reactivar ? reactivarProductoAdmin : bajaProductoAdmin
+    dispatch(accion(producto.id)).unwrap()
+      .then(() => cargar.productos())
+      .catch(err => avisar(err.message))
   }
 
-  const guardarDestacado = async (e) => {
+  const guardarDestacado = (e) => {
     e.preventDefault()
-    try {
-      await destacarProducto(destacando.producto.id, destacando.nivel, destacando.meses)
-      setDestacando(null)
-      await cargar.productos()
-    } catch (err) {
-      avisar(err.message)
-    }
+    dispatch(destacarProductoAdmin({ id: destacando.producto.id, nivel: destacando.nivel, meses: destacando.meses }))
+      .unwrap()
+      .then(() => {
+        setDestacando(null)
+        cargar.destacados()
+        cargar.productos()
+      })
+      .catch(err => avisar(err.message))
   }
 
   // --- Usuarios ---
   const confirmarCambioRol = async () => {
     try {
-      const actualizado = await cambiarRol(roleChange.usuario.id, roleChange.nuevoRol)
-      setUsuarios(prev => prev.map(u => u.id === actualizado.id ? actualizado : u))
+      await dispatch(cambiarRolAdmin({ id: roleChange.usuario.id, rol: roleChange.nuevoRol })).unwrap()
+      dispatch(fetchUsuarios())
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -148,10 +149,8 @@ function AdminPanel({ user }) {
 
   const confirmarEliminarUsuario = async () => {
     try {
-      await darDeBajaUsuario(userToDelete.id)
-      setUsuarios(prev => prev.filter(u => u.id !== userToDelete.id))
-      setUsuariosInactivos(prev => [...(prev ?? []), { ...userToDelete, activo: false }])
-      cargar.usuarios()
+      await dispatch(bajaUsuarioAdmin(userToDelete.id)).unwrap()
+      dispatch(fetchUsuarios())
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -161,10 +160,8 @@ function AdminPanel({ user }) {
 
   const reactivarUnUsuario = async (usuario) => {
     try {
-      await reactivarUsuario(usuario.id)
-      setUsuariosInactivos(prev => prev.filter(u => u.id !== usuario.id))
-      setUsuarios(prev => [...(prev ?? []), { ...usuario, activo: true }])
-      cargar.usuarios()
+      await dispatch(reactivarUsuarioAdmin(usuario.id)).unwrap()
+      dispatch(fetchUsuarios())
       exito(`${usuario.nombreUsuario} puede volver a iniciar sesión. Sus publicaciones siguen dadas de baja: las reactiva cada una desde Productos.`, { titulo: 'Usuario reactivado' })
     } catch (err) {
       avisar(err.message)
@@ -174,17 +171,9 @@ function AdminPanel({ user }) {
   // --- Categorias ---
   const reactivarUnaCategoria = async (categoria) => {
     try {
-      await reactivarCategoria(categoria.id)
-      
-      // Actualización visual en el panel
-      setCategoriasInactivas(prev => prev.filter(c => c.id !== categoria.id))
-      setCategorias(prev => [...(prev ?? []), { ...categoria, activo: true }])
-      
-      cargar.categorias()
-      
-      // AVISAMOS A TODO EL SISTEMA (Header, Inicio, etc)
+      await dispatch(reactivarCategoriaAdmin(categoria.id)).unwrap()
+      dispatch(fetchCategorias())
       window.dispatchEvent(new Event('categoriasCambiadas'))
-      
       exito(`"${categoria.nombre}" vuelve a estar disponible para publicar.`, { titulo: 'Categoría reactivada' })
     } catch (err) {
       avisar(err.message)
@@ -193,15 +182,9 @@ function AdminPanel({ user }) {
 
   const confirmarEliminarCategoria = async () => {
     try {
-      await darDeBajaCategoria(categoryToDelete.id)
-      
-      setCategorias(prev => prev.filter(c => c.id !== categoryToDelete.id))
-      setCategoriasInactivas(prev => [...(prev ?? []), { ...categoryToDelete, activo: false }])
-      
-      cargar.categorias()
-      
+      await dispatch(bajaCategoriaAdmin(categoryToDelete.id)).unwrap()
+      dispatch(fetchCategorias())
       window.dispatchEvent(new Event('categoriasCambiadas'))
-      
     } catch (err) {
       avisar(err.message)
     } finally {
@@ -224,7 +207,7 @@ function AdminPanel({ user }) {
 
   const usuariosInactivosFiltrados = (usuariosInactivos ?? []).filter(u => {
     const q = busquedaUsuario.toLowerCase()
-    return u.mail.toLowerCase().includes(q) || u.nombreUsuario.toLowerCase().includes(q) || u.rol.toLowerCase().includes(q)
+    return (u.mail || '').toLowerCase().includes(q) || (u.nombreUsuario || '').toLowerCase().includes(q) || (u.rol || '').toLowerCase().includes(q)
   })
 
   const segmento = (activos, bajas) => (
@@ -240,7 +223,7 @@ function AdminPanel({ user }) {
 
   const usuariosFiltrados = (usuarios ?? []).filter(u => {
     const q = busquedaUsuario.toLowerCase()
-    return u.mail.toLowerCase().includes(q) || u.nombreUsuario.toLowerCase().includes(q) || u.rol.toLowerCase().includes(q)
+    return (u.mail || '').toLowerCase().includes(q) || (u.nombreUsuario || '').toLowerCase().includes(q) || (u.rol || '').toLowerCase().includes(q)
   })
 
   const productosFiltrados = (productos ?? []).filter(p =>
@@ -249,9 +232,9 @@ function AdminPanel({ user }) {
   )
 
   const filaEstado = (datos, colSpan, vacio) => {
-    if (error) return <tr><td colSpan={colSpan} className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
-    if (datos === null) return <tr><td colSpan={colSpan} className="empty-state">Cargando...</td></tr>
-    if (datos.length === 0) return <tr><td colSpan={colSpan} className="empty-state">{vacio}</td></tr>
+    if (error || reduxError) return <tr><td colSpan={colSpan} className="empty-state" style={{ color: '#b91c1c' }}>{error || reduxError}</td></tr>
+    if (loading && (!datos || datos.length === 0)) return <tr><td colSpan={colSpan} className="empty-state">Cargando...</td></tr>
+    if (!datos || datos.length === 0) return <tr><td colSpan={colSpan} className="empty-state">{vacio}</td></tr>
     return null
   }
 
@@ -327,7 +310,7 @@ function AdminPanel({ user }) {
         <>
           <h3 className="panel-subtitulo">Fotos pendientes de revisión</h3>
           <p className="panel-ayuda">Fotos que la IA no pudo confirmar. Aprobar una publica su producto si estaba en borrador; rechazarla la elimina.</p>
-          {error ? <p className="empty-state" style={{ color: '#b91c1c' }}>{error}</p>
+          {reduxError ? <p className="empty-state" style={{ color: '#b91c1c' }}>{reduxError}</p>
             : fotos === null ? <p className="empty-state">Cargando...</p>
             : fotos.length === 0 ? <div className="panel-content"><p className="empty-state">No hay fotos para revisar.</p></div>
             : (
@@ -402,7 +385,7 @@ function AdminPanel({ user }) {
                           {p.activo === false ? (
                             <button className="btn-icon-edit" title="Reactivar" onClick={() => bajaOReactivar(p)}><i className="fa-solid fa-rotate-left"></i></button>
                           ) : (
-                            <button className="btn-icon-delete" title="Dar de baja" onClick={() => bajaOReactivar(p)}><i className="fa-solid fa-trash"></i></button>
+                            <button className="btn-icon-delete" title="Dar de baja" onClick={() => bajaOReactivar(p)}><i className="fa-solid fa-ban"></i></button>
                           )}
                         </td>
                       </tr>
@@ -453,13 +436,13 @@ function AdminPanel({ user }) {
                 <tr><th>USUARIO / EMAIL</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>DIRECCIÓN</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
-                {filaEstado(usuariosInactivos, 5, 'No hay usuarios dados de baja.') ?? (usuariosInactivosFiltrados.length === 0
+                {filaEstado(usuariosInactivos, 5, 'No hay usuarios dados de baja.') ?? (usuariosInactivosFiltradas.length === 0
                   ? <tr><td colSpan="5" className="empty-state">No se encontraron usuarios.</td></tr>
-                  : usuariosInactivosFiltrados.map(u => (
+                  : usuariosInactivosFiltradas.map(u => (
                     <tr key={u.id} className="fila-dada-de-baja">
                       <td>
                         <div className="user-info">
-                          <div className="avatar">{u.nombreUsuario.charAt(0).toUpperCase()}</div>
+                          <div className="avatar">{(u.nombreUsuario || '?').charAt(0).toUpperCase()}</div>
                           <div><strong>{u.nombreUsuario}</strong><br /><span>{u.mail}</span></div>
                         </div>
                       </td>
@@ -491,14 +474,14 @@ function AdminPanel({ user }) {
                       <tr key={u.id}>
                         <td>
                           <div className="user-info">
-                            <div className="avatar">{u.nombreUsuario.charAt(0).toUpperCase()}</div>
+                            <div className="avatar">{(u.nombreUsuario || '?').charAt(0).toUpperCase()}</div>
                             <div><strong>{u.nombreUsuario}</strong><br /><span>{u.mail}</span></div>
                           </div>
                         </td>
                         <td>{u.nombre} {u.apellido}</td>
                         <td>
                           {soyYo ? (
-                            <span className={`badge-role ${u.rol.toLowerCase()}`}>{ROLES[u.rol]}</span>
+                            <span className={`badge-role ${(u.rol || '').toLowerCase()}`}>{ROLES[u.rol] ?? u.rol}</span>
                           ) : (
                             <select className="panel-select-rol" value={u.rol} onChange={e => setRoleChange({ usuario: u, nuevoRol: e.target.value })}>
                               {Object.entries(ROLES).map(([clave, nombre]) => <option key={clave} value={clave}>{nombre}</option>)}
@@ -511,7 +494,7 @@ function AdminPanel({ user }) {
                             <span className="action-text italic">Sesión activa</span>
                           ) : (
                             <button className="btn-icon-delete" title="Dar de baja" onClick={() => setUserToDelete(u)}>
-                              <i className="fa-solid fa-trash"></i> Eliminar
+                              <i className="fa-solid fa-ban"></i>
                             </button>
                           )}
                         </td>
@@ -588,7 +571,7 @@ function AdminPanel({ user }) {
                       <td style={{ fontSize: '13px', color: '#6b7280' }}>{c.descripcion || '—'}</td>
                       <td className="text-right">
                         <button onClick={() => setCategoriaEditando(c)} className="btn-icon-edit" title="Editar"><i className="fa-solid fa-pen"></i></button>
-                        <button onClick={() => setCategoryToDelete(c)} className="btn-icon-delete" title="Eliminar"><i className="fa-solid fa-trash"></i></button>
+                        <button onClick={() => setCategoryToDelete(c)} className="btn-icon-delete" title="Eliminar"><i className="fa-solid fa-ban"></i></button>
                       </td>
                     </tr>
                   )))}
@@ -606,7 +589,7 @@ function AdminPanel({ user }) {
         roleChange={roleChange} setRoleChange={setRoleChange} confirmarCambioRol={confirmarCambioRol} ROLES={ROLES}
         userToDelete={userToDelete} setUserToDelete={setUserToDelete} confirmarEliminarUsuario={confirmarEliminarUsuario}
         categoryToDelete={categoryToDelete} setCategoryToDelete={setCategoryToDelete} confirmarEliminarCategoria={confirmarEliminarCategoria}
-        setCategorias={setCategorias} 
+        setCategorias={(val) => dispatch(fetchCategorias())} 
       />
       
     </div>

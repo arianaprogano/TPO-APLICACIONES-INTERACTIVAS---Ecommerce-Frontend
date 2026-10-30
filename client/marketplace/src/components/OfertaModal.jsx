@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { crearOferta } from '../api/ofertas'
+import { useDispatch } from 'react-redux'
+import { enviarOferta } from '../redux/slice/ofertasSlice'
 import { PROVINCIAS } from '../api/ordenes'
 import './AdminModals.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-// Oferta por un precio menor al de lista. Si el vendedor la acepta, el backend
-// crea la orden al precio acordado; por eso, si el producto se despacha, la
-// direccion de entrega se pide ahora.
 function OfertaModal({ producto, user, onClose, onEnviada }) {
+  const dispatch = useDispatch()
   const [form, setForm] = useState({
     cantidad: 1,
     precioOfrecido: '',
@@ -23,7 +22,7 @@ function OfertaModal({ producto, user, onClose, onEnviada }) {
   const precio = Number(form.precioOfrecido)
   const ahorro = precio > 0 ? Math.round((1 - precio / producto.price) * 100) : 0
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
     if (!precio || precio <= 0) return setError('Indicá cuánto ofrecés por unidad.')
@@ -32,27 +31,28 @@ function OfertaModal({ producto, user, onClose, onEnviada }) {
       return setError('Completá la dirección de entrega: si el vendedor acepta, la compra sale con envío.')
 
     setEnviando(true)
-    try {
-      await crearOferta({
-        idProducto: producto.id,
-        cantidad: Number(form.cantidad),
-        precioOfrecido: precio,
-        ...(producto.conEnvio ? {
-          provinciaEntrega: form.provinciaEntrega,
-          localidadEntrega: form.localidadEntrega.trim(),
-          direccionEntrega: form.direccionEntrega.trim(),
-        } : {}),
-      })
-      onEnviada()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setEnviando(false)
+    
+    const datosOferta = {
+      idProducto: producto.id,
+      cantidad: Number(form.cantidad),
+      precioOfrecido: precio,
+      ...(producto.conEnvio ? {
+        provinciaEntrega: form.provinciaEntrega,
+        localidadEntrega: form.localidadEntrega.trim(),
+        direccionEntrega: form.direccionEntrega.trim(),
+      } : {}),
     }
+
+    dispatch(enviarOferta(datosOferta))
+      .unwrap()
+      .then(() => onEnviada())
+      .catch((err) => setError(err.message || 'Error al enviar la oferta'))
+      .finally(() => setEnviando(false))
   }
 
   return (
     <div className="modal-overlay">
+      {/* HTML IDENTICO AL ORIGINAL */}
       <form className="user-modal-content" style={{ maxWidth: '460px' }} onSubmit={handleSubmit} noValidate>
         <header className="user-modal-header">
           <div className="modal-title-with-icon"><i className="fa-solid fa-hand-holding-dollar"></i> Hacer una oferta</div>

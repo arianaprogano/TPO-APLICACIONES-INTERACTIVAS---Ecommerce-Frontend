@@ -5,7 +5,7 @@ import { getProductosDeVendedor } from '../api/productos'
 import { getCalificacionVendedor, NIVELES_VENDEDOR } from '../api/resenas'
 import './PerfilVendedor.css'
 
-function PerfilVendedor({ user, favorites, toggleFavorite, addToCart }) {
+function PerfilVendedor({ user }) {
   const { nombreUsuario } = useParams()
   const navigate = useNavigate()
   const [calificacion, setCalificacion] = useState(null)
@@ -74,9 +74,6 @@ function PerfilVendedor({ user, favorites, toggleFavorite, addToCart }) {
               sales={post.sales}
               disponible={post.disponible}
               location={post.location}
-              isFavorite={favorites.includes(post.id)}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
               conEnvio={post.conEnvio}
               enOferta={post.enOferta}
               porcentajeDescuento={post.porcentajeDescuento}

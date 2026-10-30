@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { crearOrden, nombreProvincia, PROVINCIAS } from '../api/ordenes'
+import { useSelector, useDispatch } from 'react-redux'
+import { crearNuevaOrden } from '../redux/slice/ordenesSlice'
+import { vaciar } from '../redux/slice/carritoSlice'
+import { nombreProvincia, PROVINCIAS } from '../api/ordenes'
 import './Checkout.css'
 
-// El backend arma la orden con lo que hay en el carrito del usuario. Como se
-// entrega lo decide cada producto: con envio se despacha si o si y sin envio
-// se coordina si o si. Aca solo se pide a donde, si algo se despacha.
-function Checkout({ cart, onCompraRealizada, user }) {
+function Checkout({ user }) {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  
+  // Consumimos el carrito desde Redux
+  const cart = useSelector(state => state.carrito.items)
+  
   const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [ordenesCreadas, setOrdenesCreadas] = useState(null)
+  
   const seDespacha = (item) => item.conEnvio
 
   const agruparPaquetes = () => {
@@ -72,20 +78,27 @@ function Checkout({ cart, onCompraRealizada, user }) {
       return
     }
     setEnviando(true)
-    try {
-      const ordenes = await crearOrden(hayDespacho ? entrega : {})
-      onCompraRealizada()
-      setOrdenesCreadas(ordenes)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setEnviando(false)
-    }
+    
+    // Usamos el Thunk de Redux (y unwrap para poder leer el resultado directo aquí)
+    dispatch(crearNuevaOrden(hayDespacho ? entrega : {}))
+      .unwrap()
+      .then((ordenes) => {
+        setOrdenesCreadas(ordenes)
+        dispatch(vaciar()) // Vaciamos el carrito desde Redux
+      })
+      .catch((err) => {
+        setError(err.message || 'Error al procesar la compra')
+      })
+      .finally(() => {
+        setEnviando(false)
+      })
   }
 
   return (
     <div className="checkout-container">
-      <div className="checkout-left">
+       {/* El HTML del render se mantiene EXACTAMENTE IGUAL */}
+       {/* ... todo tu bloque izquierdo de envío y derecho de resumen ... */}
+       <div className="checkout-left">
         <h2 className="checkout-section-title">Revisa tu compra</h2>
 
         {hayDespacho && (

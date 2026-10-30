@@ -8,6 +8,7 @@
 .aviso-exito .error-btn,
 .aviso-confirmar .error-btn {
   background-color: var(--verde);
+  color: #ffffff !important;
 }
 
 .aviso-confirmar.aviso-peligro .error-icon-box {
@@ -15,8 +16,18 @@
   box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
 }
 
+/* Forzar que el ícono dentro del cuadro de advertencia/peligro sea blanco */
+.aviso-confirmar.aviso-peligro .error-icon-box i {
+  color: #ffffff !important;
+}
+
 .aviso-confirmar.aviso-peligro .error-btn:not(.aviso-cancelar) {
-  background-color: #ef4444;
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.aviso-confirmar.aviso-peligro .error-btn:not(.aviso-cancelar):hover {
+  background-color: #dc2626 !important;
 }
 
 .aviso-botones {
@@ -25,8 +36,12 @@
 }
 
 .error-btn.aviso-cancelar {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+.error-btn.aviso-cancelar:hover {
+  background-color: #d1d5db !important;
 }
 
 /* Dato importante dentro del modal de exito, ej. el numero de seguimiento */

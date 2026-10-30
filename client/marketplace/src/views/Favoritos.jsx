@@ -1,11 +1,34 @@
-import { useNavigate } from 'react-router-dom'
-import PostCard from '../components/PostCard'
-import './Favoritos.css'
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchWishlist, vaciarFavoritos, quitarFavorito } from '../redux/slice/wishlistSlice';
+import { agregarItem } from '../redux/slice/carritoSlice';
+import PostCard from '../components/PostCard';
+import './Favoritos.css';
 
-// La lista viene del backend (GET /wishlist) a traves de App, que tambien
-// resuelve agregar, quitar y vaciar.
-function Favoritos({ wishlist, user, toggleFavorite, clearFavorites, addToCart }) {
-  const navigate = useNavigate()
+function Favoritos() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  // Extraemos lo que necesitamos del store global
+  const { items: wishlist } = useSelector((state) => state.wishlist);
+  const user = useSelector((state) => state.auth?.user); // Suponiendo que auth lo guardes luego en Redux, o lo lees de donde esté.
+
+  useEffect(() => {
+    dispatch(fetchWishlist());
+  }, [dispatch]);
+
+  const handleClear = () => {
+    dispatch(vaciarFavoritos());
+  };
+
+  const handleToggle = (id) => {
+    dispatch(quitarFavorito(id));
+  };
+
+  const handleAddToCart = (producto, cantidad) => {
+    dispatch(agregarItem({ idProducto: producto.id, cantidad }));
+  };
 
   return (
     <div className="favoritos-container">
@@ -18,7 +41,7 @@ function Favoritos({ wishlist, user, toggleFavorite, clearFavorites, addToCart }
           <button className="btn-back-catalog" onClick={() => navigate('/productos')}>
             <i className="fa-solid fa-arrow-left"></i> VOLVER AL CATÁLOGO
           </button>
-          <button className="btn-clear-list" onClick={clearFavorites} disabled={wishlist.length === 0}>
+          <button className="btn-clear-list" onClick={handleClear} disabled={wishlist.length === 0}>
             <i className="fa-regular fa-trash-can"></i> VACIAR LISTA
           </button>
         </div>
@@ -45,26 +68,18 @@ function Favoritos({ wishlist, user, toggleFavorite, clearFavorites, addToCart }
               precioOriginal={post.precioOriginal}
               nivelDestacado={post.nivelDestacado}
               isFavorite={true}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
+              onToggleFavorite={handleToggle}
+              onAddToCart={handleAddToCart}
               esAdmin={user?.role === 'admin'}
             />
           ))
         ) : (
           <div className="empty-fav-state">
-            <div className="empty-icon-circle">
-              <i className="fa-regular fa-heart"></i>
-            </div>
-            <h3 className="empty-fav-title">Tu lista de deseos está vacía</h3>
-            <p className="empty-fav-text">Explora nuestro catálogo y guarda los productos que te interesen<br/>haciendo clic en el icono del corazón.</p>
-            <button className="btn-explorar" onClick={() => navigate('/productos')}>
-              Explorar Catálogo
-            </button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Favoritos
+export default Favoritos;

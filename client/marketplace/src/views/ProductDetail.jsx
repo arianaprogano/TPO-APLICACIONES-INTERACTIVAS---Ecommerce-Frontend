@@ -1,424 +1,249 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { getProducto, getSimilares } from '../api/productos'
-import { crearResena, getResenasDeProducto, NIVELES_VENDEDOR } from '../api/resenas'
-import { getMisCompras } from '../api/ordenes' 
-import { getMisEnvios } from '../api/envios' 
-import ProductRow from '../components/ProductRow'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchProductoDetalle } from '../redux/slice/productosSlice'
+import { agregarItem, limpiarErrorCarrito } from '../redux/slice/carritoSlice'
+import { agregarFavorito, quitarFavorito } from '../redux/slice/wishlistSlice'
 import OfertaModal from '../components/OfertaModal'
-import Reviews from '../components/Reviews' 
-import { useAvisos } from '../components/avisosContext'
 import './ProductDetail.css'
+import '../Excepciones.css' // Importante: apuntamos al archivo exacto con la E mayúscula
 
-function ProductDetail({ favorites, toggleFavorite, user, addToCart, pedirLogin }) {
-  const { error: avisarError, exito } = useAvisos()
+function ProductDetail({ user }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [product, setProduct] = useState(null)
+  const location = useLocation()
+  const dispatch = useDispatch()
+  
   const [quantity, setQuantity] = useState(1)
   const [fotoActiva, setFotoActiva] = useState(0)
-  const [loading, setLoading] = useState(true)
-
-  const [error, setError] = useState('')
-  const [similares, setSimilares] = useState([])
-  const [todasLasResenas, setTodasLasResenas] = useState(null)
   const [ofertando, setOfertando] = useState(false)
 
-  const [comprasEntregadas, setComprasEntregadas] = useState([])
-  const [miResena, setMiResena] = useState(null)
-  const [mostrarModalResena, setMostrarModalResena] = useState(false)
-
+  const { productoActual: product, loading, error: errorProducto } = useSelector(state => state.productos)
+  const errorCarrito = useSelector(state => state.carrito.error)
+  const wishlist = useSelector(state => state.wishlist.items)
+  
   useEffect(() => {
-    let cancelado = false
-    setLoading(true)
-    setError('')
+    dispatch(fetchProductoDetalle(id))
     setQuantity(1)
     setFotoActiva(0)
-    setTodasLasResenas(null)
-    setMiResena(null)
-    setComprasEntregadas([])
+  }, [id, dispatch])
 
-    getSimilares(id).then(lista => { if (!cancelado) setSimilares(lista) }).catch(() => setSimilares([]))
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Buscando producto...</div>
+  if (errorProducto) return <div style={{ padding: '40px', textAlign: 'center', color: '#b91c1c' }}>{errorProducto}</div>
+  if (!product) return <div style={{ padding: '40px', textAlign: 'center' }}>Producto no encontrado</div>
 
-    getProducto(id)
-      .then(async (p) => {
-        if (cancelado) return
-        setProduct(p)
-
-        if (user) {
-            try {
-                const [misOrdenes, misEnvios, resenasProducto] = await Promise.all([
-                    getMisCompras().catch(() => []),
-                    getMisEnvios().catch(() => []),
-                    getResenasDeProducto(id).catch(() => [])
-                ])
-
-                const resenaDelUsuario = resenasProducto.find(r => r.autor === user.username)
-                setMiResena(resenaDelUsuario || null)
-                setTodasLasResenas(resenasProducto)
-
-                const enviosPorOrden = Object.fromEntries(misEnvios.map(e => [e.idOrden, e]))
-                
-                const ordenesConEsteProducto = misOrdenes.filter(orden => 
-                    orden.items.some(item => String(item.idProducto) === String(id))
-                )
-
-                const ordenesEntregadas = ordenesConEsteProducto.filter(orden => 
-                    enviosPorOrden[orden.id]?.estado === 'ENTREGADO'
-                )
-
-                setComprasEntregadas(ordenesEntregadas)
-
-            } catch (err) {
-                console.error("Error al cargar datos del usuario para reseñas:", err)
-            }
-        }
-      })
-      .catch(err => {
-        if (cancelado) return
-        setProduct(null)
-        if (err.status !== 404) setError(err.message)
-      })
-      .finally(() => { if (!cancelado) setLoading(false) })
-      
-    return () => { cancelado = true }
-  }, [id, user])
-
-  if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center', fontSize: '18px', color: '#6b7280' }}>Buscando producto...</div>
-  }
-
-  if (error) {
-    return <div style={{ padding: '40px', textAlign: 'center', fontSize: '16px', color: '#b91c1c', fontWeight: 'bold' }}>{error}</div>
-  }
-
-  if (!loading && !product) {
-    return (
-      <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-        <i className="fa-solid fa-magnifying-glass-minus" style={{ fontSize: '48px', color: '#9ca3af', marginBottom: '20px' }}></i>
-        <h2 style={{ fontSize: '24px', color: '#111827', marginBottom: '10px' }}>Producto no encontrado</h2>
-        <p style={{ color: '#6b7280', marginBottom: '30px' }}>
-          Lo sentimos, el producto que estás buscando no existe o fue eliminado.
-        </p>
-        <button 
-          onClick={() => navigate('/home')} 
-          style={{ backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          Volver a la tienda
-        </button>
-      </div>
-    )
-  }
-
-  const isFavorite = favorites.includes(product.id)
-  const esMiProducto = Boolean(user && product.vendedor?.nombreUsuario === user.username)
-  const esAdmin = user?.role?.toLowerCase() === 'admin'
+  const isFavorite = wishlist.some(fav => fav.id === product.id)
   
-  // --- LÓGICA DE ESTADO TOLERANTE (Misma que en PostCard) ---
-  const noEstaALaVenta = product.activo === false || product.estadoPublicacion === 'PAUSADO' || product.estadoPublicacion === 'BORRADOR'
-
-  const sePuedeComprar = product.stock > 0 && !noEstaALaVenta
-  
-  const handleQuantityChange = (delta) => {
-    let newQ = quantity + delta
-    if (newQ < 1) newQ = 1
-    if (newQ > product.stock) newQ = product.stock
-    setQuantity(newQ)
+  const handleToggleFavorite = () => {
+    if (!user) {
+      navigate('/login', { state: { from: location } })
+      return
+    }
+    if (isFavorite) {
+      const favItem = wishlist.find(f => f.id === product.id)
+      if (favItem) dispatch(quitarFavorito(favItem.idItem))
+    } else {
+      dispatch(agregarFavorito(product.id))
+    }
   }
 
   const handleAddToCartClick = () => {
-    addToCart(product, quantity)
-  }
-
-  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
-
-  const puedeOfertar = product.aceptaOfertas && !esMiProducto && sePuedeComprar && (!user || user.role === 'cliente')
-  const abrirOferta = () => {
-    if (!user) return pedirLogin('Iniciá sesión para hacer una oferta.')
-    setOfertando(true)
-  }
-
-  const resenas = todasLasResenas ?? product.reviews
-  const hayMasResenas = !todasLasResenas && product.cantidadResenas > product.reviews.length
-  const verTodasLasResenas = () =>
-    getResenasDeProducto(product.id).then(setTodasLasResenas).catch(err => avisarError(err.message))
-
-  const nivelVendedor = NIVELES_VENDEDOR[product.vendedor?.nivel]
-
-  const renderStars = (rating) => {
-    const stars = []
-    for (let i = 1; i <= 5; i++) {
-      stars.push(<i key={i} className={i <= rating ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ color: i <= rating ? '#f97316' : '#d1d5db' }}></i>)
+    if (!user) {
+      navigate('/login', { state: { from: location } })
+      return
     }
-    return stars
+    dispatch(agregarItem({ idProducto: product.id, cantidad: quantity }))
   }
 
-  const handleReviewAction = () => {
-      if(!user) return pedirLogin("Iniciá sesión para dejar una opinión")
-      setMostrarModalResena(true)
-  }
-  
-  const datosParaResena = comprasEntregadas.length > 0 ? { id: comprasEntregadas[0].id, productoId: product.id, productoTitulo: product.title } : null
+  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-  const handleReviewSaved = async (ordenId, reseñaData) => {
-    try {
-  
-      await crearResena({
-        idOrden: ordenId,
-        idProducto: reseñaData.productoId,
-        puntaje: reseñaData.estrellas,
-        comentario: reseñaData.texto,
-      })
+  const imagenes = product.imagenes?.length > 0 ? product.imagenes : (product.image ? [product.image] : [])
 
-      setMostrarModalResena(false)
-
-      const resenasActualizadas = await getResenasDeProducto(product.id)
-      setTodasLasResenas(resenasActualizadas)
-      
-      const resenaDelUsuario = resenasActualizadas.find(r => r.autor === user?.username)
-      setMiResena(resenaDelUsuario || null)
-
-      exito('Tu opinión se publicó correctamente.', { titulo: '¡Gracias por opinar!' })
-    } catch (err) {
-      avisarError(err.message)
-    }
-  }
+  const incrementar = () => { if (quantity < (product.stock || 1)) setQuantity(q => q + 1) }
+  const decrementar = () => { if (quantity > 1) setQuantity(q => q - 1) }
 
   return (
     <div className="product-detail-container">
-      <nav style={{ marginBottom: '20px' }}>
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <i className="fa-solid fa-arrow-left"></i> Volver al listado
-        </button>
-      </nav>
+      <button className="back-btn" onClick={() => navigate(-1)} style={{ marginBottom: '20px' }}>
+        <i className="fa-solid fa-arrow-left"></i> Volver
+      </button>
 
-      <article className="product-detail-card">
-        
+      <div className="product-detail-card">
         <div className="pd-top-row">
+          
           <div className="product-detail-left">
             <div className="pd-galeria">
-              {product.fotos.length > 1 && (
+              {imagenes.length > 1 && (
                 <div className="pd-miniaturas">
-                  {product.fotos.map((foto, i) => (
-                    <button key={foto.id} className={`pd-miniatura ${i === fotoActiva ? 'activa' : ''}`} onClick={() => setFotoActiva(i)}>
-                      <img src={foto.url} alt={`${product.title} - foto ${i + 1}`} />
+                  {imagenes.map((imgUrl, index) => (
+                    <button 
+                      key={index} 
+                      className={`pd-miniatura ${fotoActiva === index ? 'activa' : ''}`}
+                      onClick={() => setFotoActiva(index)}
+                    >
+                      <img src={imgUrl} alt={`${product.title} ${index}`} />
                     </button>
                   ))}
                 </div>
               )}
 
-              <figure className="product-detail-image-wrapper" style={{ margin: 0, position: 'relative' }}>
-                {product.fotos.length > 0 ? (
-                  <img src={product.fotos[fotoActiva]?.url} alt={product.title} className="product-detail-image" />
+              <div className="product-detail-image-wrapper" style={{ position: 'relative' }}>
+                {imagenes.length > 0 ? (
+                  <img src={imagenes[fotoActiva]} alt={product.title} className="product-detail-image" />
                 ) : (
                   <div className="product-detail-image pd-sin-foto"><i className="fa-regular fa-image"></i></div>
                 )}
-
-                {esMiProducto && (
-                  <div className="pd-mi-producto">MI PRODUCTO</div>
-                )}
-              </figure>
+              </div>
             </div>
           </div>
 
           <div className="product-detail-info">
-            <header className="pd-header-row">
+            <div className="pd-header-row">
               <div className="pd-tags">
-                <span className="pd-condition">{product.condition}{product.anio ? ` · ${product.anio}` : ''}</span>
-                <span className="pd-breadcrumb">{product.categoria?.nombreCategoriaPadre ? `${product.categoria.nombreCategoriaPadre} > ` : ''}{product.categoria?.nombre}</span>
+                <span className="pd-condition">{product.condition} {product.anio ? `· ${product.anio}` : ''}</span>
+                {product.categoria?.nombre && <span className="pd-breadcrumb">{product.categoria.nombre}</span>}
               </div>
-              
-              {!esAdmin && (
-                <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={() => toggleFavorite(product.id)}>
-                  <i className={isFavorite ? "fa-solid fa-heart" : "fa-regular fa-heart"}></i>
-                  {isFavorite ? 'En Lista de Deseos' : 'Añadir a Deseos'}
-                </button>
-              )}
-            </header>
-
-            <h1 className="product-title" style={noEstaALaVenta ? { color: '#6b7280' } : {}}>{product.title}</h1>
-            
-            <div className="product-rating">
-              <span className="star-icon"><i className="fa-solid fa-star"></i></span>
-              <span className="rating-score">{product.rating != null ? product.rating.toFixed(1) : 'Sin reseñas'}</span>
-              <span className="rating-sales">| {product.sales} vendidos</span>
+              <button className={`pd-top-wishlist ${isFavorite ? 'active-icon' : ''}`} onClick={handleToggleFavorite}>
+                <i className={`${isFavorite ? 'fa-solid' : 'fa-regular'} fa-heart`}></i> {isFavorite ? 'En favoritos' : 'Favorito'}
+              </button>
             </div>
+
+            <h1 className="product-title">{product.title}</h1>
+
+            {product.rating != null && (
+              <div className="product-rating">
+                <i className="fa-solid fa-star star-icon"></i>
+                <span className="rating-score">{product.rating.toFixed(1)}</span>
+                <span className="rating-sales">| {product.sales || 0} vendidos</span>
+              </div>
+            )}
 
             <div className="product-price-section">
-              {product.enOferta && !noEstaALaVenta && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                  <span className="pd-precio-tachado">
-                    {formatMoney(product.precioOriginal)}
-                  </span>
-                  <span className="pd-badge-oferta">
-                    {product.porcentajeDescuento}% OFF
-                  </span>
+              {product.enOferta && product.precioOriginal && (
+                <div>
+                  <span className="pd-precio-tachado">{formatMoney(product.precioOriginal)}</span>
+                  <span className="pd-badge-oferta" style={{ marginLeft: '8px' }}>{product.porcentajeDescuento}% OFF</span>
                 </div>
               )}
-              <div className="product-price" style={noEstaALaVenta ? { color: '#6b7280' } : {}}>{formatMoney(product.price)}</div>
+              <div className="product-price">{formatMoney(product.price)}</div>
               
-              {/* MENSAJE DE ESTADO DE VENTA / STOCK */}
-              {sePuedeComprar ? (
-                <div className="product-stock-green">Stock disponible: {product.stock}</div>
-              ) : (
-                <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '13px', marginTop: '8px' }}>
-                  {noEstaALaVenta ? 'No está a la venta' : 'Agotado'}
-                </div>
-              )}
+              <div className="product-stock-green">
+                {product.disponible && product.stock > 0 ? `Stock disponible: ${product.stock}` : 'Sin stock'}
+              </div>
             </div>
 
-            {/* SI SE PUEDE COMPRAR, MOSTRAMOS LOS PAGOS Y EL BOTÓN DE AGREGAR */}
-            {sePuedeComprar ? (
-              <>
-                <section className="payment-box">
-                  <h4 className="payment-title">Medios de pago y financiación</h4>
-                  <ul className="payment-list">
-                    <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito.</li>
-                    <li><i className="fa-solid fa-check"></i> 6 cuotas sin interés bancarias.</li>
-                    <li><i className="fa-solid fa-check"></i> Descuento por transferencia bancaria.</li>
-                  </ul>
-                </section>
+            <div className="pd-location">
+              <i className="fa-solid fa-location-dot"></i> {product.location || 'Ubicación a coordinar'}
+              <div className="pd-envio">
+                {product.conEnvio ? (
+                  <span><i className="fa-solid fa-truck-fast"></i> Con envío disponible</span>
+                ) : (
+                  <span><i className="fa-solid fa-handshake"></i> Retiro a acordar</span>
+                )}
+              </div>
+            </div>
 
-                <div className="product-actions-row">
-                  <div className="qty-selector">
-                    <button onClick={() => handleQuantityChange(-1)}>-</button>
-                    <span>{quantity}</span>
-                    <button onClick={() => handleQuantityChange(1)}>+</button>
-                  </div>
-                  <button className="btn-add-cart" onClick={handleAddToCartClick}>
-                    AGREGAR AL CARRITO
-                  </button>
+            {product.disponible && product.stock > 0 && (
+              <div className="product-actions-row">
+                <div className="qty-selector">
+                  <button onClick={decrementar}>-</button>
+                  <span>{quantity}</span>
+                  <button onClick={incrementar}>+</button>
                 </div>
-              </>
-            ) : (
-               <div className="product-actions-row">
-                <button disabled style={{ flex: 1, backgroundColor: '#d1d5db', color: '#6b7280', border: 'none', borderRadius: '6px', fontWeight: 'bold', padding: '12px', cursor: 'not-allowed' }}>
-                  <i className="fa-solid fa-ban"></i> {noEstaALaVenta ? 'PRODUCTO NO DISPONIBLE' : 'SIN STOCK'}
+                <button className="btn-add-cart" onClick={handleAddToCartClick}>
+                  <i className="fa-solid fa-cart-shopping"></i> Agregar al carrito
                 </button>
               </div>
             )}
 
-            {puedeOfertar && (
-              <button className="btn-ofertar" onClick={abrirOferta}>
-                <i className="fa-solid fa-hand-holding-dollar"></i> Hacer una oferta
-              </button>
-            )}
-
-            <div className="pd-location">
-              <i className="fa-solid fa-location-dot"></i> {product.location}
-              
-              {/* DOBLE CONDICIÓN DE ENVÍO */}
-              {product.conEnvio ? (
-                 <span className="pd-envio" style={{ color: noEstaALaVenta ? '#9ca3af' : '#16a34a', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <i className="fa-solid fa-truck-fast"></i> Con envío
-                 </span>
-              ) : (
-                 <span className="pd-envio" style={{ color: '#6b7280', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <i className="fa-solid fa-handshake"></i> Retiro a acordar
-                 </span>
-              )}
-            </div>
-
             {product.vendedor && (
-              <section className="pd-vendedor">
-                <h4 className="pd-vendedor-titulo">Información sobre el vendedor</h4>
-                <div className="pd-vendedor-nombre">{product.vendedor.nombre} {product.vendedor.apellido}</div>
-                <div className="pd-vendedor-meta">
-                  @{product.vendedor.nombreUsuario}
-                  {product.vendedor.calificacion != null && ` · ${product.vendedor.calificacion.toFixed(1)} ★ (${product.vendedor.cantidadResenas})`}
-                </div>
-                {nivelVendedor && (
-                  <div className="pd-vendedor-nivel" style={{ color: nivelVendedor.color }}>
-                    <i className={`fa-solid ${nivelVendedor.icono}`}></i> {nivelVendedor.texto}
-                  </div>
-                )}
+              <div className="pd-vendedor" style={{ marginTop: '20px' }}>
+                <div className="pd-vendedor-titulo">Vendido por</div>
+                <div className="pd-vendedor-nombre">{product.vendedor.nombreUsuario}</div>
+                
+                {product.vendedor.nivel && (() => {
+                  const raw = product.vendedor.nivel.toLowerCase().replace(/_/g, ' ').trim()
+                  if (!raw || raw.includes('ninguno') || raw.includes('sin calificar') || raw.includes('none') || raw.includes('null')) {
+                    return null
+                  }
+
+                  let colorNivel = '#b45309' // Bronce por defecto
+                  if (raw.includes('oro')) colorNivel = '#ca8a04'
+                  if (raw.includes('platino')) colorNivel = '#0284c7'
+
+                  const limpiarNivel = product.vendedor.nivel.replace(/vendedor/gi, '').replace(/_/g, ' ').trim()
+                  const nivelCapitalizado = limpiarNivel.charAt(0).toUpperCase() + limpiarNivel.slice(1).toLowerCase()
+                  const etiquetaNivel = `Vendedor ${nivelCapitalizado}`
+
+                  return (
+                    <div className="pd-vendedor-nivel" style={{ color: colorNivel, fontWeight: 'bold', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <i className="fa-solid fa-medal"></i> {etiquetaNivel}
+                    </div>
+                  )
+                })()}
+
+                {product.vendedor.provincia && <div className="pd-vendedor-meta">{product.vendedor.provincia}</div>}
+                
                 <button className="pd-vendedor-link" onClick={() => navigate(`/vendedor/${product.vendedor.nombreUsuario}`)}>
-                  Ver perfil del Vendedor <i className="fa-solid fa-chevron-right"></i>
+                  Ver perfil del vendedor <i className="fa-solid fa-chevron-right"></i>
                 </button>
-              </section>
+              </div>
             )}
+
           </div>
         </div>
 
         <div className="product-bottom-section">
-          <section className="product-description-bottom">
-            <h3 className="reviews-title" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '10px', marginBottom: '16px' }}>
-              Descripción del producto:
-            </h3>
-            <p style={{ color: '#4b5563', lineHeight: '1.6', fontSize: '16px', whiteSpace: 'pre-wrap' }}>
-              {product.body}
+          <div className="product-description-bottom">
+            <h3 className="reviews-title">Descripción</h3>
+            <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+              {product.description || 'El vendedor no dejó una descripción detallada para este producto.'}
             </p>
-          </section>
+          </div>
 
-          <section className="product-reviews-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e7eb', paddingBottom: '10px', marginBottom: '16px' }}>
-                <h3 className="reviews-title" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0 }}>
-                Opiniones de los usuarios
-                </h3>
-                
-                {(!miResena && comprasEntregadas.length > 0) && (
-                    <button 
-                        onClick={handleReviewAction}
-                        className="btn-opinar"
-                    >
-                        <i className="fa-solid fa-star"></i> Opinar sobre este producto
-                    </button>
-                )}
-            </div>
-            
-            {resenas && resenas.length > 0 ? (
-              resenas.map(review => (
-                <article key={review.id} className="review-card" style={{ marginBottom: '16px' }}>
+          <div className="product-reviews-section">
+            <h3 className="reviews-title">Opiniones sobre el producto</h3>
+            {product.reviews && product.reviews.length > 0 ? (
+              product.reviews.map((rev, index) => (
+                <div key={index} className="review-card">
                   <div className="review-stars">
-                    {renderStars(review.estrellas)}
+                    {[...Array(5)].map((_, i) => (
+                      <i key={i} className={`fa-solid fa-star ${i < rev.estrellas ? '' : 'text-gray-300'}`} style={{ color: i < rev.estrellas ? '#f97316' : '#d1d5db' }}></i>
+                    ))}
                   </div>
-                  <p className="review-text">{review.texto}</p>
-                  <span className="review-author">{review.autor} - {review.fecha}</span>
-                </article>
+                  <p className="review-text">{rev.texto || rev.comentario}</p>
+                  <span className="review-author">{rev.autor || 'Comprador verificado'} — {rev.fecha}</span>
+                </div>
               ))
             ) : (
-              <p style={{ color: '#6b7280', fontStyle: 'italic' }}>Este producto aún no tiene opiniones. ¡Sé el primero en calificarlo luego de tu compra!</p>
+              <p style={{ fontSize: '14px', color: '#6b7280' }}>Este producto todavía no tiene opiniones.</p>
             )}
-            {hayMasResenas && (
-              <button className="pd-vendedor-link" onClick={verTodasLasResenas}>
-                Ver las {product.cantidadResenas} opiniones <i className="fa-solid fa-chevron-down"></i>
-              </button>
-            )}
-          </section>
+          </div>
         </div>
 
-      </article>
+      </div>
 
-      <ProductRow
-        titulo="Productos similares"
-        subtitulo="Otras publicaciones que te pueden interesar"
-        productos={similares}
-        user={user}
-        favorites={favorites}
-        toggleFavorite={toggleFavorite}
-        addToCart={addToCart}
-      />
-
-      {ofertando && (
-        <OfertaModal
-          producto={product}
-          user={user}
-          onClose={() => setOfertando(false)}
-          onEnviada={() => {
-            setOfertando(false)
-            exito('Te avisamos con una notificación cuando el vendedor responda. La podés seguir en "Mis Ofertas".', { titulo: '¡Oferta enviada!' })
-          }}
-        />
+      {/* MODAL DE ERROR UTILIZANDO LAS CLASES OFICIALES DE Excepciones.css */}
+      {errorCarrito && (
+        <div className="error-overlay">
+          <div className="error-modal">
+            <div className="error-icon-box">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 className="error-title">Atención</h3>
+            <p className="error-text">{errorCarrito}</p>
+            <button 
+              className="error-btn" 
+              onClick={() => dispatch(limpiarErrorCarrito())}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
       )}
 
-      {mostrarModalResena && datosParaResena && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <Reviews
-            orden={datosParaResena} 
-            onClose={() => setMostrarModalResena(false)}
-            onSave={handleReviewSaved}
-          />
-        </div>
+      {ofertando && (
+        <OfertaModal producto={product} onClose={() => setOfertando(false)} />
       )}
     </div>
   )

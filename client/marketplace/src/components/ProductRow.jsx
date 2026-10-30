@@ -1,7 +1,7 @@
 import PostCard from './PostCard'
 import './ProductRow.css'
 
-function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites, toggleFavorite, addToCart, misIds }) {
+function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, misIds }) {
   if (!productos || productos.length === 0) return null
 
   return (
@@ -34,9 +34,6 @@ function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, favorites,
             sales={post.sales}
             disponible={post.disponible}
             location={post.location}
-            isFavorite={favorites.includes(post.id)}
-            onToggleFavorite={toggleFavorite}
-            onAddToCart={addToCart}
             conEnvio={post.conEnvio}
             enOferta={post.enOferta}
             porcentajeDescuento={post.porcentajeDescuento}

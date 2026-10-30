@@ -1,32 +1,30 @@
 import { useEffect, useState } from 'react'
-import { cambiarEstadoEnvio, getHistorialEntregas, getMisEnvios, recibirEnvio } from '../api/envios'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchMisEnvios, fetchHistorial, ingresarPaqueteThunk, cambiarEstadoEnvioThunk } from '../redux/slice/enviosSlice'
 import { nombreProvincia } from '../api/ordenes'
 import './DespachantePanel.css'
 import { useAvisos } from '../components/avisosContext'
 
-// El despachante trabaja como en una sucursal: no elige de una lista, carga el
-// numero de la etiqueta del paquete que tiene en la mano. Con eso lo toma y
-// recien ahi ve la direccion de entrega. Despues lo marca entregado.
 function DespachantePanel() {
   const { error: avisarError, confirmar } = useAvisos()
+  const dispatch = useDispatch()
+  
   const [activeTab, setActiveTab] = useState('encurso')
-  const [enCurso, setEnCurso] = useState(null)
-  const [historial, setHistorial] = useState(null)
-  const [error, setError] = useState('')
+  const { enCurso, historial, loading } = useSelector(state => state.envios)
+  
+  const [errorIngreso, setErrorIngreso] = useState('')
   const [numero, setNumero] = useState('')
   const [isIngresoOpen, setIsIngresoOpen] = useState(false)
   const [ingresando, setIngresando] = useState(false)
-  const [errorIngreso, setErrorIngreso] = useState('')
 
   const cargar = () => {
-    setError('')
-    getMisEnvios().then(setEnCurso).catch(err => setError(err.message))
-    getHistorialEntregas().then(setHistorial).catch(err => setError(err.message))
+    dispatch(fetchMisEnvios())
+    dispatch(fetchHistorial())
   }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar() }, [dispatch])
 
-  const ingresarPaquete = async (e) => {
+  const ingresarPaquete = (e) => {
     e.preventDefault()
     if (!numero.trim()) {
       setErrorIngreso('Ingresá el número de seguimiento de la etiqueta.')
@@ -34,32 +32,29 @@ function DespachantePanel() {
     }
     setErrorIngreso('')
     setIngresando(true)
-    try {
-      const envio = await recibirEnvio(numero)
-      setEnCurso(prev => [envio, ...(prev ?? []).filter(e => e.id !== envio.id)])
-      setIsIngresoOpen(false)
-      setNumero('')
-      setActiveTab('encurso')
-    } catch (err) {
-      setErrorIngreso(err.message)
-    } finally {
-      setIngresando(false)
-    }
+    
+    dispatch(ingresarPaqueteThunk(numero))
+      .unwrap()
+      .then(() => {
+        setIsIngresoOpen(false)
+        setNumero('')
+        setActiveTab('encurso')
+      })
+      .catch(err => setErrorIngreso(err.message))
+      .finally(() => setIngresando(false))
   }
 
   const marcarEntregado = async (envio) => {
     if (!(await confirmar(`¿Confirmás la entrega del envío ${envio.numeroSeguimiento} a ${envio.comprador?.nombre} ${envio.comprador?.apellido}?`))) return
-    try {
-      await cambiarEstadoEnvio(envio.id, 'ENTREGADO')
-      cargar()
-    } catch (err) {
-      avisarError(err.message)
-    }
+    
+    dispatch(cambiarEstadoEnvioThunk({ id: envio.id, estado: 'ENTREGADO' }))
+      .unwrap()
+      .then(() => cargar())
+      .catch(err => avisarError(err.message))
   }
 
   const filaEstado = (datos, colSpan, vacio) => {
-    if (error) return <tr><td colSpan={colSpan} className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
-    if (datos === null) return <tr><td colSpan={colSpan} className="empty-state">Cargando...</td></tr>
+    if (loading && datos.length === 0) return <tr><td colSpan={colSpan} className="empty-state">Cargando...</td></tr>
     if (datos.length === 0) return <tr><td colSpan={colSpan} className="empty-state">{vacio}</td></tr>
     return null
   }

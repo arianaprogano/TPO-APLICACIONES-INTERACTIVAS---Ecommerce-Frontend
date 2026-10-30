@@ -1,25 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import HeroCarousel from '../components/HeroCarousel'
 import ProductRow from '../components/ProductRow'
-import { getArbolCategorias } from '../api/categorias' 
-import { getProductos, getMisPublicaciones } from '../api/productos' // <-- Agregamos getMisPublicaciones
+import { fetchMisPublicaciones } from '../redux/slice/productosSlice'
+import { getProductos } from '../api/productos' 
 import fotoCampo from '../assets/paisaje-agropecuario.jpg'
 import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
 import './Inicio.css'
-
-import { useAvisos } from '../components/avisosContext' 
+import { useAvisos } from '../components/avisosContext'
 
 const iconoCategoria = (nombre = '') => {
   const n = nombre.toLowerCase()
-  
   if (n.includes('maquin') || n.includes('tractor')) return 'fa-tractor'
   if (n.includes('vehic') || n.includes('camion') || n.includes('pick')) return 'fa-truck-pickup'
   if (n.includes('herramient') || n.includes('taller')) return 'fa-hammer'
   if (n.includes('semill') || n.includes('insumo') || n.includes('agrotox') || n.includes('fertil')) return 'fa-seedling'
   if (n.includes('ganad') || n.includes('animal') || n.includes('bovin') || n.includes('vac')) return 'fa-horse'
-
   return 'fa-leaf'
 }
 
@@ -30,31 +28,33 @@ const fotoCategoria = (nombre = '') => {
   return null
 }
 
-function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
+function Inicio({ user, setSelectedCategory, setSelectedSubcategory, setSearchTerm }) {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { error: avisarError } = useAvisos() 
   
-  const [categorias, setCategorias] = useState([])
+  // Consumimos las categorías desde Redux (cargadas por Navigation)
+  const categorias = useSelector(state => state.ui.categorias)
+  const misPublicaciones = useSelector(state => state.productos.misPublicaciones)
+  const misIds = new Set(misPublicaciones.map(p => p.id))
+
   const [porCategoria, setPorCategoria] = useState({})
   const [ofertas, setOfertas] = useState([])
   const [masVistos, setMasVistos] = useState([])
   const [masVendidos, setMasVendidos] = useState([])
   const [error, setError] = useState('')
-  
-
-  const [misIds, setMisIds] = useState(new Set())
 
   useEffect(() => {
     const cargarTodo = () => {
       const lista = (promesa) => promesa.catch(() => [])
 
-      getArbolCategorias()
-        .then(async (raices) => {
-          setCategorias(raices)
-          const productos = await Promise.all(raices.map(c => lista(getProductos({ idCategoria: c.id }))))
-          setPorCategoria(Object.fromEntries(raices.map((c, i) => [c.id, productos[i]])))
-        })
-        .catch(err => setError(err.message))
+      if (categorias.length > 0) {
+        Promise.all(categorias.map(c => lista(getProductos({ idCategoria: c.id }))))
+          .then(productos => {
+            setPorCategoria(Object.fromEntries(categorias.map((c, i) => [c.id, productos[i]])))
+          })
+          .catch(err => setError(err.message))
+      }
 
       lista(getProductos({ enOferta: true })).then(setOfertas)
       lista(getProductos({ orden: 'vistos' })).then(setMasVistos)
@@ -62,20 +62,13 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     }
 
     cargarTodo()
-    window.addEventListener('categoriasCambiadas', cargarTodo)
-    return () => window.removeEventListener('categoriasCambiadas', cargarTodo)
-  }, [])
-
+  }, [categorias])
 
   useEffect(() => {
-    if (!user || (user.role !== 'cliente' && user.rol !== 'CLIENTE')) {
-      setMisIds(new Set())
-      return
+    if (user?.role === 'cliente') {
+      dispatch(fetchMisPublicaciones())
     }
-    getMisPublicaciones()
-      .then((mios) => setMisIds(new Set(mios.map((p) => p.id))))
-      .catch(() => setMisIds(new Set()))
-  }, [user])
+  }, [user, dispatch])
 
   const verCategoria = (idCategoria) => {
     setSearchTerm('')
@@ -92,7 +85,7 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
   }
 
   const handlePublicarClick = () => {
-    if (user && (user.rol === 'ADMIN' || user.role === 'admin')) {
+    if (user && user.role === 'admin') {
       avisarError('Los administradores no publican productos. Gestioná el catálogo desde el Panel.')
     } else if (user) {
       navigate('/publicar')
@@ -126,12 +119,12 @@ function Inicio({ user, favorites, toggleFavorite, addToCart, setSelectedCategor
     },
   ]
 
-  const filaProps = { user, favorites, toggleFavorite, addToCart, misIds }
+  // Ya no pasamos favorites, addToCart, ni toggleFavorite porque ProductRow y PostCard se arreglan solos
+  const filaProps = { user, misIds }
 
   return (
     <div className="inicio">
       <HeroCarousel slides={slides} />
-
       <div className="inicio-contenido">
         {error && <div className="inicio-error">{error}</div>}
 

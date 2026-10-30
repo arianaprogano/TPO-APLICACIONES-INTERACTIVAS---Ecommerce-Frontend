@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { crearCategoria, editarCategoria } from '../api/admin'
+import { useDispatch } from 'react-redux'
+import { guardarCategoria } from '../redux/slice/adminSlice'
 import './AdminModals.css'
 
 function CategoryForm({ onClose, onSave, categoria, raices }) {
+  const dispatch = useDispatch()
   const [form, setForm] = useState({
     nombre: categoria?.nombre ?? '',
     descripcion: categoria?.descripcion ?? '',
@@ -13,7 +15,7 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
 
   const posiblesPadres = raices.filter(r => r.id !== categoria?.id)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     if (form.nombre.trim() === '') {
       setError('El nombre es obligatorio.')
@@ -21,23 +23,23 @@ function CategoryForm({ onClose, onSave, categoria, raices }) {
     }
     setError('')
     setGuardando(true)
+    
     const datos = {
       nombre: form.nombre.trim(),
       descripcion: form.descripcion.trim(),
       idCategoriaPadre: form.idCategoriaPadre ? Number(form.idCategoriaPadre) : null,
     }
-    try {
-      const resultado = await (categoria ? editarCategoria(categoria.id, datos) : crearCategoria(datos))
-      onSave(resultado, categoria ? 'editar' : 'crear')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setGuardando(false)
-    }
+    
+    dispatch(guardarCategoria({ id: categoria?.id, datos }))
+      .unwrap()
+      .then((resultado) => onSave(resultado, categoria ? 'editar' : 'crear'))
+      .catch((err) => setError(err.message || 'Error al guardar categoría'))
+      .finally(() => setGuardando(false))
   }
 
   return (
     <div className="user-modal-content" style={{ maxWidth: '440px' }}>
+      {/* HTML IDENTICO AL ORIGINAL */}
       <header className="user-modal-header">
         <div className="modal-title-with-icon">
           <i className="fa-solid fa-folder-tree" style={{ color: '#16a34a' }}></i>

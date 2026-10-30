@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getOrden, nombreProvincia } from '../api/ordenes'
-import { ESTADOS_ENVIO, getMisEnvios, getTodosLosEnvios } from '../api/envios'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchOrdenDetalle } from '../redux/slice/ordenesSlice'
+import { fetchMisEnvios } from '../redux/slice/enviosSlice'
+import { getTodosLosEnvios, ESTADOS_ENVIO } from '../api/envios'
+import { nombreProvincia } from '../api/ordenes'
 import './DetalleOrden.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
@@ -20,18 +23,34 @@ const PASOS = {
 function DetalleOrden({ user }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [orden, setOrden] = useState(null)
+  const dispatch = useDispatch()
+  
   const [envio, setEnvio] = useState(null)
-  const [error, setError] = useState('')
+  const [errorEnvio, setErrorEnvio] = useState('')
+
+  const { ordenActual: orden, loading, error } = useSelector(state => state.ordenes)
+  const { enCurso } = useSelector(state => state.envios)
 
   useEffect(() => {
-    getOrden(id).then(setOrden).catch(err => setError(err.message))
-    const envios = user?.role === 'admin' ? getTodosLosEnvios() : getMisEnvios()
-    envios.then(lista => setEnvio(lista.find(e => String(e.idOrden) === String(id)) ?? null)).catch(() => {})
-  }, [id, user?.role])
+    dispatch(fetchOrdenDetalle(id))
+    
+    if (user?.role === 'admin') {
+      getTodosLosEnvios()
+        .then(lista => setEnvio(lista.find(e => String(e.idOrden) === String(id)) ?? null))
+        .catch(err => setErrorEnvio(err.message))
+    } else {
+      dispatch(fetchMisEnvios())
+    }
+  }, [id, user?.role, dispatch])
 
-  if (error) return <div className="detalle-orden"><p className="post-list-mensaje post-list-error">{error}</p></div>
-  if (!orden) return <div className="detalle-orden"><p className="post-list-mensaje">Cargando orden...</p></div>
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      setEnvio(enCurso.find(e => String(e.idOrden) === String(id)) ?? null)
+    }
+  }, [enCurso, id, user?.role])
+
+  if (error || errorEnvio) return <div className="detalle-orden"><p className="post-list-mensaje post-list-error">{error || errorEnvio}</p></div>
+  if (loading || !orden) return <div className="detalle-orden"><p className="post-list-mensaje">Cargando orden...</p></div>
 
   const estado = ESTADOS_ORDEN[orden.estado] ?? { texto: orden.estado, color: '#6b7280' }
   const pasos = PASOS[orden.metodoEntrega] ?? PASOS.DESPACHO

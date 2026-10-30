@@ -64,8 +64,6 @@
   font-size: 14px;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
-  
-
   max-width: 300px;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -279,6 +277,7 @@
 .btn-cancel-panel:hover {
   background-color: #d1d5db !important;
 }
+
 /* --- MIS PUBLICACIONES --- */
 .panel-producto {
   display: flex;
@@ -351,7 +350,6 @@
 }
 
 /* --- PANEL DE ADMIN --- */
-/* La barra de busqueda y su tabla forman una sola tarjeta blanca */
 .users-section {
   background-color: #ffffff;
   border-radius: 12px;
@@ -586,7 +584,6 @@
   border: 1px solid #fed7aa;
 }
 
-
 .fila-dada-de-baja td {
   color: #9ca3af;
 }
@@ -687,4 +684,26 @@
 .btn-ver-detalle:hover {
   background-color: #15803d;
   transform: translateY(-1px);
+}
+
+.modal-overlay .panel-modal-actions button:first-child,
+.error-overlay .panel-modal-actions button:first-child,
+.error-modal .panel-modal-actions button:first-child {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.modal-overlay .panel-modal-actions button:last-child,
+.error-overlay .panel-modal-actions button:last-child,
+.error-modal .panel-modal-actions button:last-child {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.modal-overlay .panel-modal-actions button:last-child:hover,
+.error-overlay .panel-modal-actions button:last-child:hover,
+.error-modal .panel-modal-actions button:last-child:hover {
+  background-color: #dc2626 !important;
 }

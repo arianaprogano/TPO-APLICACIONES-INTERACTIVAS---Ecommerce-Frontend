@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchCatalogo, fetchMisPublicaciones } from '../redux/slice/productosSlice'
 import PostCard from './PostCard'
-import { getMisPublicaciones, getPaginaProductos } from '../api/productos'
 import './PostList.css'
 
 const POR_PAGINA = 12
 
-// Todos los filtros y la paginacion los resuelve el backend (GET /productos):
-// asi cada pagina viene llena y el total es el real.
-function PostList({ user, addToCart, orden, searchTerm, selectedCategory, selectedSubcategory, conditions, provincia, rango, favorites, toggleFavorite, soloConEnvio, soloSinEnvio, soloOfertas }) {
-  const [resultado, setResultado] = useState({ items: [], pagina: 0, totalPaginas: 0, total: 0 })
+function PostList({ user, orden, searchTerm, selectedCategory, selectedSubcategory, conditions, provincia, rango, soloConEnvio, soloSinEnvio, soloOfertas }) {
+  const dispatch = useDispatch()
   const [pagina, setPagina] = useState(0)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-  const [misIds, setMisIds] = useState(new Set())
+  
+  // Extraemos estado de Redux
+  const { catalogo: resultado, loading: cargando, error } = useSelector(state => state.productos)
+  const misPublicaciones = useSelector(state => state.productos.misPublicaciones)
+  const misIds = new Set(misPublicaciones.map(p => p.id))
+
   const condicion = conditions.length === 1 ? (conditions[0] === 'Nuevo' ? 'NUEVO' : 'USADO') : undefined
 
   const filtros = {
@@ -32,35 +34,20 @@ function PostList({ user, addToCart, orden, searchTerm, selectedCategory, select
 
   useEffect(() => { setPagina(0) }, [claveFiltros])
 
+  // Despacha la búsqueda del catálogo mediante Redux
   useEffect(() => {
-    let cancelado = false
-    const timer = setTimeout(async () => {
-      setCargando(true)
-      setError('')
-      try {
-        const respuesta = await getPaginaProductos(JSON.parse(claveFiltros), pagina, POR_PAGINA)
-        if (!cancelado) setResultado(respuesta)
-      } catch (err) {
-        if (!cancelado) setError(err.message)
-      } finally {
-        if (!cancelado) setCargando(false)
-      }
+    const timer = setTimeout(() => {
+      dispatch(fetchCatalogo({ filtros: JSON.parse(claveFiltros), pagina, tamanio: POR_PAGINA }))
     }, 300)
-    return () => {
-      cancelado = true
-      clearTimeout(timer)
-    }
-  }, [claveFiltros, pagina])
+    return () => clearTimeout(timer)
+  }, [claveFiltros, pagina, dispatch])
 
+  // Si es cliente, cargamos sus publicaciones para saber cuáles son suyas
   useEffect(() => {
-    if (user?.role !== 'cliente') {
-      setMisIds(new Set())
-      return
+    if (user?.role === 'cliente') {
+      dispatch(fetchMisPublicaciones())
     }
-    getMisPublicaciones()
-      .then((mios) => setMisIds(new Set(mios.map((p) => p.id))))
-      .catch(() => setMisIds(new Set()))
-  }, [user])
+  }, [user, dispatch])
 
   const irAPagina = (nueva) => {
     setPagina(nueva)
@@ -96,9 +83,6 @@ function PostList({ user, addToCart, orden, searchTerm, selectedCategory, select
               sales={post.sales}
               disponible={post.disponible}
               location={post.location}
-              isFavorite={favorites.includes(post.id)}
-              onToggleFavorite={toggleFavorite}
-              onAddToCart={addToCart}
               conEnvio={post.conEnvio}
               enOferta={post.enOferta}
               porcentajeDescuento={post.porcentajeDescuento}

@@ -97,7 +97,7 @@ export default function AdminModals({
             <div style={{ width: '64px', height: '64px', backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)' }}>
               <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ffffff', fontSize: '32px' }}></i>
             </div>
-            <h2 className="error-title">¿Eliminar Usuario?</h2>
+            <h2 className="error-title">¿Dar de baja Usuario?</h2>
             <p className="error-text">
               ¿Estás seguro de dar de baja a <strong>{userToDelete.nombreUsuario}</strong>?
               <br /><br />
@@ -107,7 +107,7 @@ export default function AdminModals({
             </p>
             <div className="panel-modal-actions">
               <button className="error-btn btn-cancel-panel" style={{ backgroundColor: '#e5e7eb', color: '#111827' }} onClick={() => setUserToDelete(null)}>Cancelar</button>
-              <button className="error-btn" onClick={confirmarEliminarUsuario}>Eliminar</button>
+              <button className="error-btn" onClick={confirmarEliminarUsuario}>Dar de baja</button>
             </div>
           </div>
         </div>
@@ -119,13 +119,13 @@ export default function AdminModals({
             <div style={{ width: '64px', height: '64px', backgroundColor: '#f59e0b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)' }}>
               <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ffffff', fontSize: '32px' }}></i>
             </div>
-            <h2 className="error-title">¿Eliminar Categoría?</h2>
+            <h2 className="error-title">¿Dar de baja Categoría?</h2>
             <p className="error-text">
-              ¿Eliminar <strong>{categoryToDelete.nombre}</strong>? Solo se puede si no tiene subcategorías ni productos.
+              ¿Dar de baja <strong>{categoryToDelete.nombre}</strong>? Solo se puede si no tiene subcategorías ni productos.
             </p>
             <div className="panel-modal-actions">
               <button className="error-btn btn-cancel-panel" style={{ backgroundColor: '#e5e7eb', color: '#111827' }} onClick={() => setCategoryToDelete(null)}>Cancelar</button>
-              <button className="error-btn" onClick={confirmarEliminarCategoria}>Eliminar</button>
+              <button className="error-btn" onClick={confirmarEliminarCategoria}>Dar de baja</button>
             </div>
           </div>
         </div>

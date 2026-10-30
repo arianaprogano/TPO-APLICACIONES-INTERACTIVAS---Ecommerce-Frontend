@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchMisCompras, cancelarMiOrden } from '../redux/slice/ordenesSlice'
+import { fetchMisEnvios, cambiarEstadoEnvioThunk } from '../redux/slice/enviosSlice'
 import Reviews from '../components/Reviews'
-import { cancelarOrden, getMisCompras, nombreProvincia } from '../api/ordenes'
+import { nombreProvincia } from '../api/ordenes'
+import { ESTADOS_ENVIO } from '../api/envios'
 import { crearResena, getResenasDeProducto } from '../api/resenas'
-import { cambiarEstadoEnvio, ESTADOS_ENVIO, getMisEnvios } from '../api/envios'
 import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
@@ -16,49 +19,65 @@ const ESTADOS = {
 function MisCompras({ user }) {
   const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
-  const [compras, setCompras] = useState([])
-  const [envios, setEnvios] = useState({})
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
+  const { compras, loading: cargandoCompras, error } = useSelector(state => state.ordenes)
+  const { enCurso } = useSelector(state => state.envios)
+  
+  const envios = Object.fromEntries(enCurso.map(e => [e.idOrden, e]))
+
   const [productoAReseñar, setProductoAReseñar] = useState(null)
   const [reseñados, setReseñados] = useState(new Set())
 
-  const marcarYaReseñados = async (ordenes, enviosPorOrden) => {
-    const entregadas = ordenes.filter(o => enviosPorOrden[o.id]?.estado === 'ENTREGADO')
-    const productos = [...new Set(entregadas.flatMap(o => o.items.map(i => i.idProducto)))]
-    const propias = new Set()
-    await Promise.all(productos.map(async (idProducto) => {
-      const resenas = await getResenasDeProducto(idProducto).catch(() => [])
-      if (resenas.some(r => r.autor === user?.username)) {
-        entregadas.filter(o => o.items.some(i => i.idProducto === idProducto))
-          .forEach(o => propias.add(`${o.id}-${idProducto}`))
-      }
-    }))
-    setReseñados(propias)
-  }
+  useEffect(() => {
+    dispatch(fetchMisCompras())
+    dispatch(fetchMisEnvios())
+  }, [dispatch])
 
-  const cargar = () =>
-    Promise.all([getMisCompras(), getMisEnvios()])
-      .then(([ordenes, lista]) => {
-        const porOrden = Object.fromEntries(lista.map(e => [e.idOrden, e]))
-        setCompras(ordenes)
-        setEnvios(porOrden)
-        return marcarYaReseñados(ordenes, porOrden)
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setCargando(false))
-
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    if (compras.length > 0 && enCurso.length > 0) {
+      const entregadas = compras.filter(o => envios[o.id]?.estado === 'ENTREGADO')
+      const productos = [...new Set(entregadas.flatMap(o => o.items.map(i => i.idProducto)))]
+      const propias = new Set()
+      
+      Promise.all(productos.map(async (idProducto) => {
+        const resenas = await getResenasDeProducto(idProducto).catch(() => [])
+        if (resenas.some(r => r.autor === user?.username)) {
+          entregadas.filter(o => o.items.some(i => i.idProducto === idProducto))
+            .forEach(o => propias.add(`${o.id}-${idProducto}`))
+        }
+      })).then(() => setReseñados(propias))
+    }
+  }, [compras, enCurso, user?.username, envios])
 
   const confirmarRecepcion = async (envio) => {
     if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
-    try {
-      const actualizado = await cambiarEstadoEnvio(envio.id, 'ENTREGADO')
-      setEnvios(prev => ({ ...prev, [actualizado.idOrden]: actualizado }))
-    } catch (err) {
+    dispatch(cambiarEstadoEnvioThunk({ id: envio.id, estado: 'ENTREGADO' }))
+      .unwrap()
+      .catch(err => avisarError(err.message))
+  }
+
+  const handleCancelar = async (orden) => {
+    if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
+    dispatch(cancelarMiOrden(orden.id))
+      .unwrap()
+      .catch(err => avisarError(err.message))
+  }
+
+  const handleReviewSaved = (ordenId, reseñaData) => {
+    crearResena({
+      idOrden: ordenId,
+      idProducto: reseñaData.productoId,
+      puntaje: reseñaData.estrellas,
+      comentario: reseñaData.texto,
+    }).then(() => {
+      setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
+      setProductoAReseñar(null)
+      exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })
+    }).catch(err => {
+      setProductoAReseñar(null)
       avisarError(err.message)
-    }
+    })
   }
 
   if (!user) {
@@ -70,33 +89,6 @@ function MisCompras({ user }) {
         </button>
       </div>
     )
-  }
-
-  const handleCancelar = async (orden) => {
-    if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
-    try {
-      const actualizada = await cancelarOrden(orden.id)
-      setCompras(prev => prev.map(c => c.id === actualizada.id ? actualizada : c))
-    } catch (err) {
-      avisarError(err.message)
-    }
-  }
-
-  const handleReviewSaved = async (ordenId, reseñaData) => {
-    try {
-      await crearResena({
-        idOrden: ordenId,
-        idProducto: reseñaData.productoId,
-        puntaje: reseñaData.estrellas,
-        comentario: reseñaData.texto,
-      })
-      setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
-      setProductoAReseñar(null)
-      exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })
-    } catch (err) {
-      setProductoAReseñar(null)
-      avisarError(err.message)
-    }
   }
 
   const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
@@ -119,7 +111,7 @@ function MisCompras({ user }) {
             </tr>
           </thead>
           <tbody>
-            {cargando ? (
+            {cargandoCompras ? (
               <tr><td colSpan="5" className="empty-state">Cargando tus compras...</td></tr>
             ) : error ? (
               <tr><td colSpan="5" className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
@@ -137,12 +129,9 @@ function MisCompras({ user }) {
                   <tr key={compra.id}>
                     <td>
                       <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{compra.fecha}</div>
-                      
-                      {/* ACÁ CAMBIAMOS EL TEXTO */}
                       <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${compra.id}`)}>
                         <i className="fa-solid fa-eye"></i> Orden #{compra.id}
                       </button>
-
                       <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Vendedor: {compra.vendedor?.nombreUsuario}</div>
                     </td>
                     <td>

@@ -1,14 +1,17 @@
 import { useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { quitarItem, cambiarCantidadItem, vaciar } from '../redux/slice/carritoSlice'
 import { useAvisos } from '../components/avisosContext'
 import './CarritoPage.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-// Carrito en pagina completa: los productos a la izquierda y el resumen a la
-// derecha. El contenido vive en el backend (GET /carrito) y App lo mantiene.
-function CarritoPage({ cart, removeFromCart, updateCartQty, clearCart }) {
+function CarritoPage() {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { confirmar } = useAvisos()
+  
+  const cart = useSelector(state => state.carrito.items)
 
   const unidades = cart.reduce((acc, item) => acc + item.qty, 0)
   const total = cart.reduce((acc, item) => acc + item.price * item.qty, 0)
@@ -16,9 +19,10 @@ function CarritoPage({ cart, removeFromCart, updateCartQty, clearCart }) {
   const conEnvio = cart.filter(i => i.conEnvio).length
   const aCoordinar = cart.length - conEnvio
 
-  const vaciar = async () => {
-    if (await confirmar({ titulo: '¿Vaciar el carrito?', texto: 'Se quitan todos los productos.', ok: 'Vaciar', peligro: true }))
-      clearCart()
+  const handleVaciar = async () => {
+    if (await confirmar({ titulo: '¿Vaciar el carrito?', texto: 'Se quitan todos los productos.', ok: 'Vaciar', peligro: true })) {
+      dispatch(vaciar())
+    }
   }
 
   if (cart.length === 0) {
@@ -54,13 +58,13 @@ function CarritoPage({ cart, removeFromCart, updateCartQty, clearCart }) {
                 {item.conEnvio
                   ? <span className="carrito-envio con"><i className="fa-solid fa-truck-fast"></i> Con envío a domicilio</span>
                   : <span className="carrito-envio sin"><i className="fa-solid fa-handshake"></i> Entrega a coordinar con el vendedor</span>}
-                <button className="carrito-item-quitar" onClick={() => removeFromCart(item.id)}>Eliminar</button>
+                <button className="carrito-item-quitar" onClick={() => dispatch(quitarItem(item.idItem))}>Eliminar</button>
               </div>
 
               <div className="carrito-item-cantidad">
-                <button onClick={() => updateCartQty(item.id, item.qty - 1)} aria-label="Quitar uno">−</button>
+                <button onClick={() => dispatch(cambiarCantidadItem({ idItem: item.idItem, cantidad: item.qty - 1 }))} aria-label="Quitar uno">−</button>
                 <span>{item.qty}</span>
-                <button onClick={() => updateCartQty(item.id, item.qty + 1)} aria-label="Agregar uno">+</button>
+                <button onClick={() => dispatch(cambiarCantidadItem({ idItem: item.idItem, cantidad: item.qty + 1 }))} aria-label="Agregar uno">+</button>
               </div>
 
               <div className="carrito-item-precio">
@@ -71,7 +75,7 @@ function CarritoPage({ cart, removeFromCart, updateCartQty, clearCart }) {
             </article>
           ))}
 
-          <button className="carrito-vaciar" onClick={vaciar}><i className="fa-regular fa-trash-can"></i> Vaciar carrito</button>
+          <button className="carrito-vaciar" onClick={handleVaciar}><i className="fa-regular fa-trash-can"></i> Vaciar carrito</button>
         </section>
 
         <aside className="carrito-resumen">

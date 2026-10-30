@@ -1,149 +1,95 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchMisPublicaciones, fetchDashboard, reactivarProducto, alternarPausaProducto, bajaProducto } from '../redux/slice/productosSlice'
+import { fetchMisVentas, cancelarMiOrden } from '../redux/slice/ordenesSlice'
+import { fetchMisEnvios, cambiarEstadoEnvioThunk } from '../redux/slice/enviosSlice'
 import EditProductForm from '../components/EditProductForm'
 import VisibilidadModal from '../components/VisibilidadModal'
-import { cambiarEstadoPublicacion, darDeBajaProducto, getDashboard, getMisPublicaciones, reactivarPublicacion } from '../api/productos'
-import { cancelarOrden, getMisVentas, nombreProvincia } from '../api/ordenes'
-import { cambiarEstadoEnvio, ESTADOS_ENVIO, getMisEnvios } from '../api/envios'
+import { nombreProvincia } from '../api/ordenes'
+import { ESTADOS_ENVIO } from '../api/envios'
 import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
-const ESTADOS_PUBLICACION = {
-  PUBLICADO: { texto: 'Publicado', clase: 'publicado' },
-  PAUSADO: { texto: 'Pausado', clase: 'pausado' },
-  BORRADOR: { texto: 'Borrador · sin foto aprobada', clase: 'borrador' },
-}
-
-const ESTADOS_ORDEN = {
-  PENDIENTE: { texto: 'Pendiente de pago', color: '#f59e0b' },
-  PAGADA: { texto: 'Pagada', color: '#16a34a' },
-  CANCELADA: { texto: 'Cancelada', color: '#ef4444' },
-}
-
+const ESTADOS_PUBLICACION = { PUBLICADO: { texto: 'Publicado', clase: 'publicado' }, PAUSADO: { texto: 'Pausado', clase: 'pausado' }, BORRADOR: { texto: 'Borrador · sin foto aprobada', clase: 'borrador' } }
+const ESTADOS_ORDEN = { PENDIENTE: { texto: 'Pendiente de pago', color: '#f59e0b' }, PAGADA: { texto: 'Pagada', color: '#16a34a' }, CANCELADA: { texto: 'Cancelada', color: '#ef4444' } }
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-// Panel del vendedor: sus publicaciones (GET /productos/mis-publicaciones) y lo
-// que le compraron (GET /ordenes/mis-ventas). Cada accion actualiza la fila
-// con lo que devuelve el backend.
 function VendedorPanel() {
   const { error: avisarError, exito, confirmar, toast } = useAvisos()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'publicaciones')
+  
   useEffect(() => { if (searchParams.get('tab')) setActiveTab(searchParams.get('tab')) }, [searchParams])
 
-  const [publicaciones, setPublicaciones] = useState([])
-  const [ventas, setVentas] = useState([])
-  const [envios, setEnvios] = useState({})
-  const [dashboard, setDashboard] = useState(null)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
+  // --- REDUX ---
+  const { misPublicaciones: publicaciones, dashboard, loading: cargandoProductos, error: errorProductos } = useSelector(state => state.productos)
+  const { ventas, loading: cargandoVentas, error: errorVentas } = useSelector(state => state.ordenes)
+  const { enCurso } = useSelector(state => state.envios)
+  const envios = Object.fromEntries(enCurso.map(e => [e.idOrden, e]))
+
   const [editando, setEditando] = useState(null)
   const [destacando, setDestacando] = useState(null)
   const [ocupado, setOcupado] = useState(null)
 
-  const cargar = async () => {
-    setError('')
-    try {
-      const [mias, vendidas, lista, tablero] = await Promise.all([
-        getMisPublicaciones(), getMisVentas(), getMisEnvios(), getDashboard(),
-      ])
-      setPublicaciones(mias)
-      setVentas(vendidas)
-      setEnvios(Object.fromEntries(lista.map(e => [e.idOrden, e])))
-      setDashboard(tablero)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setCargando(false)
-    }
+  const cargar = () => {
+    dispatch(fetchMisPublicaciones())
+    dispatch(fetchMisVentas())
+    dispatch(fetchMisEnvios())
+    dispatch(fetchDashboard())
   }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar() }, [dispatch])
 
-  const reemplazar = (actualizado) =>
-    setPublicaciones(prev => prev.map(p => p.id === actualizado.id ? actualizado : p))
-
-  const handleSaveProduct = (actualizado) => {
-    reemplazar(actualizado)
-    setEditando(null)
-    exito('Los cambios del producto se guardaron.', { titulo: 'Producto actualizado' })
-  }
-
-  const reactivar = async (producto) => {
+  const reactivar = (producto) => {
     setOcupado(producto.id)
-    try {
-      reemplazar(await reactivarPublicacion(producto.id))
-      toast(`"${producto.title}" se reactivó y volvió a Publicaciones`)
-    } catch (err) {
-      avisarError(err.message)
-    } finally {
-      setOcupado(null)
-    }
+    dispatch(reactivarProducto(producto.id)).unwrap()
+      .then(() => toast(`"${producto.title}" se reactivó y volvió a Publicaciones`))
+      .catch(err => avisarError(err.message))
+      .finally(() => setOcupado(null))
   }
 
-  const alternarPausa = async (producto) => {
+  const alternarPausa = (producto) => {
     setOcupado(producto.id)
-    try {
-      reemplazar(await cambiarEstadoPublicacion(producto.id, producto.estadoPublicacion === 'PAUSADO' ? 'PUBLICADO' : 'PAUSADO'))
-    } catch (err) {
-      avisarError(err.message)
-    } finally {
-      setOcupado(null)
-    }
+    dispatch(alternarPausaProducto({ id: producto.id, estadoActual: producto.estadoPublicacion })).unwrap()
+      .catch(err => avisarError(err.message))
+      .finally(() => setOcupado(null))
   }
 
   const darDeBaja = async (producto) => {
-    const ok = await confirmar({
-      titulo: '¿Dar de baja la publicación?',
-      texto: `"${producto.title}" sale del catálogo y de los carritos. Queda acá en gris y la podés reactivar cuando quieras.`,
-      ok: 'Dar de baja',
-      peligro: true,
-    })
+    const ok = await confirmar({ titulo: '¿Dar de baja la publicación?', texto: `Queda acá en gris y la podés reactivar cuando quieras.`, ok: 'Dar de baja', peligro: true })
     if (!ok) return
     setOcupado(producto.id)
-    try {
-      await darDeBajaProducto(producto.id)
-      setPublicaciones(prev => prev.map(p => p.id === producto.id ? { ...p, activo: false } : p))
-      toast(`"${producto.title}" pasó a Publicaciones inactivas`)
-    } catch (err) {
-      avisarError(err.message)
-    } finally {
-      setOcupado(null)
-    }
+    dispatch(bajaProducto(producto.id)).unwrap()
+      .then(() => toast(`"${producto.title}" pasó a Publicaciones inactivas`))
+      .catch(err => avisarError(err.message))
+      .finally(() => setOcupado(null))
   }
 
   const cancelarVenta = async (orden) => {
     if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
-    try {
-      const actualizada = await cancelarOrden(orden.id)
-      setVentas(prev => prev.map(v => v.id === actualizada.id ? actualizada : v))
-      cargar()
-    } catch (err) {
-      avisarError(err.message)
-    }
+    dispatch(cancelarMiOrden(orden.id)).unwrap()
+      .then(() => cargar()) 
+      .catch(err => avisarError(err.message))
   }
 
   const despachar = async (envio) => {
-    if (!(await confirmar(`¿Despachar la orden #${envio.idOrden}? Se genera el número de seguimiento para la etiqueta.`))) return
-    try {
-      const actualizado = await cambiarEstadoEnvio(envio.id, 'DESPACHADO')
-      setEnvios(prev => ({ ...prev, [actualizado.idOrden]: actualizado }))
-      exito('Pegale al bulto una etiqueta con este número de seguimiento. El despachante lo va a cargar para llevarlo.', {
-        titulo: 'Envío despachado',
-        destacado: actualizado.numeroSeguimiento,
+    if (!(await confirmar(`¿Despachar la orden #${envio.idOrden}? Se genera el número de seguimiento.`))) return
+    dispatch(cambiarEstadoEnvioThunk({ id: envio.id, estado: 'DESPACHADO' })).unwrap()
+      .then((actualizado) => {
+        exito('Pegale al bulto una etiqueta con este número de seguimiento.', { titulo: 'Envío despachado', destacado: actualizado.numeroSeguimiento })
       })
-    } catch (err) {
-      avisarError(err.message)
-    }
+      .catch(err => avisarError(err.message))
   }
 
   const activas = publicaciones.filter(p => p.activo !== false)
   const inactivas = publicaciones.filter(p => p.activo === false)
   const listaVisible = activeTab === 'inactivas' ? inactivas : activas
 
-  const filaVacia = (colSpan, texto) => (
-    <tr><td colSpan={colSpan} className="empty-state" style={error ? { color: '#b91c1c' } : undefined}>{texto}</td></tr>
+  const filaVacia = (colSpan, texto, isError = false) => (
+    <tr><td colSpan={colSpan} className="empty-state" style={isError ? { color: '#b91c1c' } : undefined}>{texto}</td></tr>
   )
 
   return (
@@ -156,8 +102,8 @@ function VendedorPanel() {
       </nav>
 
       {activeTab === 'resumen' && (
-        cargando ? <p className="empty-state">Cargando tu resumen...</p>
-          : error ? <p className="empty-state" style={{ color: '#b91c1c' }}>{error}</p>
+        cargandoProductos ? <p className="empty-state">Cargando tu resumen...</p>
+          : errorProductos ? <p className="empty-state" style={{ color: '#b91c1c' }}>{errorProductos}</p>
           : dashboard && (
             <div className="dashboard">
               <section className="dashboard-bloque">
@@ -218,8 +164,8 @@ function VendedorPanel() {
               </tr>
             </thead>
             <tbody>
-              {cargando ? filaVacia(5, 'Cargando tus publicaciones...')
-                : error ? filaVacia(5, error)
+              {cargandoProductos ? filaVacia(5, 'Cargando tus publicaciones...')
+                : errorProductos ? filaVacia(5, errorProductos, true)
                 : listaVisible.length === 0 ? filaVacia(5, activeTab === 'inactivas'
                   ? 'No tenés publicaciones dadas de baja.'
                   : 'No tenés publicaciones activas. Las dadas de baja están en "Publicaciones inactivas".')
@@ -312,8 +258,8 @@ function VendedorPanel() {
               </tr>
             </thead>
             <tbody>
-              {cargando ? filaVacia(7, 'Cargando tus ventas...')
-                : error ? filaVacia(7, error)
+              {cargandoVentas ? filaVacia(7, 'Cargando tus ventas...')
+                : errorVentas ? filaVacia(7, errorVentas, true)
                 : ventas.length === 0 ? filaVacia(7, 'No hay órdenes recibidas aún.')
                 : ventas.map(v => {
                   const estado = ESTADOS_ORDEN[v.estado] ?? { texto: v.estado, color: '#6b7280' }
@@ -322,7 +268,6 @@ function VendedorPanel() {
                   return (
                     <tr key={v.id}>
                       <td>
-                        {/* ACÁ ESTÁ EL NUEVO BOTÓN PARA EL VENDEDOR */}
                         <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${v.id}`)}>
                           <i className="fa-solid fa-eye"></i> Orden #{v.id}
                         </button>
@@ -377,7 +322,7 @@ function VendedorPanel() {
           producto={destacando}
           onClose={() => setDestacando(null)}
           onComprado={(actualizado, compra) => {
-            reemplazar(actualizado)
+            dispatch(fetchMisPublicaciones())
             setDestacando(null)
             exito(`Plan ${compra.nivel} por ${compra.meses} ${compra.meses === 1 ? 'mes' : 'meses'}. Tu publicación ya sale más arriba en el catálogo.`, { titulo: 'Visibilidad activada' })
           }}
@@ -389,7 +334,7 @@ function VendedorPanel() {
           <EditProductForm
             producto={editando}
             onClose={(huboCambios) => { setEditando(null); if (huboCambios) cargar() }}
-            onSave={handleSaveProduct}
+            onSave={() => { setEditando(null); cargar(); exito('Los cambios del producto se guardaron.', { titulo: 'Producto actualizado' }) }}
           />
         </div>
       )}

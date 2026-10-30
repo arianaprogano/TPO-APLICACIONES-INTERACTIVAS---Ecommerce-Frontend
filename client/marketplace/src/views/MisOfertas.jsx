@@ -1,27 +1,28 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { aceptarOferta, cancelarOferta, ESTADOS_OFERTA, getMisOfertas, rechazarOferta } from '../api/ofertas'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchMisOfertas, aceptarOfertaThunk, rechazarOfertaThunk, retirarOfertaThunk } from '../redux/slice/ofertasSlice'
+import { ESTADOS_OFERTA } from '../api/ofertas'
 import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-// GET /ofertas trae juntas las que hice y las que me hicieron; se separan por
-// quien es el comprador. El vendedor acepta (se crea la orden al precio
-// acordado) o rechaza; el comprador puede retirar la suya mientras este
-// pendiente.
 function MisOfertas({ user }) {
   const { error: avisarError, exito, confirmar } = useAvisos()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  
   const [activeTab, setActiveTab] = useState('recibidas')
-  const [ofertas, setOfertas] = useState(null)
-  const [error, setError] = useState('')
+  
+  const { lista: ofertas, loading, error } = useSelector(state => state.ofertas)
 
-  const cargar = () => getMisOfertas().then(setOfertas).catch(err => setError(err.message))
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    dispatch(fetchMisOfertas())
+  }, [dispatch])
 
-  const hechas = (ofertas ?? []).filter(o => o.comprador?.nombreUsuario === user?.username)
-  const recibidas = (ofertas ?? []).filter(o => o.vendedor?.nombreUsuario === user?.username)
+  const hechas = ofertas.filter(o => o.comprador?.nombreUsuario === user?.username)
+  const recibidas = ofertas.filter(o => o.vendedor?.nombreUsuario === user?.username)
   const lista = activeTab === 'recibidas' ? recibidas : hechas
 
   const responder = async (oferta, accion) => {
@@ -30,15 +31,17 @@ function MisOfertas({ user }) {
       rechazar: `¿Rechazar la oferta de ${oferta.comprador?.nombreUsuario}? Puede volver a ofertar más alto.`,
       cancelar: '¿Retirar tu oferta?',
     }
+    
     if (!(await confirmar(textos[accion]))) return
-    try {
-      const accionApi = { aceptar: aceptarOferta, rechazar: rechazarOferta, cancelar: cancelarOferta }[accion]
-      await accionApi(oferta.id)
-      await cargar()
-      if (accion === 'aceptar') exito('Se creó la orden de compra al precio acordado. La ves en Mis Publicaciones › Órdenes Recibidas.', { titulo: 'Oferta aceptada' })
-    } catch (err) {
-      avisarError(err.message)
-    }
+    
+    const accionThunk = { aceptar: aceptarOfertaThunk, rechazar: rechazarOfertaThunk, cancelar: retirarOfertaThunk }[accion]
+    
+    dispatch(accionThunk(oferta.id))
+      .unwrap()
+      .then(() => {
+        if (accion === 'aceptar') exito('Se creó la orden de compra al precio acordado. La ves en Mis Publicaciones › Órdenes Recibidas.', { titulo: 'Oferta aceptada' })
+      })
+      .catch(err => avisarError(err.message))
   }
 
   return (
@@ -67,7 +70,7 @@ function MisOfertas({ user }) {
           <tbody>
             {error ? (
               <tr><td colSpan="6" className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
-            ) : ofertas === null ? (
+            ) : loading ? (
               <tr><td colSpan="6" className="empty-state">Cargando ofertas...</td></tr>
             ) : lista.length === 0 ? (
               <tr><td colSpan="6" className="empty-state">

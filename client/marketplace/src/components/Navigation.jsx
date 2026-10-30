@@ -1,24 +1,44 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import logoImg from '../assets/logo.png' 
-import { getArbolCategorias } from '../api/categorias'
-import { contarNoLeidas, getNotificaciones, ICONOS_NOTIFICACION, marcarLeida } from '../api/notificaciones'
+import { fetchCategoriasArbol, fetchNotificaciones, marcarNotificacionLeida } from '../redux/slice/uiSlice'
+import { ICONOS_NOTIFICACION } from '../api/notificaciones'
 import './Navigation.css'
 
 function Navigation({ 
   searchTerm, setSearchTerm, 
   selectedCategory, setSelectedCategory,
   selectedSubcategory, setSelectedSubcategory,
-  favoritesCount,
-  user, setUser,
-  cartCount, openCart
+  user, setUser
 }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const dispatch = useDispatch()
+  
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const notifRef = useRef(null)
   const userMenuRef = useRef(null)
+
+  // --- DATOS DESDE REDUX ---
+  const { categorias, notificaciones, noLeidas } = useSelector(state => state.ui)
+  const cart = useSelector(state => state.carrito.items)
+  const wishlist = useSelector(state => state.wishlist.items)
+  
+  const cartCount = cart.reduce((acc, item) => acc + item.qty, 0)
+  const favoritesCount = wishlist.length
+
+  useEffect(() => {
+    dispatch(fetchCategoriasArbol())
+  }, [dispatch])
+
+  useEffect(() => {
+    if (!user) return
+    dispatch(fetchNotificaciones())
+    const timer = setInterval(() => dispatch(fetchNotificaciones()), 20000)
+    return () => clearInterval(timer)
+  }, [user, dispatch])
 
   useEffect(() => {
     if (!isNotifOpen && !isDropdownOpen) return
@@ -48,54 +68,20 @@ function Navigation({
     setIsDropdownOpen(false)
     setIsNotifOpen(false)
   }
-
-  // --- ACÁ METIMOS LA MAGIA DE ESCUCHAR LOS CAMBIOS ---
-  const [categorias, setCategorias] = useState([])
-  
-  useEffect(() => {
-    const traerCategorias = () => {
-      getArbolCategorias().then(setCategorias).catch(() => setCategorias([]))
-    }
-    
-    traerCategorias()
-    
-    window.addEventListener('categoriasCambiadas', traerCategorias)
-    
-    return () => window.removeEventListener('categoriasCambiadas', traerCategorias)
-  }, [])
   
   const categoriaActiva = categorias.find(c => c.id === selectedCategory)
   const enListado = location.pathname === '/productos'
   const canPublish = user && user.role === 'cliente'
   const canShop = user?.role !== 'admin' && user?.role !== 'despachante'
-  
-  const [notifications, setNotifications] = useState([])
-  const [noLeidas, setNoLeidas] = useState(0)
-
-  useEffect(() => {
-    if (!user) {
-      setNotifications([])
-      setNoLeidas(0)
-      return
-    }
-    const actualizarContador = () => contarNoLeidas().then(setNoLeidas).catch(() => {})
-    actualizarContador()
-    const timer = setInterval(actualizarContador, 20000)
-    return () => clearInterval(timer)
-  }, [user])
 
   const abrirNotificaciones = () => {
-    const abrir = !isNotifOpen
-    setIsNotifOpen(abrir)
+    setIsNotifOpen(!isNotifOpen)
     setIsDropdownOpen(false)
-    if (abrir) getNotificaciones().then(setNotifications).catch(() => setNotifications([]))
   }
 
-  const leer = async (notif) => {
+  const leer = (notif) => {
     if (!notif.leida) {
-      await marcarLeida(notif.id).catch(() => {})
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, leida: true } : n))
-      setNoLeidas(prev => Math.max(0, prev - 1))
+      dispatch(marcarNotificacionLeida(notif.id))
     }
     if (notif.ruta) {
       setIsNotifOpen(false)
@@ -103,16 +89,15 @@ function Navigation({
     }
   }
 
-  const handleMarcarLeidas = async () => {
-    const pendientes = notifications.filter(n => !n.leida)
-    await Promise.all(pendientes.map(n => marcarLeida(n.id).catch(() => {})))
-    setNotifications(prev => prev.map(n => ({ ...n, leida: true })))
-    setNoLeidas(0)
+  const handleMarcarLeidas = () => {
+    const pendientes = notificaciones.filter(n => !n.leida)
+    pendientes.forEach(n => dispatch(marcarNotificacionLeida(n.id)))
   }
 
   return (
     <>
       <header className="header-main">
+        {/* El HTML queda EXACTAMENTE IGUAL que tu Navigation original */}
         <div className="header-top">
           <Link to={user?.role === 'despachante' ? '/despachante' : '/home'} className="header-logo" onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedSubcategory(''); }}>
             <img src={logoImg} alt="AgroMarket Logo" className="logo-img" />
@@ -148,9 +133,9 @@ function Navigation({
                       {noLeidas > 0 && <span className="mark-read" onClick={handleMarcarLeidas} style={{ cursor: 'pointer' }}>Marcar leídas</span>}
                     </header>
                     <div className="notif-list">
-                      {notifications.length === 0 ? (
+                      {notificaciones.length === 0 ? (
                         <div className="notif-empty">No tenés notificaciones.</div>
-                      ) : notifications.map(notif => (
+                      ) : notificaciones.map(notif => (
                         <article key={notif.id} className={`notif-item ${notif.leida ? '' : 'unread'}`} onClick={() => leer(notif)}>
                           <div className="notif-icon"><i className={`fa-solid ${ICONOS_NOTIFICACION[notif.tipo] ?? 'fa-circle-info'}`}></i></div>
                           <div className="notif-content"><p>{notif.mensaje}</p><span>{notif.hace}</span></div>
@@ -163,7 +148,7 @@ function Navigation({
             )}
 
             {canShop && (
-              <button className="action-btn btn-cart" title="Carrito" onClick={openCart}>
+              <button className="action-btn btn-cart" title="Carrito" onClick={() => navigate('/carrito')}>
                 <i className="fa-solid fa-cart-shopping"></i>
                 {cartCount > 0 && <span className="badge-counter">{cartCount}</span>}
               </button>
