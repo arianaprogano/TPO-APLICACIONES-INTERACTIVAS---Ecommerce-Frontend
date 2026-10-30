@@ -56,6 +56,11 @@ const carritoSlice = createSlice({
   reducers: {
     limpiarErrorCarrito: (state) => {
       state.error = null;
+    },
+
+    limpiarCarritoLocal: (state) => {
+      state.items = [];
+      state.total = 0;
     }
   },
   extraReducers: (builder) => {
@@ -85,5 +90,5 @@ const carritoSlice = createSlice({
   },
 });
 
-export const { limpiarErrorCarrito } = carritoSlice.actions;
+export const { limpiarErrorCarrito, limpiarCarritoLocal } = carritoSlice.actions;
 export default carritoSlice.reducer;

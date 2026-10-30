@@ -39,7 +39,12 @@ const wishlistSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // NUEVA FUNCIÓN: Limpia la pantalla sin borrar los datos del servidor
+    limpiarWishlistLocal: (state) => {
+      state.items = [];
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchWishlist.pending, handlePending)
@@ -60,4 +65,5 @@ const wishlistSlice = createSlice({
   },
 });
 
+export const { limpiarWishlistLocal } = wishlistSlice.actions;
 export default wishlistSlice.reducer;

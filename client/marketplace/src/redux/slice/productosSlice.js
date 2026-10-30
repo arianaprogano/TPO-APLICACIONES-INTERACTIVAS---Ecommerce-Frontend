@@ -56,7 +56,6 @@ export const destacarPublicacion = createAsyncThunk("productos/comprarVisibilida
   return await comprarVisibilidad(id, nivel, meses);
 });
 
-// Thunk compuesto para Publicar (Crea y luego sube fotos usando Promise.allSettled para evitar try...catch)
 export const crearPublicacionCompleta = createAsyncThunk("productos/crearCompleta", async ({ datos, fotos }) => {
   const { producto } = await crearProducto(datos);
   const resultadosFotos = await Promise.allSettled(
@@ -96,6 +95,10 @@ const productosSlice = createSlice({
   reducers: {
     limpiarProductoActual: (state) => {
       state.productoActual = null;
+    },
+
+    limpiarMisPublicacionesLocal: (state) => {
+      state.misPublicaciones = [];
     }
   },
   extraReducers: (builder) => {
@@ -149,5 +152,5 @@ const productosSlice = createSlice({
   },
 });
 
-export const { limpiarProductoActual } = productosSlice.actions;
+export const { limpiarProductoActual, limpiarMisPublicacionesLocal } = productosSlice.actions;
 export default productosSlice.reducer;

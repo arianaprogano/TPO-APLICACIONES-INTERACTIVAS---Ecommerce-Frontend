@@ -6,7 +6,7 @@ import { agregarItem, limpiarErrorCarrito } from '../redux/slice/carritoSlice'
 import { agregarFavorito, quitarFavorito } from '../redux/slice/wishlistSlice'
 import OfertaModal from '../components/OfertaModal'
 import './ProductDetail.css'
-import '../Excepciones.css' // Importante: apuntamos al archivo exacto con la E mayúscula
+import '../Excepciones.css'
 
 function ProductDetail({ user }) {
   const { id } = useParams()
@@ -34,6 +34,12 @@ function ProductDetail({ user }) {
 
   const isFavorite = wishlist.some(fav => fav.id === product.id)
   
+  // Verificamos si el producto pertenece al usuario logueado para mostrar la insignia
+  const esMiProducto = user && product.vendedor && (
+    product.vendedor.id === user.id || 
+    product.vendedor.nombreUsuario === user.nombreUsuario
+  )
+
   const handleToggleFavorite = () => {
     if (!user) {
       navigate('/login', { state: { from: location } })
@@ -93,6 +99,8 @@ function ProductDetail({ user }) {
                 ) : (
                   <div className="product-detail-image pd-sin-foto"><i className="fa-regular fa-image"></i></div>
                 )}
+                {/* Insignia de Mi Producto */}
+                {esMiProducto && <div className="badge-mi-producto-foto">Mi Producto</div>}
               </div>
             </div>
           </div>
@@ -167,7 +175,7 @@ function ProductDetail({ user }) {
                     return null
                   }
 
-                  let colorNivel = '#b45309' // Bronce por defecto
+                  let colorNivel = '#b45309'
                   if (raw.includes('oro')) colorNivel = '#ca8a04'
                   if (raw.includes('platino')) colorNivel = '#0284c7'
 
@@ -223,7 +231,6 @@ function ProductDetail({ user }) {
 
       </div>
 
-      {/* MODAL DE ERROR UTILIZANDO LAS CLASES OFICIALES DE Excepciones.css */}
       {errorCarrito && (
         <div className="error-overlay">
           <div className="error-modal">

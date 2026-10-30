@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { agregarItem } from '../redux/slice/carritoSlice'
 import { agregarFavorito, quitarFavorito } from '../redux/slice/wishlistSlice'
@@ -10,9 +10,10 @@ import './PostCard.css'
 function PostCard({
   id, title, price, image, condition, anio, rating, sales, disponible, location,
   conEnvio, enOferta, porcentajeDescuento, precioOriginal,
-  esMiProducto, esAdmin, nivelDestacado, activo, estadoPublicacion
+  esMiProducto, esAdmin, nivelDestacado, activo, estadoPublicacion, user
 }) {
   const navigate = useNavigate()
+  const locationPath = useLocation()
   const dispatch = useDispatch()
   const { confirmar, exito } = useAvisos()
   const [isDeleted, setIsDeleted] = useState(false)
@@ -38,6 +39,10 @@ function PostCard({
 
   const handleToggleFavorite = (e) => {
     e.stopPropagation()
+    if (!user) {
+      navigate('/login', { state: { from: locationPath } })
+      return
+    }
     if (isFavorite) {
       const favItem = wishlist.find(f => f.id === id)
       if (favItem) dispatch(quitarFavorito(favItem.idItem))
@@ -48,11 +53,15 @@ function PostCard({
 
   const agregar = (e) => {
     e.stopPropagation()
+    e.preventDefault()
+    if (!user) {
+      navigate('/login', { state: { from: locationPath } })
+      return
+    }
     dispatch(agregarItem({ idProducto: id, cantidad: 1 }))
   }
 
   const noEstaALaVenta = activo === false || estadoPublicacion === 'PAUSADO' || estadoPublicacion === 'BORRADOR'
-  // Si es admin, por más que venga la bandera, nunca es su producto
   const realEsMiProducto = esAdmin ? false : esMiProducto
   const esClienteComprando = !realEsMiProducto && !esAdmin
   const sePuedeComprar = disponible && !noEstaALaVenta

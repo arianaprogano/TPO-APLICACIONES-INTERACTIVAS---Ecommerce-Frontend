@@ -4,6 +4,9 @@ import { useSelector, useDispatch } from 'react-redux'
 import logoImg from '../assets/logo.png' 
 import { fetchCategoriasArbol, fetchNotificaciones, marcarNotificacionLeida } from '../redux/slice/uiSlice'
 import { ICONOS_NOTIFICACION } from '../api/notificaciones'
+import { limpiarCarritoLocal, fetchCarrito } from '../redux/slice/carritoSlice' // Cambiado a limpiador local
+import { limpiarWishlistLocal, fetchWishlist } from '../redux/slice/wishlistSlice'
+import { limpiarMisPublicacionesLocal } from '../redux/slice/productosSlice' // Agregado limpiador local de publicaciones
 import './Navigation.css'
 
 function Navigation({ 
@@ -21,7 +24,7 @@ function Navigation({
   const notifRef = useRef(null)
   const userMenuRef = useRef(null)
 
-  // --- DATOS DESDE REDUX ---
+  // DATOS DESDE REDUX
   const { categorias, notificaciones, noLeidas } = useSelector(state => state.ui)
   const cart = useSelector(state => state.carrito.items)
   const wishlist = useSelector(state => state.wishlist.items)
@@ -36,6 +39,9 @@ function Navigation({
   useEffect(() => {
     if (!user) return
     dispatch(fetchNotificaciones())
+    dispatch(fetchWishlist()) 
+    dispatch(fetchCarrito())
+    
     const timer = setInterval(() => dispatch(fetchNotificaciones()), 20000)
     return () => clearInterval(timer)
   }, [user, dispatch])
@@ -50,6 +56,15 @@ function Navigation({
     return () => document.removeEventListener('mousedown', cerrarSiEsAfuera)
   }, [isNotifOpen, isDropdownOpen])
 
+
+  useEffect(() => {
+    if (!user) {
+      dispatch(limpiarCarritoLocal()) 
+      dispatch(limpiarWishlistLocal())
+      dispatch(limpiarMisPublicacionesLocal())
+    }
+  }, [user, dispatch])
+
   const elegirCategoria = (cat, sub = '') => {
     setSelectedCategory(cat)
     setSelectedSubcategory(sub)
@@ -58,6 +73,9 @@ function Navigation({
 
   const handleLogout = () => {
     setUser(null)
+    dispatch(limpiarCarritoLocal()) 
+    dispatch(limpiarWishlistLocal())
+    dispatch(limpiarMisPublicacionesLocal()) // <-- Borra la insignia al hacer clic en salir
     setIsDropdownOpen(false)
     setIsNotifOpen(false)
     navigate('/home')
@@ -97,7 +115,6 @@ function Navigation({
   return (
     <>
       <header className="header-main">
-        {/* El HTML queda EXACTAMENTE IGUAL que tu Navigation original */}
         <div className="header-top">
           <Link to={user?.role === 'despachante' ? '/despachante' : '/home'} className="header-logo" onClick={() => { setSearchTerm(''); setSelectedCategory(''); setSelectedSubcategory(''); }}>
             <img src={logoImg} alt="AgroMarket Logo" className="logo-img" />

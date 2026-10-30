@@ -1,11 +1,11 @@
-.home-container {
+.catalogo-container {
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 32px 20px;
 }
 
-.home-layout {
+.catalogo-layout {
   display: flex;
   gap: 32px;
   align-items: flex-start;
@@ -175,11 +175,11 @@
 }
 
 @media (max-width: 768px) {
-  .home-container {
+  .catalogo-container {
     padding: 16px 16px 32px;
   }
 
-  .home-layout {
+  .catalogo-layout {
     flex-direction: column;
     align-items: stretch;
   }

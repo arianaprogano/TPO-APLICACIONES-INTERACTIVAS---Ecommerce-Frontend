@@ -225,8 +225,9 @@
 }
 
 .btn-pagar:disabled {
-  opacity: 0.6;
-  cursor: wait;
+  background-color: #d1d5db; /* Fondo gris claro en vez del naranja pálido */
+  color: #9ca3af;            /* Texto gris oscuro */
+  cursor: not-allowed;       /* Flechita normal y símbolo de prohibido, chau ruedita */
 }
 
 @media (max-width: 768px) {

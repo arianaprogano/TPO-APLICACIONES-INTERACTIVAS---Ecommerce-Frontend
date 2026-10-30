@@ -86,7 +86,7 @@ const adminSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Cargas principales
+    
       .addCase(fetchTodasLasOrdenes.pending, handlePending)
       .addCase(fetchTodasLasOrdenes.fulfilled, (state, action) => { state.loading = false; state.ordenes = action.payload; })
       .addCase(fetchTodasLasOrdenes.rejected, handleRejected)
@@ -98,13 +98,16 @@ const adminSlice = createSlice({
       .addCase(fetchFotosPendientes.pending, handlePending)
       .addCase(fetchFotosPendientes.fulfilled, (state, action) => { state.loading = false; state.fotosPendientes = action.payload; })
       
+      .addCase(fetchDestacados.pending, handlePending)
+      .addCase(fetchDestacados.fulfilled, (state, action) => { state.loading = false; state.destacados = action.payload; })
+      .addCase(fetchDestacados.rejected, handleRejected)
+
       .addCase(fetchUsuarios.pending, handlePending)
       .addCase(fetchUsuarios.fulfilled, (state, action) => { state.loading = false; state.usuarios = action.payload; })
       
       .addCase(fetchCategorias.pending, handlePending)
       .addCase(fetchCategorias.fulfilled, (state, action) => { state.loading = false; state.categorias = action.payload; })
 
-      // Acciones rápidas (optimistas o de reemplazo)
       .addCase(resolverFotoAdmin.fulfilled, (state, action) => {
         state.fotosPendientes = state.fotosPendientes.filter(f => f.id !== action.payload);
       })
@@ -112,10 +115,6 @@ const adminSlice = createSlice({
         const index = state.ordenes.findIndex(o => o.id === action.payload.id);
         if (index !== -1) state.ordenes[index] = action.payload;
       });
-
-    
-      // El resto de los addCase de Admin (reactivar, baja, etc.) se agregan según necesites reflejar cambios locales o, más fácil aún, 
-      // despachar el thunk de "fetchUsuarios" o "fetchCategorias" de nuevo en el componente (lo cual es válido y mantiene la base limpia).
   },
 });
 

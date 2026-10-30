@@ -41,6 +41,7 @@ function ProductRow({ titulo, subtitulo, productos, onVerTodos, user, misIds }) 
             nivelDestacado={post.nivelDestacado}
             esAdmin={user?.role === 'admin'}
             esMiProducto={misIds?.has(post.id)} 
+            user={user} /* <-- ACÁ ESTÁ LA SOLUCIÓN */
           />
         ))}
       </div>

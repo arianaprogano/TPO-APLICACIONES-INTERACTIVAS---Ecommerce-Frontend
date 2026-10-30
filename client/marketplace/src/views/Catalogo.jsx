@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PostList from '../components/PostList'
 import { PROVINCIAS } from '../api/ordenes'
-import './Home.css'
+import './Catalogo.css'
 
 const rangoVacio = { precioMin: '', precioMax: '', anioDesde: '', anioHasta: '' }
 
-const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory }) => {
-  // Los filtros ahora viven acá, donde realmente se usan
+const Catalogo = ({ user, searchTerm, selectedCategory, selectedSubcategory }) => {
+  const storageKey = user ? `agroFiltros_${user.id}` : 'agroFiltros_invitado'
+
   const [conditions, setConditions] = useState([])
   const [provincia, setProvincia] = useState('')
   const [rango, setRango] = useState(rangoVacio)
@@ -24,6 +25,56 @@ const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory }) => {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const orden = searchParams.get('orden') || ''
+
+  // 1. CARGAR O HEREDAR FILTROS
+  useEffect(() => {
+    let guardados = null;
+
+    if (user) {
+      // Si el usuario acaba de iniciar sesión, nos fijamos si dejó filtros como invitado
+      const filtrosInvitado = localStorage.getItem('agroFiltros_invitado')
+      if (filtrosInvitado) {
+        guardados = filtrosInvitado
+        // Los mudamos a su cuenta personal y limpiamos el invitado
+        localStorage.setItem(storageKey, filtrosInvitado)
+        localStorage.removeItem('agroFiltros_invitado')
+      } else {
+        // Si no había nada de invitado, cargamos sus filtros personales históricos
+        guardados = localStorage.getItem(storageKey)
+      }
+    } else {
+      // Si no está logueado, carga los de invitado
+      guardados = localStorage.getItem(storageKey)
+    }
+
+    if (guardados) {
+      try {
+        const parsed = JSON.parse(guardados)
+        setConditions(parsed.conditions || [])
+        setProvincia(parsed.provincia || '')
+        setRango(parsed.rango || rangoVacio)
+        setSoloConEnvio(parsed.soloConEnvio || false)
+        setSoloSinEnvio(parsed.soloSinEnvio || false)
+        setSoloOfertas(parsed.soloOfertas || false)
+      } catch (e) {
+        console.error("Error leyendo filtros guardados")
+      }
+    } else {
+      setConditions([])
+      setProvincia('')
+      setRango(rangoVacio)
+      setSoloConEnvio(false)
+      setSoloSinEnvio(false)
+      setSoloOfertas(false)
+    }
+  }, [storageKey, user])
+
+  // 2. GUARDAR FILTROS AUTOMÁTICAMENTE AL CAMBIARLOS
+  useEffect(() => {
+    const filtrosActuales = { conditions, provincia, rango, soloConEnvio, soloSinEnvio, soloOfertas }
+    localStorage.setItem(storageKey, JSON.stringify(filtrosActuales))
+  }, [conditions, provincia, rango, soloConEnvio, soloSinEnvio, soloOfertas, storageKey])
+
 
   const cambiarOrden = (nuevoOrden) => {
     const params = new URLSearchParams(searchParams)
@@ -58,8 +109,8 @@ const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory }) => {
   }
 
   return (
-    <div className="home-container">
-      <div className="home-layout">
+    <div className="catalogo-container">
+      <div className="catalogo-layout">
         <aside className="sidebar-filtros">
           <div className="filtros-header-principal">
             <h3 className="filtros-titulo">Filtros</h3>
@@ -182,4 +233,4 @@ const Home = ({ user, searchTerm, selectedCategory, selectedSubcategory }) => {
   )
 }
 
-export default Home
+export default Catalogo

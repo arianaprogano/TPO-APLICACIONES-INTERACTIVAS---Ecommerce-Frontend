@@ -52,6 +52,32 @@ function AdminPanel({ user }) {
   const categorias = categoriasObj?.activas || []
   const categoriasInactivas = categoriasObj?.inactivas || []
 
+  // FILTRO INTELIGENTE Y REAL: Cruzamos con los productos reales para descartar los que ya no están destacados
+  const destacadosUnicos = (destacados ?? []).reduce((acc, curr) => {
+    const idProd = curr.idProducto || curr.producto?.id || curr.id;
+    
+    // Buscamos el producto en la lista general para ver su estado ACTUAL real
+    const productoReal = (productos ?? []).find(p => p.id === idProd);
+    
+    // Si el producto no existe o su nivel actual es NINGUNO (o nulo), lo ignoramos por completo
+    if (!productoReal || !productoReal.nivelDestacado || productoReal.nivelDestacado === 'NINGUNO') {
+      return acc;
+    }
+
+    // Evitamos duplicados en el historial mostrando una única línea limpia del producto activo
+    const existe = acc.find(item => {
+      const existingId = item.idProducto || item.producto?.id || item.id;
+      return existingId === idProd;
+    });
+
+    if (!existe) {
+      const itemActualizado = { ...curr, nivel: productoReal.nivelDestacado };
+      acc.push(itemActualizado);
+    }
+    
+    return acc;
+  }, []);
+
   const [enviosPorOrden, setEnviosPorOrden] = useState({})
   const [destacando, setDestacando] = useState(null)
   const [verBajas, setVerBajas] = useState(false)
@@ -84,8 +110,8 @@ function AdminPanel({ user }) {
     setError('')
     setVerBajas(false)
     if (activeTab === 'ordenes') cargar.ordenes()
-    else if (activeTab === 'productos') cargar.productos()
-    else if (activeTab === 'destacados') cargar.destacados()
+    else if (activeTab === 'productos') { cargar.productos(); cargar.destacados(); }
+    else if (activeTab === 'destacados') { cargar.productos(); cargar.destacados(); }
     else if (activeTab === 'usuarios') cargar.usuarios()
     else if (activeTab === 'categorias') cargar.categorias()
   }, [activeTab, dispatch])
@@ -378,7 +404,7 @@ function AdminPanel({ user }) {
                         </td>
                         <td className="text-right">
                           {p.activo !== false && (
-                            <button className="btn-icon-edit" title="Destacar" onClick={() => setDestacando({ producto: p, nivel: p.nivelDestacado && p.nivelDestacado !== 'NINGUNO' ? p.nivelDestacado : 'DESTACADO', meses: 1 })}>
+                            <button className="btn-icon-edit" title="Destacar / Quitar" onClick={() => setDestacando({ producto: p, nivel: p.nivelDestacado && p.nivelDestacado !== 'NINGUNO' ? p.nivelDestacado : 'DESTACADO', meses: 1 })}>
                               <i className="fa-solid fa-star"></i>
                             </button>
                           )}
@@ -405,7 +431,7 @@ function AdminPanel({ user }) {
               <tr><th>PRODUCTO</th><th>VENDEDOR</th><th>NIVEL</th><th>PERÍODO</th><th>ESTADO</th></tr>
             </thead>
             <tbody>
-              {filaEstado(destacados, 5, 'Todavía no se destacó ningún producto. Se destaca desde la pestaña Productos.') ?? destacados.map(d => (
+              {filaEstado(destacadosUnicos, 5, 'Todavía no se destacó ningún producto. Se destaca desde la pestaña Productos.') ?? destacadosUnicos.map(d => (
                 <tr key={d.id}>
                   <td><strong>{d.nombreProducto}</strong></td>
                   <td>{d.vendedor?.nombreUsuario}</td>

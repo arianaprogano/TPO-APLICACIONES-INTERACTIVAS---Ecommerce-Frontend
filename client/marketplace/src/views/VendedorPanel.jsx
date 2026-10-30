@@ -232,7 +232,7 @@ function VendedorPanel() {
                               </button>
                             )}
                             <button className="btn-icon-delete" title="Dar de baja" disabled={trabajando} onClick={() => darDeBaja(p)}>
-                              <i className="fa-solid fa-trash"></i>
+                              <i className="fa-solid fa-ban"></i>
                             </button>
                           </div>
                         )}

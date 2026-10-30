@@ -123,7 +123,11 @@ function MisDatos({ user, setUser }) {
         <section className="perfil-card perfil-zona-peligro">
           <div>
             <h3>Dar de baja mi cuenta</h3>
-            <p>Tus publicaciones salen del catálogo y de los carritos. Las órdenes se conservan. No se puede deshacer desde acá.</p>
+            {user?.role === 'despachante' ? (
+              <p>Ya no podrás gestionar el estado de los envíos ni acceder al panel de logística. Esta acción no se puede deshacer desde acá.</p>
+            ) : (
+              <p>Tus publicaciones salen del catálogo y de los carritos. Las órdenes se conservan. No se puede deshacer desde acá.</p>
+            )}
           </div>
           {confirmandoBaja ? (
             <div style={{ display: 'flex', gap: '10px' }}>

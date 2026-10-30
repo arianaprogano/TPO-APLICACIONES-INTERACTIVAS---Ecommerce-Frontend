@@ -10,7 +10,6 @@ function PostList({ user, orden, searchTerm, selectedCategory, selectedSubcatego
   const dispatch = useDispatch()
   const [pagina, setPagina] = useState(0)
   
-  // Extraemos estado de Redux
   const { catalogo: resultado, loading: cargando, error } = useSelector(state => state.productos)
   const misPublicaciones = useSelector(state => state.productos.misPublicaciones)
   const misIds = new Set(misPublicaciones.map(p => p.id))
@@ -90,6 +89,7 @@ function PostList({ user, orden, searchTerm, selectedCategory, selectedSubcatego
               nivelDestacado={post.nivelDestacado}
               esMiProducto={misIds.has(post.id)}
               esAdmin={user?.role === 'admin'}
+              user={user}
             />
           ))
         ) : (

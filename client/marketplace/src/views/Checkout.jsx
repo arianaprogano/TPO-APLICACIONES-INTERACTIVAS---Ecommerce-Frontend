@@ -34,6 +34,9 @@ function Checkout({ user }) {
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
   const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
+  const faltanDatosEnvio = hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())
+  const botonDeshabilitado = enviando || faltanDatosEnvio
+
   if (ordenesCreadas) {
     return (
       <div className="error-overlay">
@@ -73,13 +76,13 @@ function Checkout({ user }) {
 
   const handlePay = async () => {
     setError('')
-    if (hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())) {
+    if (faltanDatosEnvio) {
       setError('Completá provincia, localidad y dirección para los productos que se envían.')
       return
     }
     setEnviando(true)
     
-    // Usamos el Thunk de Redux (y unwrap para poder leer el resultado directo aquí)
+    // Usamos el Thunk de Redux
     dispatch(crearNuevaOrden(hayDespacho ? entrega : {}))
       .unwrap()
       .then((ordenes) => {
@@ -96,8 +99,6 @@ function Checkout({ user }) {
 
   return (
     <div className="checkout-container">
-       {/* El HTML del render se mantiene EXACTAMENTE IGUAL */}
-       {/* ... todo tu bloque izquierdo de envío y derecho de resumen ... */}
        <div className="checkout-left">
         <h2 className="checkout-section-title">Revisa tu compra</h2>
 
@@ -190,7 +191,12 @@ function Checkout({ user }) {
 
         {error && <div className="checkout-error">{error}</div>}
 
-        <button className="btn-pagar" onClick={handlePay} disabled={enviando}>
+        <button 
+          className="btn-pagar" 
+          onClick={handlePay} 
+          disabled={botonDeshabilitado} 
+          title={faltanDatosEnvio ? 'Completá los datos de envío para continuar' : ''}
+        >
           {enviando ? 'PROCESANDO...' : 'CONFIRMAR COMPRA'}
         </button>
         <p className="checkout-aviso">La orden queda pendiente de pago hasta que se acredite.</p>
