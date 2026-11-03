@@ -516,3 +516,60 @@
 .btn-opinar:hover {
   background-color: #ea580c;
 }
+
+.pd-metodos-pago {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pd-metodo-item {
+  font-size: 14px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pd-metodo-item i {
+  color: var(--verde);
+  font-size: 14px;
+}
+
+.payment-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+  background-color: #f9fafb;
+}
+
+.payment-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.payment-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.payment-list li {
+  font-size: 13px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payment-list i {
+  color: var(--verde);
+  font-size: 14px;
+}

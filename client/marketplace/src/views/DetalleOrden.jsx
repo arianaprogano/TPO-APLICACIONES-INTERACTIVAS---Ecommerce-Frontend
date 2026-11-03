@@ -5,6 +5,7 @@ import { fetchOrdenDetalle } from '../redux/slice/ordenesSlice'
 import { fetchMisEnvios } from '../redux/slice/enviosSlice'
 import { getTodosLosEnvios, ESTADOS_ENVIO } from '../api/envios'
 import { nombreProvincia } from '../api/ordenes'
+import ChatOrden from '../components/ChatOrden'
 import './DetalleOrden.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
@@ -25,34 +26,34 @@ function DetalleOrden({ user }) {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   
-  const [envio, setEnvio] = useState(null)
+  const [envioAdmin, setEnvioAdmin] = useState(null)
   const [errorEnvio, setErrorEnvio] = useState('')
 
   const { ordenActual: orden, loading, error } = useSelector(state => state.ordenes)
   const { enCurso } = useSelector(state => state.envios)
 
+  // Carga inicial de datos (solo al montar o cambiar el ID/rol)
   useEffect(() => {
     dispatch(fetchOrdenDetalle(id))
     
     if (user?.role === 'admin') {
       getTodosLosEnvios()
-        .then(lista => setEnvio(lista.find(e => String(e.idOrden) === String(id)) ?? null))
+        .then(lista => setEnvioAdmin(lista.find(e => String(e.idOrden) === String(id)) ?? null))
         .catch(err => setErrorEnvio(err.message))
     } else {
       dispatch(fetchMisEnvios())
     }
   }, [id, user?.role, dispatch])
 
-  useEffect(() => {
-    if (user?.role !== 'admin') {
-      setEnvio(enCurso.find(e => String(e.idOrden) === String(id)) ?? null)
-    }
-  }, [enCurso, id, user?.role])
-
   if (error || errorEnvio) return <div className="detalle-orden"><p className="post-list-mensaje post-list-error">{error || errorEnvio}</p></div>
   if (loading || !orden) return <div className="detalle-orden"><p className="post-list-mensaje">Cargando orden...</p></div>
 
-  const estado = ESTADOS_ORDEN[orden.estado] ?? { texto: orden.estado, color: '#6b7280' }
+  // Determinamos el envío actual sin causar bucles de renderizado
+  const envio = user?.role === 'admin' 
+    ? envioAdmin 
+    : (enCurso.find(e => String(e.idOrden) === String(id)) ?? null)
+
+  const estado = ESTADOS_ORDEN[orden.estado?.toUpperCase()] ?? { texto: orden.estado, color: '#6b7280' }
   const pasos = PASOS[orden.metodoEntrega] ?? PASOS.DESPACHO
   const pasoActual = envio ? pasos.indexOf(envio.estado) : -1
 
@@ -88,8 +89,8 @@ function DetalleOrden({ user }) {
           <p><i className="fa-solid fa-handshake"></i> Entrega a coordinar entre comprador y vendedor.</p>
         )}
 
-        {orden.estado === 'PENDIENTE' && <p className="panel-producto-meta">El envío se prepara cuando se confirme el pago.</p>}
-        {orden.estado === 'CANCELADA' && <p className="panel-producto-meta">La orden fue cancelada.</p>}
+        {orden.estado?.toUpperCase() === 'PENDIENTE' && <p className="panel-producto-meta">El envío se prepara cuando se confirme el pago.</p>}
+        {orden.estado?.toUpperCase() === 'CANCELADA' && <p className="panel-producto-meta">La orden fue cancelada.</p>}
 
         {envio && (
           <>
@@ -110,6 +111,11 @@ function DetalleOrden({ user }) {
           </>
         )}
       </section>
+
+      {orden.estado?.toUpperCase() === 'PAGADA' && (
+        <ChatOrden orden={orden} user={user} envio={envio} />
+      )}
+      
     </div>
   )
 }

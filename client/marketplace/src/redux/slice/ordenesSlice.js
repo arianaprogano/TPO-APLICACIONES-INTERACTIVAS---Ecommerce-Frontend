@@ -43,14 +43,29 @@ const ordenesSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Casos para Mis Compras
       .addCase(fetchMisCompras.pending, handlePending)
-      .addCase(fetchMisCompras.fulfilled, (state, action) => { state.loading = false; state.compras = action.payload; })
+      .addCase(fetchMisCompras.fulfilled, (state, action) => { 
+        state.loading = false; 
+        state.compras = action.payload; 
+      })
       .addCase(fetchMisCompras.rejected, handleRejected)
 
+      // Casos para Mis Ventas
       .addCase(fetchMisVentas.pending, handlePending)
-      .addCase(fetchMisVentas.fulfilled, (state, action) => { state.loading = false; state.ventas = action.payload; })
+      .addCase(fetchMisVentas.fulfilled, (state, action) => { 
+        state.loading = false; 
+        state.ventas = action.payload; 
+      })
       .addCase(fetchMisVentas.rejected, handleRejected)
 
+      .addCase(fetchOrdenDetalle.pending, handlePending)
+      .addCase(fetchOrdenDetalle.fulfilled, (state, action) => { 
+        state.loading = false; 
+        state.ordenActual = action.payload; 
+      })
+      .addCase(fetchOrdenDetalle.rejected, handleRejected)
+     
       .addCase(cancelarMiOrden.fulfilled, (state, action) => {
         // Actualizamos localmente sin necesidad de recargar todo
         const indexCompra = state.compras.findIndex(c => c.id === action.payload.id);

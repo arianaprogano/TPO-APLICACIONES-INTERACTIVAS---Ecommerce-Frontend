@@ -34,7 +34,6 @@ function ProductDetail({ user }) {
 
   const isFavorite = wishlist.some(fav => fav.id === product.id)
   
-  // Verificamos si el producto pertenece al usuario logueado para mostrar la insignia
   const esMiProducto = user && product.vendedor && (
     product.vendedor.id === user.id || 
     product.vendedor.nombreUsuario === user.nombreUsuario
@@ -68,6 +67,11 @@ function ProductDetail({ user }) {
   const incrementar = () => { if (quantity < (product.stock || 1)) setQuantity(q => q + 1) }
   const decrementar = () => { if (quantity > 1) setQuantity(q => q - 1) }
 
+  const esMaquinaria = (() => {
+    const texto = `${product.title} ${product.categoria?.nombre || ''}`.toLowerCase()
+    return texto.includes('tractor') || texto.includes('maquinaria') || texto.includes('cosechadora') || texto.includes('agro') || texto.includes('vehiculo')
+  })()
+
   return (
     <div className="product-detail-container">
       <button className="back-btn" onClick={() => navigate(-1)} style={{ marginBottom: '20px' }}>
@@ -99,7 +103,7 @@ function ProductDetail({ user }) {
                 ) : (
                   <div className="product-detail-image pd-sin-foto"><i className="fa-regular fa-image"></i></div>
                 )}
-                {/* Insignia de Mi Producto */}
+                
                 {esMiProducto && <div className="badge-mi-producto-foto">Mi Producto</div>}
               </div>
             </div>
@@ -137,6 +141,24 @@ function ProductDetail({ user }) {
               
               <div className="product-stock-green">
                 {product.disponible && product.stock > 0 ? `Stock disponible: ${product.stock}` : 'Sin stock'}
+              </div>
+
+              <div className="payment-box">
+                <div className="payment-title">Medios de pago disponibles</div>
+                <ul className="payment-list">
+                  {esMaquinaria ? (
+                    <>
+                      <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito</li>
+                      <li><i className="fa-solid fa-check"></i> Financiación en cuotas fijas o semestrales</li>
+                      <li><i className="fa-solid fa-check"></i> Transferencia bancaria o cheques a plazo</li>
+                    </>
+                  ) : (
+                    <>
+                      <li><i className="fa-solid fa-check"></i> Tarjetas de crédito y débito</li>
+                      <li><i className="fa-solid fa-check"></i> Transferencia bancaria</li>
+                    </>
+                  )}
+                </ul>
               </div>
             </div>
 
