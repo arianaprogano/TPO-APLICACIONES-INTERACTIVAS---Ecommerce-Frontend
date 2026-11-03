@@ -10,12 +10,10 @@ function Checkout({ user }) {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
-    // Consumimos el carrito desde Redux
     const cart = useSelector(state => state.carrito.items)
 
     const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
 
-    // Estado para los datos de la tarjeta (sin validaciones)
     const [tarjeta, setTarjeta] = useState({
         numero: '',
         titular: '',
