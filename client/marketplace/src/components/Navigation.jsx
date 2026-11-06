@@ -4,9 +4,9 @@ import { useSelector, useDispatch } from 'react-redux'
 import logoImg from '../assets/logo.png' 
 import { fetchCategoriasArbol, fetchNotificaciones, marcarNotificacionLeida } from '../redux/slice/uiSlice'
 import { ICONOS_NOTIFICACION } from '../api/notificaciones'
-import { limpiarCarritoLocal, fetchCarrito } from '../redux/slice/carritoSlice' // Cambiado a limpiador local
+import { limpiarCarritoLocal, fetchCarrito } from '../redux/slice/carritoSlice' 
 import { limpiarWishlistLocal, fetchWishlist } from '../redux/slice/wishlistSlice'
-import { limpiarMisPublicacionesLocal } from '../redux/slice/productosSlice' // Agregado limpiador local de publicaciones
+import { limpiarMisPublicacionesLocal } from '../redux/slice/productosSlice' 
 import './Navigation.css'
 
 function Navigation({ 
@@ -75,7 +75,7 @@ function Navigation({
     setUser(null)
     dispatch(limpiarCarritoLocal()) 
     dispatch(limpiarWishlistLocal())
-    dispatch(limpiarMisPublicacionesLocal()) // <-- Borra la insignia al hacer clic en salir
+    dispatch(limpiarMisPublicacionesLocal()) 
     setIsDropdownOpen(false)
     setIsNotifOpen(false)
     navigate('/home')
@@ -149,16 +149,34 @@ function Navigation({
                       <h4>Notificaciones</h4>
                       {noLeidas > 0 && <span className="mark-read" onClick={handleMarcarLeidas} style={{ cursor: 'pointer' }}>Marcar leídas</span>}
                     </header>
+                    
                     <div className="notif-list">
                       {notificaciones.length === 0 ? (
                         <div className="notif-empty">No tenés notificaciones.</div>
-                      ) : notificaciones.map(notif => (
-                        <article key={notif.id} className={`notif-item ${notif.leida ? '' : 'unread'}`} onClick={() => leer(notif)}>
-                          <div className="notif-icon"><i className={`fa-solid ${ICONOS_NOTIFICACION[notif.tipo] ?? 'fa-circle-info'}`}></i></div>
-                          <div className="notif-content"><p>{notif.mensaje}</p><span>{notif.hace}</span></div>
-                        </article>
-                      ))}
+                      ) : notificaciones.map(notif => {
+                        
+                        // 1. Busca el ícono en tu diccionario (ej: VENTA traerá 'fa-sack-dollar'). Si no hay, usa 'fa-receipt'.
+                        let iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
+
+                        // 2. Única excepción: Si es un mensaje de chat camuflado de ORDEN_ACTUALIZADA
+                        if (notif.tipo === 'ORDEN_ACTUALIZADA' && notif.mensaje && notif.mensaje.toLowerCase().includes('chat')) {
+                            iconoFinal = 'fa-comments';
+                        }
+
+                        return (
+                          <article key={notif.id} className={`notif-item ${notif.leida ? '' : 'unread'}`} onClick={() => leer(notif)}>
+                            <div className="notif-icon">
+                              <i className={`fa-solid ${iconoFinal}`}></i>
+                            </div>
+                            <div className="notif-content">
+                              <p>{notif.mensaje}</p>
+                              <span>{notif.hace}</span>
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
+
                   </aside>
                 )}
               </div>

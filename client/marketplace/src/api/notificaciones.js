@@ -14,7 +14,7 @@ export const ICONOS_NOTIFICACION = {
   DISPONIBLE_OTRA_VEZ: 'fa-box',
   OFERTA_RECIBIDA: 'fa-hand-holding-dollar',
   OFERTA_RESPONDIDA: 'fa-handshake',
-  VENTA: 'fa-sack-dollar',
+  VENTA: 'fa-tag',
   ORDEN_ACTUALIZADA: 'fa-receipt',
   ENVIO_ACTUALIZADO: 'fa-truck-fast',
   OPINA_TU_COMPRA: 'fa-star',
@@ -43,3 +43,5 @@ export const getNotificaciones = () =>
 export const contarNoLeidas = async () => (await api.get('/notificaciones/no-leidas')).cantidad
 
 export const marcarLeida = (id) => api.put(`/notificaciones/${id}/leida`)
+
+export const notificarMensajeChat = (idOrden) => api.post(`/notificaciones/chat/notificar?idOrden=${idOrden}`, {})

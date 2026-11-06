@@ -1,34 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { cargarMensajes, agregarMensaje } from '../redux/slice/chatSlice'
+import { notificarMensajeChat } from '../api/notificaciones' // Ajustá la ruta si tu carpeta api está en otro lado
 import './ChatOrden.css'
 
 function ChatOrden({ orden, user, envio }) {
   const dispatch = useDispatch()
   const finRef = useRef(null)
 
-  // Leemos los mensajes directamente desde Redux
   const { mensajes } = useSelector(state => state.chat)
-  
   const [texto, setTexto] = useState('')
 
   const soyComprador = user?.nombreUsuario === orden.comprador?.nombreUsuario
   const soyParte = soyComprador || user?.nombreUsuario === orden.vendedor?.nombreUsuario
   const otraParte = soyComprador ? orden.vendedor : orden.comprador
 
-  // Verificamos si la orden o el envío ya fueron entregados
   const esEntregada = 
     orden.estado?.trim().toUpperCase() === 'ENTREGADO' || 
     envio?.estado?.trim().toUpperCase() === 'ENTREGADO'
 
-  // Carga inicial de mensajes una sola vez cuando el ID de la orden cambia
   useEffect(() => {
     if (orden?.id) {
       dispatch(cargarMensajes(orden.id))
     }
   }, [orden?.id, dispatch])
 
-  // Scroll automático solo cuando llegan mensajes nuevos
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: 'nearest' })
   }, [mensajes?.length])
@@ -37,13 +33,16 @@ function ChatOrden({ orden, user, envio }) {
     e.preventDefault()
     if (!texto.trim() || esEntregada) return
     
-    // Disparamos el reducer para agregar el mensaje
+    // 1. Guardamos el mensaje en Redux (Front)
     dispatch(agregarMensaje({ 
       idOrden: orden.id, 
       user: user, 
       texto: texto.trim() 
     }))
     
+    // 2. Disparamos la notificación usando tu cliente api configurado
+    notificarMensajeChat(orden.id)
+
     setTexto('')
   }
 
