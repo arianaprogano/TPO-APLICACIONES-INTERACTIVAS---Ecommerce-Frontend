@@ -155,10 +155,8 @@ function Navigation({
                         <div className="notif-empty">No tenés notificaciones.</div>
                       ) : notificaciones.map(notif => {
                         
-                        // 1. Busca el ícono en tu diccionario (ej: VENTA traerá 'fa-sack-dollar'). Si no hay, usa 'fa-receipt'.
                         let iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
 
-                        // 2. Única excepción: Si es un mensaje de chat camuflado de ORDEN_ACTUALIZADA
                         if (notif.tipo === 'ORDEN_ACTUALIZADA' && notif.mensaje && notif.mensaje.toLowerCase().includes('chat')) {
                             iconoFinal = 'fa-comments';
                         }

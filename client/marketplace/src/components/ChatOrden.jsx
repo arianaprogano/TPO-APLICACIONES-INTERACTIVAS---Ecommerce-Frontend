@@ -33,14 +33,13 @@ function ChatOrden({ orden, user, envio }) {
     e.preventDefault()
     if (!texto.trim() || esEntregada) return
     
-    // 1. Guardamos el mensaje en Redux (Front)
+    // Guardamos el mensaje en Redux (Front)
     dispatch(agregarMensaje({ 
       idOrden: orden.id, 
       user: user, 
       texto: texto.trim() 
     }))
     
-    // 2. Disparamos la notificación usando tu cliente api configurado
     notificarMensajeChat(orden.id)
 
     setTexto('')
