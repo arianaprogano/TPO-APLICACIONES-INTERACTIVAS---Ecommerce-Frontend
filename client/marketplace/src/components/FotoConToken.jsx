@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { getToken } from '../api/client'
+import { http } from '../api/client'
 
 // Una foto que todavia no esta aprobada solo la puede ver su vendedor o un
 // admin, y el backend lo sabe por el token. Un <img src> no manda el header
-// Authorization, asi que estas fotos se piden con fetch y se muestran desde
-// una URL temporal del navegador.
+// Authorization, asi que estas fotos se piden con axios (que pone el token) y
+// se muestran desde una URL temporal del navegador.
 function FotoConToken({ src, alt, className }) {
   const [url, setUrl] = useState(null)
   const [fallo, setFallo] = useState(false)
@@ -13,9 +13,8 @@ function FotoConToken({ src, alt, className }) {
     let creada = null
     let cancelado = false
     setFallo(false)
-    fetch(src, { headers: { Authorization: `Bearer ${getToken()}` } })
-      .then(r => (r.ok ? r.blob() : Promise.reject(r.status)))
-      .then(blob => {
+    http.get(src, { responseType: 'blob' })
+      .then(({ data: blob }) => {
         if (cancelado) return
         creada = URL.createObjectURL(blob)
         setUrl(creada)

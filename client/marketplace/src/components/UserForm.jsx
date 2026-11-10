@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { crearUsuario } from '../api/admin'
+import { useDispatch } from 'react-redux'
+import { crearNuevoUsuario } from '../redux/slice/adminSlice'
 import './AdminModals.css'
 
 const vacio = { mail: '', nombreUsuario: '', rol: 'CLIENTE', contrasena: '', nombre: '', apellido: '', direccion: '' }
 
 function UserForm({ onClose, onSave }) {
+  const dispatch = useDispatch()
   const [form, setForm] = useState(vacio)
   const [error, setError] = useState('')
   const [errores, setErrores] = useState({})
@@ -20,7 +22,7 @@ function UserForm({ onClose, onSave }) {
     setError('')
     setGuardando(true)
     try {
-      await crearUsuario(form)
+      await dispatch(crearNuevoUsuario(form)).unwrap()
       onSave()
     } catch (err) {
       setError(err.message)

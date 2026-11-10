@@ -8,7 +8,7 @@ import {
   fetchUsuarios, cambiarRolAdmin, bajaUsuarioAdmin, reactivarUsuarioAdmin,
   fetchDestacados 
 } from '../redux/slice/adminSlice'
-import { getTodosLosEnvios } from '../api/envios'
+import { fetchTodosLosEnvios } from '../redux/slice/enviosSlice'
 import FotoConToken from '../components/FotoConToken'
 import AdminModals from '../components/AdminModals'
 import { nombreProvincia } from '../api/ordenes'
@@ -78,7 +78,8 @@ function AdminPanel({ user }) {
     return acc;
   }, []);
 
-  const [enviosPorOrden, setEnviosPorOrden] = useState({})
+  const todosLosEnvios = useSelector(state => state.envios.todos)
+  const enviosPorOrden = Object.fromEntries(todosLosEnvios.map(e => [e.idOrden, e]))
   const [destacando, setDestacando] = useState(null)
   const [verBajas, setVerBajas] = useState(false)
   const [error, setError] = useState('')
@@ -98,7 +99,7 @@ function AdminPanel({ user }) {
   const cargar = {
     ordenes: () => {
       dispatch(fetchTodasLasOrdenes())
-      getTodosLosEnvios().then(lista => setEnviosPorOrden(Object.fromEntries(lista.map(e => [e.idOrden, e]))))
+      dispatch(fetchTodosLosEnvios())
     },
     productos: () => { dispatch(fetchFotosPendientes()); dispatch(fetchTodosLosProductos()); },
     destacados: () => dispatch(fetchDestacados()),
@@ -462,9 +463,9 @@ function AdminPanel({ user }) {
                 <tr><th>USUARIO / EMAIL</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>DIRECCIÓN</th><th className="text-right">ACCIÓN</th></tr>
               </thead>
               <tbody>
-                {filaEstado(usuariosInactivos, 5, 'No hay usuarios dados de baja.') ?? (usuariosInactivosFiltradas.length === 0
+                {filaEstado(usuariosInactivos, 5, 'No hay usuarios dados de baja.') ?? (usuariosInactivosFiltrados.length === 0
                   ? <tr><td colSpan="5" className="empty-state">No se encontraron usuarios.</td></tr>
-                  : usuariosInactivosFiltradas.map(u => (
+                  : usuariosInactivosFiltrados.map(u => (
                     <tr key={u.id} className="fila-dada-de-baja">
                       <td>
                         <div className="user-info">

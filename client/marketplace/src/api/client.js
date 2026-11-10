@@ -1,6 +1,7 @@
-// Cliente unico para hablar con el backend. Todas las llamadas pasan por aca:
-// arma la URL, pone el JSON y el token, y convierte los errores del backend en
-// excepciones con el mensaje que mando el servidor.
+import axios from 'axios'
+
+// Cliente de axios para hablar con el backend. Los thunks de Redux lo usan
+// igual que axios, pero ya trae la direccion del backend y el token.
 export const API_URL = 'http://localhost:4002'
 
 const TOKEN_KEY = 'agroMarketToken'
@@ -12,8 +13,8 @@ export const setToken = (token) => {
   else localStorage.removeItem(TOKEN_KEY)
 }
 
-// App registra aca que hacer cuando el backend rechaza el token (vencido o
-// invalido): cerrar la sesion en el front.
+// App puede registrar aca que hacer cuando el backend rechaza el token
+// (vencido o invalido): cerrar la sesion en el front.
 let onSesionVencida = () => {}
 export const configurarSesionVencida = (callback) => {
   onSesionVencida = callback
@@ -28,59 +29,46 @@ export class ApiError extends Error {
   }
 }
 
-export const apiRequest = async (path, options = {}) => {
+export const http = axios.create({ baseURL: API_URL })
+
+// Antes de cada pedido: si hay sesion, va el token.
+http.interceptors.request.use((config) => {
   const token = getToken()
-  const esFormData = options.body instanceof FormData
-  const headers = {
-    ...(options.body && !esFormData ? { 'Content-Type': 'application/json' } : {}),
-    ...options.headers,
-  }
-  if (token) headers.Authorization = `Bearer ${token}`
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
 
-  let response
-  try {
-    response = await fetch(`${API_URL}${path}`, { ...options, headers })
-  } catch {
-    throw new ApiError('No se pudo conectar con el servidor. ¿Está levantado el backend?', 0)
-  }
-
-  const text = await response.text()
-  let json = null
-  if (text) {
-    try {
-      json = JSON.parse(text)
-    } catch {
-      json = { message: text }
+// Si el backend responde con error, se lanza un ApiError con el mensaje que
+// mando el servidor, su codigo y los errores por campo.
+http.interceptors.response.use(
+  (respuesta) => respuesta,
+  (error) => {
+    if (!error.response) {
+      throw new ApiError('No se pudo conectar con el servidor. ¿Está levantado el backend?', 0)
     }
-  }
-
-  if (!response.ok) {
-    if (response.status === 401 && token) {
+    const { status, data } = error.response
+    if (status === 401 && getToken()) {
       setToken(null)
       onSesionVencida()
     }
-    throw new ApiError(json?.message || 'Ocurrió un error con la solicitud.', response.status, json?.campos)
+    throw new ApiError(data?.message || 'Ocurrió un error con la solicitud.', status, data?.campos)
   }
+)
 
-  return json
-}
-
-// Las listas del backend vienen paginadas ({ contenido, pagina, ... }) y
-// responden 404 cuando estan vacias: para una pantalla eso es una lista vacia.
-export const listarPaginado = async (path, adaptar = (x) => x, tamanio = 100) => {
-  const separador = path.includes('?') ? '&' : '?'
+// Pide un listado. El backend responde 404 cuando no hay resultados, que para
+// la pantalla es una lista vacia, y algunos listados vienen paginados
+// ({ contenido, pagina, ... }).
+export const getLista = async (ruta, params) => {
   try {
-    return (await apiRequest(`${path}${separador}tamanio=${tamanio}`)).contenido.map(adaptar)
-  } catch (err) {
-    if (err.status === 404) return []
-    throw err
+    const { data } = await http.get(ruta, { params })
+    return data.contenido ?? data
+  } catch (error) {
+    if (error.status === 404) return []
+    throw error
   }
 }
 
-// Atajos para no repetir method y JSON.stringify en cada llamada.
-export const api = {
-  get: (path) => apiRequest(path),
-  post: (path, body) => apiRequest(path, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body) }),
-  put: (path, body) => apiRequest(path, { method: 'PUT', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }),
-  delete: (path) => apiRequest(path, { method: 'DELETE' }),
-}
+// createAsyncThunk solo guarda el mensaje de un error. Los formularios
+// necesitan tambien los errores por campo: estos thunks los devuelven con
+// rejectWithValue.
+export const errorConCampos = (error) => ({ message: error.message, campos: error.campos })

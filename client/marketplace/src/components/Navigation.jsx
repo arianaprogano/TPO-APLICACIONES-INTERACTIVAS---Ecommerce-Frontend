@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import logoImg from '../assets/logo.png' 
 import { fetchCategoriasArbol, fetchNotificaciones, marcarNotificacionLeida } from '../redux/slice/uiSlice'
 import { ICONOS_NOTIFICACION } from '../api/notificaciones'
+import { setToken } from '../api/client'
 import { limpiarCarritoLocal, fetchCarrito } from '../redux/slice/carritoSlice' 
 import { limpiarWishlistLocal, fetchWishlist } from '../redux/slice/wishlistSlice'
 import { limpiarMisPublicacionesLocal } from '../redux/slice/productosSlice' 
@@ -72,6 +73,7 @@ function Navigation({
   }
 
   const handleLogout = () => {
+    setToken(null)
     setUser(null)
     dispatch(limpiarCarritoLocal()) 
     dispatch(limpiarWishlistLocal())
@@ -155,11 +157,7 @@ function Navigation({
                         <div className="notif-empty">No tenés notificaciones.</div>
                       ) : notificaciones.map(notif => {
                         
-                        let iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
-
-                        if (notif.tipo === 'ORDEN_ACTUALIZADA' && notif.mensaje && notif.mensaje.toLowerCase().includes('chat')) {
-                            iconoFinal = 'fa-comments';
-                        }
+                        const iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
 
                         return (
                           <article key={notif.id} className={`notif-item ${notif.leida ? '' : 'unread'}`} onClick={() => leer(notif)}>

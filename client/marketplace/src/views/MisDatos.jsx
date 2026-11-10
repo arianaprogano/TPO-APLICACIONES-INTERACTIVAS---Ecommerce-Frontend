@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { actualizarPerfil, darmeDeBaja } from '../api/auth'
+import { useDispatch } from 'react-redux'
+import { actualizarPerfil, darmeDeBaja } from '../redux/slice/usuarioSlice'
 import './MisDatos.css'
 
 const desdeUsuario = (user) => ({
@@ -17,6 +18,7 @@ const desdeUsuario = (user) => ({
 // actual para no cambiarla, o una nueva.
 function MisDatos({ user, setUser }) {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState(() => desdeUsuario(user))
   const [errores, setErrores] = useState({})
@@ -48,7 +50,7 @@ function MisDatos({ user, setUser }) {
     setGuardando(true)
     try {
       // Si cambio el mail, el backend manda un token nuevo; actualizarPerfil lo guarda.
-      const actualizado = await actualizarPerfil(formData)
+      const actualizado = await dispatch(actualizarPerfil(formData)).unwrap()
       setUser(actualizado)
       setFormData(desdeUsuario(actualizado))
       setIsEditing(false)
@@ -63,7 +65,7 @@ function MisDatos({ user, setUser }) {
 
   const handleBaja = async () => {
     try {
-      await darmeDeBaja()
+      await dispatch(darmeDeBaja()).unwrap()
       setUser(null)
       navigate('/home')
     } catch (err) {

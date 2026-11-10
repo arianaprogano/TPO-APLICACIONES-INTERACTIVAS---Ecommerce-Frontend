@@ -6,7 +6,7 @@ import { fetchMisEnvios, cambiarEstadoEnvioThunk } from '../redux/slice/enviosSl
 import Reviews from '../components/Reviews'
 import { nombreProvincia } from '../api/ordenes'
 import { ESTADOS_ENVIO } from '../api/envios'
-import { crearResena, getResenasDeProducto } from '../api/resenas'
+import { crearResena, fetchResenasDeProducto } from '../redux/slice/resenasSlice'
 import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
@@ -41,14 +41,14 @@ function MisCompras({ user }) {
       const propias = new Set()
       
       Promise.all(productos.map(async (idProducto) => {
-        const resenas = await getResenasDeProducto(idProducto).catch(() => [])
+        const resenas = await dispatch(fetchResenasDeProducto(idProducto)).unwrap().catch(() => [])
         if (resenas.some(r => r.autor === user?.username)) {
           entregadas.filter(o => o.items.some(i => i.idProducto === idProducto))
             .forEach(o => propias.add(`${o.id}-${idProducto}`))
         }
       })).then(() => setReseñados(propias))
     }
-  }, [compras, enCurso, user?.username, envios])
+  }, [compras, enCurso, user?.username, envios, dispatch])
 
   const confirmarRecepcion = async (envio) => {
     if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
@@ -65,12 +65,12 @@ function MisCompras({ user }) {
   }
 
   const handleReviewSaved = (ordenId, reseñaData) => {
-    crearResena({
+    dispatch(crearResena({
       idOrden: ordenId,
       idProducto: reseñaData.productoId,
       puntaje: reseñaData.estrellas,
       comentario: reseñaData.texto,
-    }).then(() => {
+    })).unwrap().then(() => {
       setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
       setProductoAReseñar(null)
       exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })

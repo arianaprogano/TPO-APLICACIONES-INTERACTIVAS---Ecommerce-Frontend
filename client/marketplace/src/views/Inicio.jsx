@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import HeroCarousel from '../components/HeroCarousel'
 import ProductRow from '../components/ProductRow'
-import { fetchMisPublicaciones } from '../redux/slice/productosSlice'
-import { getProductos } from '../api/productos' 
+import { fetchFilaInicio, fetchMisPublicaciones } from '../redux/slice/productosSlice'
 import fotoCampo from '../assets/paisaje-agropecuario.jpg'
 import fotoCamioneta from '../assets/camioneta.jpg'
 import fotoSemillas from '../assets/semillas.jpg'
@@ -38,31 +37,19 @@ function Inicio({ user, setSelectedCategory, setSelectedSubcategory, setSearchTe
   const misPublicaciones = useSelector(state => state.productos.misPublicaciones)
   const misIds = new Set(misPublicaciones.map(p => p.id))
 
-  const [porCategoria, setPorCategoria] = useState({})
-  const [ofertas, setOfertas] = useState([])
-  const [masVistos, setMasVistos] = useState([])
-  const [masVendidos, setMasVendidos] = useState([])
-  const [error, setError] = useState('')
+  // Cada fila de la portada se guarda en el store bajo su clave.
+  const filas = useSelector(state => state.productos.filasInicio)
+  const ofertas = filas.ofertas ?? []
+  const masVistos = filas.vistos ?? []
+  const masVendidos = filas.vendidos ?? []
+  const porCategoria = Object.fromEntries(categorias.map(c => [c.id, filas[`categoria-${c.id}`]]))
 
   useEffect(() => {
-    const cargarTodo = () => {
-      const lista = (promesa) => promesa.catch(() => [])
-
-      if (categorias.length > 0) {
-        Promise.all(categorias.map(c => lista(getProductos({ idCategoria: c.id }))))
-          .then(productos => {
-            setPorCategoria(Object.fromEntries(categorias.map((c, i) => [c.id, productos[i]])))
-          })
-          .catch(err => setError(err.message))
-      }
-
-      lista(getProductos({ enOferta: true })).then(setOfertas)
-      lista(getProductos({ orden: 'vistos' })).then(setMasVistos)
-      lista(getProductos({ orden: 'vendidos' })).then(setMasVendidos)
-    }
-
-    cargarTodo()
-  }, [categorias])
+    categorias.forEach(c => dispatch(fetchFilaInicio({ clave: `categoria-${c.id}`, filtros: { idCategoria: c.id } })))
+    dispatch(fetchFilaInicio({ clave: 'ofertas', filtros: { enOferta: true } }))
+    dispatch(fetchFilaInicio({ clave: 'vistos', filtros: { orden: 'vistos' } }))
+    dispatch(fetchFilaInicio({ clave: 'vendidos', filtros: { orden: 'vendidos' } }))
+  }, [categorias, dispatch])
 
   useEffect(() => {
     if (user?.role === 'cliente') {
@@ -126,7 +113,6 @@ function Inicio({ user, setSelectedCategory, setSelectedSubcategory, setSearchTe
     <div className="inicio">
       <HeroCarousel slides={slides} />
       <div className="inicio-contenido">
-        {error && <div className="inicio-error">{error}</div>}
 
         <div className="inicio-catalogo">
           <button className="inicio-btn-catalogo" onClick={() => verListado('')}>

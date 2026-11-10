@@ -1,5 +1,3 @@
-import { api, listarPaginado } from './client'
-
 // Provincias que acepta el backend (enum Provincia), con su nombre para mostrar.
 export const PROVINCIAS = [
   ['BUENOS_AIRES', 'Buenos Aires'], ['CABA', 'Ciudad Autónoma de Buenos Aires'],
@@ -33,20 +31,3 @@ export const adaptarOrden = (o) => ({
     total: Number(d.total),
   })),
 })
-
-// El contenido sale del carrito del usuario en el backend; aca solo va a
-// donde se despacha (si algo tiene envio). Devuelve una orden por cada
-// vendedor y metodo de entrega, y el backend deja el carrito vacio.
-export const crearOrden = async ({ provinciaEntrega, localidadEntrega, direccionEntrega }) =>
-  (await api.post('/ordenes', { provinciaEntrega, localidadEntrega, direccionEntrega }))
-    .map(adaptarOrden)
-
-export const getMisCompras = () => listarPaginado('/ordenes/mis-compras', adaptarOrden)
-export const getMisVentas = () => listarPaginado('/ordenes/mis-ventas', adaptarOrden)
-
-// Una orden puntual: la ven su comprador, su vendedor y el admin.
-export const getOrden = async (idOrden) => adaptarOrden(await api.get(`/ordenes/${idOrden}`))
-
-// Comprador o vendedor pueden cancelar una orden PENDIENTE; repone el stock.
-export const cancelarOrden = async (idOrden) =>
-  adaptarOrden(await api.put(`/ordenes/${idOrden}/estado?estado=CANCELADA`))

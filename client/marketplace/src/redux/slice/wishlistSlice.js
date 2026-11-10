@@ -1,20 +1,26 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { getWishlist, agregarAWishlist, quitarDeWishlist, vaciarWishlist } from "../../api/wishlist";
+import { http } from "../../api/client";
+import { adaptarWishlist } from "../../api/wishlist";
 
+// Igual que el carrito: cada operacion devuelve la lista completa.
 export const fetchWishlist = createAsyncThunk("wishlist/fetch", async () => {
-  return await getWishlist();
+  const { data } = await http.get("/wishlist");
+  return adaptarWishlist(data);
 });
 
 export const agregarFavorito = createAsyncThunk("wishlist/agregar", async (idProducto) => {
-  return await agregarAWishlist(idProducto);
+  const { data } = await http.post("/wishlist/items", { idProducto });
+  return adaptarWishlist(data);
 });
 
 export const quitarFavorito = createAsyncThunk("wishlist/quitar", async (idItem) => {
-  return await quitarDeWishlist(idItem);
+  const { data } = await http.delete(`/wishlist/items/${idItem}`);
+  return adaptarWishlist(data);
 });
 
 export const vaciarFavoritos = createAsyncThunk("wishlist/vaciar", async () => {
-  return await vaciarWishlist();
+  const { data } = await http.delete("/wishlist");
+  return adaptarWishlist(data);
 });
 
 const handlePending = (state) => {
@@ -24,7 +30,7 @@ const handlePending = (state) => {
 
 const handleFulfilled = (state, action) => {
   state.loading = false;
-  state.items = action.payload; // El backend de wishlist devuelve un array directo de items
+  state.items = action.payload;
 };
 
 const handleRejected = (state, action) => {
@@ -40,7 +46,7 @@ const wishlistSlice = createSlice({
     error: null,
   },
   reducers: {
-    // NUEVA FUNCIÓN: Limpia la pantalla sin borrar los datos del servidor
+    // Limpia la pantalla sin borrar los datos del servidor
     limpiarWishlistLocal: (state) => {
       state.items = [];
     }
@@ -50,15 +56,15 @@ const wishlistSlice = createSlice({
       .addCase(fetchWishlist.pending, handlePending)
       .addCase(fetchWishlist.fulfilled, handleFulfilled)
       .addCase(fetchWishlist.rejected, handleRejected)
-      
+
       .addCase(agregarFavorito.pending, handlePending)
       .addCase(agregarFavorito.fulfilled, handleFulfilled)
       .addCase(agregarFavorito.rejected, handleRejected)
-      
+
       .addCase(quitarFavorito.pending, handlePending)
       .addCase(quitarFavorito.fulfilled, handleFulfilled)
       .addCase(quitarFavorito.rejected, handleRejected)
-      
+
       .addCase(vaciarFavoritos.pending, handlePending)
       .addCase(vaciarFavoritos.fulfilled, handleFulfilled)
       .addCase(vaciarFavoritos.rejected, handleRejected);

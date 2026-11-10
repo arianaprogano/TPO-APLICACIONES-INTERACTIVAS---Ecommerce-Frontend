@@ -1,48 +1,53 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { cargarMensajes, agregarMensaje } from '../redux/slice/chatSlice'
-import { notificarMensajeChat } from '../api/notificaciones' // Ajustá la ruta si tu carpeta api está en otro lado
+import { useLocation } from 'react-router-dom'
+import { cargarMensajes, enviarMensaje } from '../redux/slice/chatSlice'
+import { useAvisos } from './avisosContext'
 import './ChatOrden.css'
 
 function ChatOrden({ orden, user, envio }) {
   const dispatch = useDispatch()
+  const { error: avisarError } = useAvisos()
   const finRef = useRef(null)
+  // Cambia en cada navegacion: si ya estas en la orden y tocas la
+  // notificacion de un mensaje nuevo, el chat se vuelve a cargar.
+  const { key } = useLocation()
 
   const { mensajes } = useSelector(state => state.chat)
   const [texto, setTexto] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
   const soyComprador = user?.nombreUsuario === orden.comprador?.nombreUsuario
   const soyParte = soyComprador || user?.nombreUsuario === orden.vendedor?.nombreUsuario
   const otraParte = soyComprador ? orden.vendedor : orden.comprador
 
-  const esEntregada = 
-    orden.estado?.trim().toUpperCase() === 'ENTREGADO' || 
+  const esEntregada =
+    orden.estado?.trim().toUpperCase() === 'ENTREGADO' ||
     envio?.estado?.trim().toUpperCase() === 'ENTREGADO'
 
   useEffect(() => {
     if (orden?.id) {
       dispatch(cargarMensajes(orden.id))
     }
-  }, [orden?.id, dispatch])
+  }, [orden?.id, key, dispatch])
 
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: 'nearest' })
   }, [mensajes?.length])
 
-  const enviar = (e) => {
+  // El backend guarda el mensaje y le avisa a la otra parte.
+  const enviar = async (e) => {
     e.preventDefault()
     if (!texto.trim() || esEntregada) return
-    
-    // Guardamos el mensaje en Redux (Front)
-    dispatch(agregarMensaje({ 
-      idOrden: orden.id, 
-      user: user, 
-      texto: texto.trim() 
-    }))
-    
-    notificarMensajeChat(orden.id)
-
-    setTexto('')
+    setEnviando(true)
+    try {
+      await dispatch(enviarMensaje({ idOrden: orden.id, texto: texto.trim() })).unwrap()
+      setTexto('')
+    } catch (err) {
+      avisarError(err.message)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -55,7 +60,7 @@ function ChatOrden({ orden, user, envio }) {
             {soyParte ? 'Todavía no hay mensajes. Escribí para arreglar el día, el lugar o cualquier detalle de la entrega.' : 'Todavía no hay mensajes.'}
           </p>
         )}
-        
+
         {mensajes?.map(m => {
           const mio = m.idAutor === user?.id
           return (
@@ -82,8 +87,9 @@ function ChatOrden({ orden, user, envio }) {
               maxLength={500}
               value={texto}
               onChange={e => setTexto(e.target.value)}
+              disabled={enviando}
             />
-            <button type="submit" disabled={!texto.trim()} title="Enviar">
+            <button type="submit" disabled={enviando || !texto.trim()} title="Enviar">
               <i className="fa-solid fa-paper-plane"></i>
             </button>
           </form>

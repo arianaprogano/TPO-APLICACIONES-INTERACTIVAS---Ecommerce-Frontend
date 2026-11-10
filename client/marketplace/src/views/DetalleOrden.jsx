@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchOrdenDetalle } from '../redux/slice/ordenesSlice'
-import { fetchMisEnvios } from '../redux/slice/enviosSlice'
-import { getTodosLosEnvios, ESTADOS_ENVIO } from '../api/envios'
+import { fetchMisEnvios, fetchTodosLosEnvios } from '../redux/slice/enviosSlice'
+import { ESTADOS_ENVIO } from '../api/envios'
 import { nombreProvincia } from '../api/ordenes'
 import ChatOrden from '../components/ChatOrden'
 import './DetalleOrden.css'
@@ -26,32 +26,27 @@ function DetalleOrden({ user }) {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   
-  const [envioAdmin, setEnvioAdmin] = useState(null)
-  const [errorEnvio, setErrorEnvio] = useState('')
 
   const { ordenActual: orden, loading, error } = useSelector(state => state.ordenes)
-  const { enCurso } = useSelector(state => state.envios)
+  const { enCurso, todos } = useSelector(state => state.envios)
 
   // Carga inicial de datos (solo al montar o cambiar el ID/rol)
   useEffect(() => {
     dispatch(fetchOrdenDetalle(id))
     
     if (user?.role === 'admin') {
-      getTodosLosEnvios()
-        .then(lista => setEnvioAdmin(lista.find(e => String(e.idOrden) === String(id)) ?? null))
-        .catch(err => setErrorEnvio(err.message))
+      dispatch(fetchTodosLosEnvios())
     } else {
       dispatch(fetchMisEnvios())
     }
   }, [id, user?.role, dispatch])
 
-  if (error || errorEnvio) return <div className="detalle-orden"><p className="post-list-mensaje post-list-error">{error || errorEnvio}</p></div>
+  if (error) return <div className="detalle-orden"><p className="post-list-mensaje post-list-error">{error}</p></div>
   if (loading || !orden) return <div className="detalle-orden"><p className="post-list-mensaje">Cargando orden...</p></div>
 
   // Determinamos el envío actual sin causar bucles de renderizado
-  const envio = user?.role === 'admin' 
-    ? envioAdmin 
-    : (enCurso.find(e => String(e.idOrden) === String(id)) ?? null)
+  const envios = user?.role === 'admin' ? todos : enCurso
+  const envio = envios.find(e => String(e.idOrden) === String(id)) ?? null
 
   const estado = ESTADOS_ORDEN[orden.estado?.toUpperCase()] ?? { texto: orden.estado, color: '#6b7280' }
   const pasos = PASOS[orden.metodoEntrega] ?? PASOS.DESPACHO

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { actualizarPublicacion } from '../redux/slice/productosSlice'
+import { actualizarPublicacion, eliminarFotoProducto, fetchFotosDeProducto, subirFotosProducto } from '../redux/slice/productosSlice'
 import { PROVINCIAS } from '../api/ordenes'
-import { eliminarFoto, getFotosDeProducto, subirFoto } from '../api/productos'
 import FotoConToken from './FotoConToken'
 import './ProductForm.css'
 import { useAvisos } from '../components/avisosContext'
@@ -34,7 +33,7 @@ function EditProductForm({ onClose, producto, onSave }) {
   const [subiendo, setSubiendo] = useState(0)
   const [fotosCambiaron, setFotosCambiaron] = useState(false)
 
-  const cargarFotos = () => getFotosDeProducto(producto.id).then(setFotos).catch(() => setFotos([]))
+  const cargarFotos = () => dispatch(fetchFotosDeProducto(producto.id)).unwrap().then(setFotos).catch(() => setFotos([]))
 
   useEffect(() => { cargarFotos() }, [])
 
@@ -48,7 +47,7 @@ function EditProductForm({ onClose, producto, onSave }) {
     })
     if (!ok) return
     
-    eliminarFoto(foto.id)
+    dispatch(eliminarFotoProducto(foto.id)).unwrap()
       .then(() => {
         setFotos(prev => prev.filter(f => f.id !== foto.id))
         setFotosCambiaron(true)
@@ -62,7 +61,7 @@ function EditProductForm({ onClose, producto, onSave }) {
     if (archivos.length === 0) return
     setSubiendo(archivos.length)
     
-    Promise.allSettled(archivos.map(archivo => subirFoto(producto.id, archivo)))
+    dispatch(subirFotosProducto({ idProducto: producto.id, archivos })).unwrap()
       .then(() => {
         setFotosCambiaron(true)
         return cargarFotos()

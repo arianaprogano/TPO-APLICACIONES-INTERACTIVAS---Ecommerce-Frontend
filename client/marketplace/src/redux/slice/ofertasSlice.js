@@ -1,24 +1,34 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { getMisOfertas, crearOferta, aceptarOferta, rechazarOferta, cancelarOferta } from "../../api/ofertas"; 
+import { http, getLista } from "../../api/client";
+import { adaptarOferta } from "../../api/ofertas";
 
+// Las que hice y las que me hicieron, juntas.
 export const fetchMisOfertas = createAsyncThunk("ofertas/fetch", async () => {
-  return await getMisOfertas(); 
+  const lista = await getLista("/ofertas", { tamanio: 100 });
+  return lista.map(adaptarOferta);
 });
 
+// Precio por unidad, menor al de lista. Si el producto se despacha va la
+// direccion: si el vendedor acepta, la orden sale con esa entrega.
 export const enviarOferta = createAsyncThunk("ofertas/crear", async (datos) => {
-  return await crearOferta(datos); 
+  const { data } = await http.post("/ofertas", datos);
+  return adaptarOferta(data);
 });
 
+// Aceptar crea la orden al precio acordado.
 export const aceptarOfertaThunk = createAsyncThunk("ofertas/aceptar", async (id) => {
-  return await aceptarOferta(id); 
+  const { data } = await http.put(`/ofertas/${id}/aceptar`);
+  return adaptarOferta(data);
 });
 
 export const rechazarOfertaThunk = createAsyncThunk("ofertas/rechazar", async (id) => {
-  return await rechazarOferta(id); 
+  const { data } = await http.put(`/ofertas/${id}/rechazar`);
+  return adaptarOferta(data);
 });
 
 export const retirarOfertaThunk = createAsyncThunk("ofertas/retirar", async (id) => {
-  return await cancelarOferta(id); 
+  const { data } = await http.put(`/ofertas/${id}/cancelar`);
+  return adaptarOferta(data);
 });
 
 const ofertasSlice = createSlice({
@@ -40,7 +50,7 @@ const ofertasSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      // Reemplazo optimista para aceptar/rechazar/cancelar
+      // Aceptar, rechazar o retirar: se reemplaza la oferta en la lista
       .addMatcher(
         (action) => action.type.endsWith('/fulfilled') && ['ofertas/aceptar', 'ofertas/rechazar', 'ofertas/retirar'].includes(action.type.replace('/fulfilled', '')),
         (state, action) => {

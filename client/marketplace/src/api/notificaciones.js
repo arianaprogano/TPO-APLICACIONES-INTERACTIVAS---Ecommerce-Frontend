@@ -1,5 +1,3 @@
-import { api, listarPaginado } from './client'
-
 const hace = (f) => {
   const minutos = Math.round((Date.now() - new Date(f).getTime()) / 60000)
   if (minutos < 1) return 'Recién'
@@ -20,6 +18,7 @@ export const ICONOS_NOTIFICACION = {
   OPINA_TU_COMPRA: 'fa-star',
   FOTO_VERIFICADA: 'fa-image',
   FOTO_PENDIENTE: 'fa-images',
+  MENSAJE: 'fa-comments',
 }
 
 // El backend arma los links con sus propias rutas; aca se pasan a las del front.
@@ -37,11 +36,4 @@ const rutaFront = (link) => {
   return null
 }
 
-export const getNotificaciones = () =>
-  listarPaginado('/notificaciones', (n) => ({ ...n, hace: hace(n.fecha), ruta: rutaFront(n.link) }), 30)
-
-export const contarNoLeidas = async () => (await api.get('/notificaciones/no-leidas')).cantidad
-
-export const marcarLeida = (id) => api.put(`/notificaciones/${id}/leida`)
-
-export const notificarMensajeChat = (idOrden) => api.post(`/notificaciones/chat/notificar?idOrden=${idOrden}`, {})
+export const adaptarNotificacion = (n) => ({ ...n, hace: hace(n.fecha), ruta: rutaFront(n.link) })

@@ -8,6 +8,8 @@ import ofertasReducer from "./slice/ofertasSlice";
 import enviosReducer from "./slice/enviosSlice";
 import uiReducer from "./slice/uiSlice";
 import chatReducer from "./slice/chatSlice";
+import usuarioReducer from "./slice/usuarioSlice";
+import resenasReducer from "./slice/resenasSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +22,7 @@ export const store = configureStore({
     envios: enviosReducer,
     ui: uiReducer,
     chat: chatReducer,
+    usuario: usuarioReducer,
+    resenas: resenasReducer,
   },
 });

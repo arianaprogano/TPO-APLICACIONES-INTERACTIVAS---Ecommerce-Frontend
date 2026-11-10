@@ -1,23 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import PostCard from '../components/PostCard'
-import { getProductosDeVendedor } from '../api/productos'
-import { getCalificacionVendedor, NIVELES_VENDEDOR } from '../api/resenas'
+import { fetchProductosDeVendedor } from '../redux/slice/productosSlice'
+import { fetchCalificacionVendedor } from '../redux/slice/resenasSlice'
+import { NIVELES_VENDEDOR } from '../api/resenas'
 import './PerfilVendedor.css'
 
 function PerfilVendedor({ user }) {
   const { nombreUsuario } = useParams()
   const navigate = useNavigate()
-  const [calificacion, setCalificacion] = useState(null)
-  const [productos, setProductos] = useState(null)
-  const [error, setError] = useState('')
+  const dispatch = useDispatch()
+  const calificacion = useSelector(state => state.resenas.calificacionVendedor)
+  const { delVendedor: productos, error } = useSelector(state => state.productos)
 
   useEffect(() => {
-    setError('')
-    setProductos(null)
-    getCalificacionVendedor(nombreUsuario).then(setCalificacion).catch(() => setCalificacion(null))
-    getProductosDeVendedor(nombreUsuario).then(setProductos).catch(err => setError(err.message))
-  }, [nombreUsuario])
+    dispatch(fetchCalificacionVendedor(nombreUsuario))
+    dispatch(fetchProductosDeVendedor(nombreUsuario))
+  }, [nombreUsuario, dispatch])
 
   const nivel = NIVELES_VENDEDOR[calificacion?.nivel] ?? NIVELES_VENDEDOR.SIN_CALIFICAR
   const esYo = user?.username === nombreUsuario

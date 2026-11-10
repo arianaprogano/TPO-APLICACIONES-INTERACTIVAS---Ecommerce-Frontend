@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { comprarVisibilidad, getPlanesVisibilidad } from '../api/productos'
+import { useDispatch } from 'react-redux'
+import { destacarPublicacion, obtenerPlanesVisibilidad } from '../redux/slice/productosSlice'
 import './VisibilidadModal.css'
 
 const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
@@ -16,6 +17,7 @@ const MESES = [1, 3, 6]
 // meses, y despues confirmar el pago. No hay pasarela: el pago es simulado y el
 // backend registra lo cobrado en el historial de destacados.
 function VisibilidadModal({ producto, onClose, onComprado }) {
+  const dispatch = useDispatch()
   const [planes, setPlanes] = useState(null)
   const [nivel, setNivel] = useState('DESTACADO')
   const [meses, setMeses] = useState(1)
@@ -24,8 +26,8 @@ function VisibilidadModal({ producto, onClose, onComprado }) {
   const [pagando, setPagando] = useState(false)
 
   useEffect(() => {
-    getPlanesVisibilidad().then(setPlanes).catch(err => setError(err.message))
-  }, [])
+    dispatch(obtenerPlanesVisibilidad()).unwrap().then(setPlanes).catch(err => setError(err.message))
+  }, [dispatch])
 
   const plan = planes?.find(p => p.nivel === nivel)
   const total = plan ? Number(plan.precioMensual) * meses : 0
@@ -34,7 +36,7 @@ function VisibilidadModal({ producto, onClose, onComprado }) {
     setError('')
     setPagando(true)
     try {
-      const actualizado = await comprarVisibilidad(producto.id, nivel, meses)
+      const actualizado = await dispatch(destacarPublicacion({ id: producto.id, nivel, meses })).unwrap()
       onComprado(actualizado, { nivel: DESCRIPCIONES[nivel].nombre, meses, total })
     } catch (err) {
       setError(err.message)

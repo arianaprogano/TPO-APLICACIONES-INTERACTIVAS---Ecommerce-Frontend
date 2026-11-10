@@ -1,18 +1,23 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { getArbolCategorias } from "../../api/categorias"; 
-import { getNotificaciones, contarNoLeidas, marcarLeida } from "../../api/notificaciones"; 
+import { http, getLista } from "../../api/client";
+import { armarArbolCategorias } from "../../api/categorias";
+import { adaptarNotificacion } from "../../api/notificaciones";
 
 export const fetchCategoriasArbol = createAsyncThunk("ui/fetchCategorias", async () => {
-  return await getArbolCategorias(); 
+  const { data } = await http.get("/categorias");
+  return armarArbolCategorias(data);
 });
 
 export const fetchNotificaciones = createAsyncThunk("ui/fetchNotificaciones", async () => {
-  const [lista, noLeidas] = await Promise.all([getNotificaciones(), contarNoLeidas()]); 
-  return { lista, noLeidas };
+  const [lista, { data: contador }] = await Promise.all([
+    getLista("/notificaciones", { tamanio: 30 }),
+    http.get("/notificaciones/no-leidas"),
+  ]);
+  return { lista: lista.map(adaptarNotificacion), noLeidas: contador.cantidad };
 });
 
 export const marcarNotificacionLeida = createAsyncThunk("ui/marcarLeida", async (id) => {
-  await marcarLeida(id); 
+  await http.put(`/notificaciones/${id}/leida`);
   return id;
 });
 

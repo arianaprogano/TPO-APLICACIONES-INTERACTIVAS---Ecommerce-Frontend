@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { login, registrar } from '../api/auth'
+import { useDispatch } from 'react-redux'
+import { login, registrar } from '../redux/slice/usuarioSlice'
 import './Login.css'
 
 const registroVacio = { nombre: '', apellido: '', nombreUsuario: '', mail: '', contrasena: '', direccion: '' }
 
 function Login({ setUser }) {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { desde, motivo } = useLocation().state ?? {}
   const [modo, setModo] = useState('login')
   const [credenciales, setCredenciales] = useState({ mail: '', contrasena: '' })
@@ -28,8 +30,8 @@ function Login({ setUser }) {
     setCargando(true)
     try {
       const usuario = modo === 'login'
-        ? await login(credenciales.mail, credenciales.contrasena)
-        : await registrar(registro)
+        ? await dispatch(login({ mail: credenciales.mail, contrasena: credenciales.contrasena })).unwrap()
+        : await dispatch(registrar(registro)).unwrap()
       entrar(usuario)
     } catch (err) {
       setError(err.message)
