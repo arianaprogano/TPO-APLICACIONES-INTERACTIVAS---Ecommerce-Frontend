@@ -15,7 +15,6 @@ function Checkout({ user }) {
 
     const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
 
-    // Estado para los datos de la tarjeta
     const [tarjeta, setTarjeta] = useState({
         numero: '',
         titular: '',
@@ -43,7 +42,6 @@ function Checkout({ user }) {
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
     const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-    // Validación de fecha MM/AA (formato y vencimiento)
     const esFechaValida = (vencimiento) => {
         if (!vencimiento.trim()) return false
         if (!/^\d{2}\/\d{2}$/.test(vencimiento)) return false
@@ -67,7 +65,6 @@ function Checkout({ user }) {
     const fechaEsValida = esFechaValida(tarjeta.vencimiento)
     const fechaIngresadaInvalida = tarjeta.vencimiento.trim() !== '' && !fechaEsValida
 
-    // El botón SOLO se deshabilita si falta seleccionar la provincia de envío o si algún campo está completamente vacío
     const faltanDatosEnvio = hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())
     const faltanCamposTarjetaVacios = !tarjeta.numero.trim() || !tarjeta.titular.trim() || !tarjeta.vencimiento.trim() || !tarjeta.cvv.trim()
 
@@ -113,8 +110,6 @@ function Checkout({ user }) {
     const handlePay = async () => {
         setError('')
 
-        // Validaciones flexibles: permitimos letras/números de prueba, pero exigimos
-        // que el número y CVV tengan algún dígito, que el titular tenga texto y que la fecha sea válida.
         const numeroLimpio = tarjeta.numero.replace(/\s+/g, '')
         const esNumeroValido = /\d/.test(numeroLimpio) // Con que tenga algún número ya sirve para testear
         const esTitularValido = tarjeta.titular.trim().length > 0
