@@ -43,9 +43,9 @@ function Checkout({ user }) {
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
     const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-    // Función para validar formato MM/AA y que la tarjeta no esté vencida
+    // Validación de fecha MM/AA (formato y vencimiento)
     const esFechaValida = (vencimiento) => {
-        if (!vencimiento.trim()) return true // Si está vacío no mostramos error prematuro
+        if (!vencimiento.trim()) return false
         if (!/^\d{2}\/\d{2}$/.test(vencimiento)) return false
 
         const [mesStr, anioStr] = vencimiento.split('/')
@@ -67,11 +67,11 @@ function Checkout({ user }) {
     const fechaEsValida = esFechaValida(tarjeta.vencimiento)
     const fechaIngresadaInvalida = tarjeta.vencimiento.trim() !== '' && !fechaEsValida
 
-    // Validación de campos obligatorios
+    // El botón SOLO se deshabilita si falta seleccionar la provincia de envío o si algún campo está completamente vacío
     const faltanDatosEnvio = hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())
-    const faltanDatosTarjeta = !tarjeta.numero.trim() || !tarjeta.titular.trim() || !tarjeta.cvv.trim() || !tarjeta.vencimiento.trim() || !fechaEsValida
+    const faltanCamposTarjetaVacios = !tarjeta.numero.trim() || !tarjeta.titular.trim() || !tarjeta.vencimiento.trim() || !tarjeta.cvv.trim()
 
-    const botonDeshabilitado = enviando || faltanDatosEnvio || faltanDatosTarjeta
+    const botonDeshabilitado = enviando || faltanDatosEnvio || faltanCamposTarjetaVacios
 
     if (ordenesCreadas) {
         return (
@@ -112,6 +112,21 @@ function Checkout({ user }) {
 
     const handlePay = async () => {
         setError('')
+
+        // Validaciones flexibles: permitimos letras/números de prueba, pero exigimos
+        // que el número y CVV tengan algún dígito, que el titular tenga texto y que la fecha sea válida.
+        const numeroLimpio = tarjeta.numero.replace(/\s+/g, '')
+        const esNumeroValido = /\d/.test(numeroLimpio) // Con que tenga algún número ya sirve para testear
+        const esTitularValido = tarjeta.titular.trim().length > 0
+        const esCvvValido = /\d/.test(tarjeta.cvv)
+
+        const datosTarjetaInvalidos = !esNumeroValido || !esTitularValido || !esCvvValido || !fechaEsValida
+
+        if (datosTarjetaInvalidos) {
+            setError('Los datos de la tarjeta no coinciden o no son válidos.')
+            return
+        }
+
         setEnviando(true)
 
         dispatch(crearNuevaOrden(hayDespacho ? entrega : {}))
@@ -284,7 +299,6 @@ function Checkout({ user }) {
                     className="btn-pagar"
                     onClick={handlePay}
                     disabled={botonDeshabilitado}
-                    title={botonDeshabilitado ? 'Completá los datos requeridos con una fecha de vencimiento válida (MM/AA)' : ''}
                 >
                     {enviando ? 'PROCESANDO...' : 'CONFIRMAR COMPRA'}
                 </button>
