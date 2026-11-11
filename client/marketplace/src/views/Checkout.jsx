@@ -10,10 +10,12 @@ function Checkout({ user }) {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
+    // Consumimos el carrito desde Redux
     const cart = useSelector(state => state.carrito.items)
 
     const [entrega, setEntrega] = useState({ provinciaEntrega: '', localidadEntrega: '', direccionEntrega: user?.direccion || '' })
 
+    // Estado para los datos de la tarjeta
     const [tarjeta, setTarjeta] = useState({
         numero: '',
         titular: '',
@@ -41,9 +43,33 @@ function Checkout({ user }) {
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0)
     const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount || 0)
 
-    // Validación de campos vacíos para deshabilitar el botón
+    // Función para validar formato MM/AA y que la tarjeta no esté vencida
+    const esFechaValida = (vencimiento) => {
+        if (!vencimiento.trim()) return true // Si está vacío no mostramos error prematuro
+        if (!/^\d{2}\/\d{2}$/.test(vencimiento)) return false
+
+        const [mesStr, anioStr] = vencimiento.split('/')
+        const mes = parseInt(mesStr, 10)
+        const anio = parseInt(`20${anioStr}`, 10)
+
+        if (mes < 1 || mes > 12) return false
+
+        const hoy = new Date()
+        const anioActual = hoy.getFullYear()
+        const mesActual = hoy.getMonth() + 1
+
+        if (anio < anioActual) return false
+        if (anio === anioActual && mes < mesActual) return false
+
+        return true
+    }
+
+    const fechaEsValida = esFechaValida(tarjeta.vencimiento)
+    const fechaIngresadaInvalida = tarjeta.vencimiento.trim() !== '' && !fechaEsValida
+
+    // Validación de campos obligatorios
     const faltanDatosEnvio = hayDespacho && (!entrega.provinciaEntrega || !entrega.localidadEntrega.trim() || !entrega.direccionEntrega.trim())
-    const faltanDatosTarjeta = !tarjeta.numero.trim() || !tarjeta.titular.trim() || !tarjeta.vencimiento.trim() || !tarjeta.cvv.trim()
+    const faltanDatosTarjeta = !tarjeta.numero.trim() || !tarjeta.titular.trim() || !tarjeta.cvv.trim() || !tarjeta.vencimiento.trim() || !fechaEsValida
 
     const botonDeshabilitado = enviando || faltanDatosEnvio || faltanDatosTarjeta
 
@@ -88,12 +114,11 @@ function Checkout({ user }) {
         setError('')
         setEnviando(true)
 
-        // Usamos el Thunk de Redux
         dispatch(crearNuevaOrden(hayDespacho ? entrega : {}))
             .unwrap()
             .then((ordenes) => {
                 setOrdenesCreadas(ordenes)
-                dispatch(vaciar()) // Vaciamos el carrito desde Redux
+                dispatch(vaciar())
             })
             .catch((err) => {
                 setError(err.message || 'Error al procesar la compra')
@@ -128,7 +153,7 @@ function Checkout({ user }) {
                     </section>
                 )}
 
-                {/* Sección de Tarjeta de Crédito / Débito (Sin validaciones) */}
+                {/* Sección de Tarjeta de Crédito / Débito */}
                 <section className="paquete-card">
                     <h3 className="paquete-title" style={{ marginBottom: '4px' }}>Medio de pago</h3>
                     <p className="paquete-subtitle">Ingresá los datos de tu tarjeta para completar la operación.</p>
@@ -154,14 +179,21 @@ function Checkout({ user }) {
 
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <div style={{ flex: 1 }}>
-                                <label htmlFor="tarjeta-vencimiento">VENCIMIENTO</label>
+                                <label htmlFor="tarjeta-vencimiento">VENCIMIENTO (MM/AA)</label>
                                 <input
                                     id="tarjeta-vencimiento"
                                     type="text"
                                     placeholder="MM/AA"
+                                    maxLength={5}
+                                    style={{ borderColor: fechaIngresadaInvalida ? '#dc2626' : undefined }}
                                     value={tarjeta.vencimiento}
                                     onChange={e => setTarjeta({ ...tarjeta, vencimiento: e.target.value })}
                                 />
+                                {fechaIngresadaInvalida && (
+                                    <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    Fecha inválida o vencida (formato MM/AA).
+                  </span>
+                                )}
                             </div>
 
                             <div style={{ flex: 1 }}>
@@ -170,6 +202,7 @@ function Checkout({ user }) {
                                     id="tarjeta-cvv"
                                     type="text"
                                     placeholder="123"
+                                    maxLength={4}
                                     value={tarjeta.cvv}
                                     onChange={e => setTarjeta({ ...tarjeta, cvv: e.target.value })}
                                 />
@@ -251,7 +284,7 @@ function Checkout({ user }) {
                     className="btn-pagar"
                     onClick={handlePay}
                     disabled={botonDeshabilitado}
-                    title={botonDeshabilitado ? 'Completá los datos requeridos para continuar' : ''}
+                    title={botonDeshabilitado ? 'Completá los datos requeridos con una fecha de vencimiento válida (MM/AA)' : ''}
                 >
                     {enviando ? 'PROCESANDO...' : 'CONFIRMAR COMPRA'}
                 </button>
