@@ -160,8 +160,8 @@ function Navigation({
                         // 1. Buscamos el ícono por defecto
                         let iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
 
-                        // 2. Si el mensaje es de chat, usamos la versión sólida (rellena) del ícono
-                        if (notif.tipo === 'ORDEN_ACTUALIZADA' && notif.mensaje && notif.mensaje.toLowerCase().includes('chat')) {
+                        // 2. Si la notificación es un mensaje de chat, usamos el ícono de los comentarios
+                        if (notif.tipo === 'MENSAJE') {
                             iconoFinal = 'fa-comments';
                         }
 
