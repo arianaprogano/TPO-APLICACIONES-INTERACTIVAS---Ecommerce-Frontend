@@ -13,9 +13,6 @@ const DESCRIPCIONES = {
 
 const MESES = [1, 3, 6]
 
-// Compra de visibilidad para una publicacion propia. Dos pasos: elegir plan y
-// meses, y despues confirmar el pago. No hay pasarela: el pago es simulado y el
-// backend registra lo cobrado en el historial de destacados.
 function VisibilidadModal({ producto, onClose, onComprado }) {
   const dispatch = useDispatch()
   const [planes, setPlanes] = useState(null)
@@ -32,18 +29,19 @@ function VisibilidadModal({ producto, onClose, onComprado }) {
   const plan = planes?.find(p => p.nivel === nivel)
   const total = plan ? Number(plan.precioMensual) * meses : 0
 
-  const pagar = async () => {
+  const pagar = () => {
     setError('')
     setPagando(true)
-    try {
-      const actualizado = await dispatch(destacarPublicacion({ id: producto.id, nivel, meses })).unwrap()
-      onComprado(actualizado, { nivel: DESCRIPCIONES[nivel].nombre, meses, total })
-    } catch (err) {
-      setError(err.message)
-      setPaso('elegir')
-    } finally {
-      setPagando(false)
-    }
+    
+    dispatch(destacarPublicacion({ id: producto.id, nivel, meses })).unwrap()
+      .then((actualizado) => {
+        onComprado(actualizado, { nivel: DESCRIPCIONES[nivel].nombre, meses, total })
+      })
+      .catch((err) => {
+        setError(err.message)
+        setPaso('elegir')
+      })
+      .finally(() => setPagando(false))
   }
 
   return (

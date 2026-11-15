@@ -9,8 +9,7 @@ function ChatOrden({ orden, user, envio }) {
   const dispatch = useDispatch()
   const { error: avisarError } = useAvisos()
   const finRef = useRef(null)
-  // Cambia en cada navegacion: si ya estas en la orden y tocas la
-  // notificacion de un mensaje nuevo, el chat se vuelve a cargar.
+  
   const { key } = useLocation()
 
   const { mensajes } = useSelector(state => state.chat)
@@ -35,19 +34,15 @@ function ChatOrden({ orden, user, envio }) {
     finRef.current?.scrollIntoView({ block: 'nearest' })
   }, [mensajes?.length])
 
-  // El backend guarda el mensaje y le avisa a la otra parte.
-  const enviar = async (e) => {
+  const enviar = (e) => {
     e.preventDefault()
     if (!texto.trim() || esEntregada) return
     setEnviando(true)
-    try {
-      await dispatch(enviarMensaje({ idOrden: orden.id, texto: texto.trim() })).unwrap()
-      setTexto('')
-    } catch (err) {
-      avisarError(err.message)
-    } finally {
-      setEnviando(false)
-    }
+    
+    dispatch(enviarMensaje({ idOrden: orden.id, texto: texto.trim() })).unwrap()
+      .then(() => setTexto(''))
+      .catch((err) => avisarError(err.message))
+      .finally(() => setEnviando(false))
   }
 
   return (

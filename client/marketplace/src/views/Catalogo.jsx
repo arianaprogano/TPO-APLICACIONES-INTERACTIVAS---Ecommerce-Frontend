@@ -26,39 +26,30 @@ const Catalogo = ({ user, searchTerm, selectedCategory, selectedSubcategory }) =
   const [searchParams, setSearchParams] = useSearchParams()
   const orden = searchParams.get('orden') || ''
 
-  // 1. CARGAR O HEREDAR FILTROS
   useEffect(() => {
     let guardados = null;
 
     if (user) {
-      // Si el usuario acaba de iniciar sesión, nos fijamos si dejó filtros como invitado
       const filtrosInvitado = localStorage.getItem('agroFiltros_invitado')
       if (filtrosInvitado) {
         guardados = filtrosInvitado
-        // Los mudamos a su cuenta personal y limpiamos el invitado
         localStorage.setItem(storageKey, filtrosInvitado)
         localStorage.removeItem('agroFiltros_invitado')
       } else {
-        // Si no había nada de invitado, cargamos sus filtros personales históricos
         guardados = localStorage.getItem(storageKey)
       }
     } else {
-      // Si no está logueado, carga los de invitado
       guardados = localStorage.getItem(storageKey)
     }
 
     if (guardados) {
-      try {
-        const parsed = JSON.parse(guardados)
-        setConditions(parsed.conditions || [])
-        setProvincia(parsed.provincia || '')
-        setRango(parsed.rango || rangoVacio)
-        setSoloConEnvio(parsed.soloConEnvio || false)
-        setSoloSinEnvio(parsed.soloSinEnvio || false)
-        setSoloOfertas(parsed.soloOfertas || false)
-      } catch (e) {
-        console.error("Error leyendo filtros guardados")
-      }
+      const parsed = JSON.parse(guardados)
+      setConditions(parsed.conditions || [])
+      setProvincia(parsed.provincia || '')
+      setRango(parsed.rango || rangoVacio)
+      setSoloConEnvio(parsed.soloConEnvio || false)
+      setSoloSinEnvio(parsed.soloSinEnvio || false)
+      setSoloOfertas(parsed.soloOfertas || false)
     } else {
       setConditions([])
       setProvincia('')
@@ -69,12 +60,10 @@ const Catalogo = ({ user, searchTerm, selectedCategory, selectedSubcategory }) =
     }
   }, [storageKey, user])
 
-  // 2. GUARDAR FILTROS AUTOMÁTICAMENTE AL CAMBIARLOS
   useEffect(() => {
     const filtrosActuales = { conditions, provincia, rango, soloConEnvio, soloSinEnvio, soloOfertas }
     localStorage.setItem(storageKey, JSON.stringify(filtrosActuales))
   }, [conditions, provincia, rango, soloConEnvio, soloSinEnvio, soloOfertas, storageKey])
-
 
   const cambiarOrden = (nuevoOrden) => {
     const params = new URLSearchParams(searchParams)

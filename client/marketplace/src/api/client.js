@@ -59,14 +59,13 @@ http.interceptors.response.use(
 // la pantalla es una lista vacia, y algunos listados vienen paginados
 // ({ contenido, pagina, ... }).
 export const getLista = async (ruta, params) => {
-  try {
-    const { data } = await http.get(ruta, { params })
-    return data.contenido ?? data
-  } catch (error) {
-    if (error.status === 404) return []
-    throw error
-  }
-}
+  return http.get(ruta, { params })
+    .then(({ data }) => data.contenido ?? data)
+    .catch((error) => {
+      if (error.status === 404) return [];
+      throw error;
+    });
+};
 
 // createAsyncThunk solo guarda el mensaje de un error. Los formularios
 // necesitan tambien los errores por campo: estos thunks los devuelven con

@@ -1,23 +1,22 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { http, getLista, errorConCampos } from "../../api/client";
+import { http, getLista } from "../../api/client";
 import { adaptarDetalle, adaptarFoto, adaptarResumen, sinVacios } from "../../api/productos";
 
 // filtros: { idCategoria, nombre, enOferta, admiteEnvio, condicion, provincia,
 // precioMin, precioMax, anioDesde, anioHasta, orden }. El backend responde
 // 404 cuando no hay resultados: para la grilla es una pagina vacia.
 export const fetchCatalogo = createAsyncThunk("productos/fetchCatalogo", async ({ filtros, pagina = 0, tamanio = 12 }) => {
-  try {
-    const { data } = await http.get("/productos", { params: { ...sinVacios(filtros), pagina, tamanio } });
-    return {
+  return http.get("/productos", { params: { ...sinVacios(filtros), pagina, tamanio } })
+    .then(({ data }) => ({
       items: data.contenido.map(adaptarResumen),
       pagina: data.pagina,
       totalPaginas: data.totalPaginas,
       total: data.total,
-    };
-  } catch (error) {
-    if (error.status === 404) return { items: [], pagina: 0, totalPaginas: 0, total: 0 };
-    throw error;
-  }
+    }))
+    .catch(error => {
+      if (error.status === 404) return { items: [], pagina: 0, totalPaginas: 0, total: 0 };
+      throw error;
+    });
 });
 
 // Una fila de la portada (ofertas, mas vistos, una categoria...): una sola
@@ -70,13 +69,9 @@ export const reactivarProducto = createAsyncThunk("productos/reactivar", async (
 });
 
 // PUT reemplaza todos los datos: se manda el producto completo.
-export const actualizarPublicacion = createAsyncThunk("productos/actualizar", async ({ id, datos }, { rejectWithValue }) => {
-  try {
-    const { data } = await http.put(`/productos/${id}`, datos);
-    return adaptarDetalle(data);
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const actualizarPublicacion = createAsyncThunk("productos/actualizar", async ({ id, datos }) => {
+  const { data } = await http.put(`/productos/${id}`, datos);
+  return adaptarDetalle(data);
 });
 
 // Planes de visibilidad con su precio por mes (publico).
@@ -100,14 +95,9 @@ const subirFoto = (idProducto, archivo) => {
 };
 
 // El producto nace en BORRADOR y se publica cuando se aprueba una foto.
-export const crearPublicacionCompleta = createAsyncThunk("productos/crearCompleta", async ({ datos, fotos }, { rejectWithValue }) => {
-  let producto;
-  try {
-    const { data } = await http.post("/productos", datos);
-    producto = data.producto;
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const crearPublicacionCompleta = createAsyncThunk("productos/crearCompleta", async ({ datos, fotos }) => {
+  const { data } = await http.post("/productos", datos);
+  const producto = data.producto;
 
   const resultadosFotos = await Promise.allSettled(
     fotos.map(foto => subirFoto(producto.id, foto.file))

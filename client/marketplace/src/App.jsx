@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 
 // Importación de Vistas
 import Navigation from './components/Navigation'
-import Catalogo from './views/Catalogo' // <-- Importación actualizada
+import Catalogo from './views/Catalogo'
 import Inicio from './views/Inicio'
 import Login from './views/Login'
 import MisDatos from './views/MisDatos'
@@ -21,14 +21,9 @@ import DetalleOrden from './views/DetalleOrden'
 import PublicarProducto from './views/PublicarProducto'
 
 function App() {
-  // Persistencia de sesión con localStorage
   const [user, setUser] = useState(() => {
-    try {
-      const usuarioGuardado = localStorage.getItem('agroUser')
-      return usuarioGuardado ? JSON.parse(usuarioGuardado) : null
-    } catch (error) {
-      return null
-    }
+    const usuarioGuardado = localStorage.getItem('agroUser')
+    return usuarioGuardado ? JSON.parse(usuarioGuardado) : null
   })
   
   const [searchTerm, setSearchTerm] = useState('')

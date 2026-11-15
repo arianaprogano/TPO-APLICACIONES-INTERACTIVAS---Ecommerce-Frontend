@@ -157,11 +157,18 @@ function Navigation({
                         <div className="notif-empty">No tenés notificaciones.</div>
                       ) : notificaciones.map(notif => {
                         
-                        const iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
+                        // 1. Buscamos el ícono por defecto
+                        let iconoFinal = ICONOS_NOTIFICACION[notif.tipo] || 'fa-receipt';
+
+                        // 2. Si el mensaje es de chat, usamos la versión sólida (rellena) del ícono
+                        if (notif.tipo === 'ORDEN_ACTUALIZADA' && notif.mensaje && notif.mensaje.toLowerCase().includes('chat')) {
+                            iconoFinal = 'fa-comments';
+                        }
 
                         return (
                           <article key={notif.id} className={`notif-item ${notif.leida ? '' : 'unread'}`} onClick={() => leer(notif)}>
                             <div className="notif-icon">
+                              {/* Al usar fa-solid, el ícono entero se pinta con el color verde de CSS */}
                               <i className={`fa-solid ${iconoFinal}`}></i>
                             </div>
                             <div className="notif-content">

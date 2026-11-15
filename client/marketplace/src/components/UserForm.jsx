@@ -17,19 +17,18 @@ function UserForm({ onClose, onSave }) {
     setErrores(prev => ({ ...prev, [campo]: undefined }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
     setGuardando(true)
-    try {
-      await dispatch(crearNuevoUsuario(form)).unwrap()
-      onSave()
-    } catch (err) {
-      setError(err.message)
-      setErrores(err.campos || {})
-    } finally {
-      setGuardando(false)
-    }
+    
+    dispatch(crearNuevoUsuario(form)).unwrap()
+      .then(() => onSave())
+      .catch((err) => {
+        setError(err.message)
+        setErrores(err.campos || {})
+      })
+      .finally(() => setGuardando(false))
   }
 
   const campo = (name, label, type = 'text', placeholder = '') => (

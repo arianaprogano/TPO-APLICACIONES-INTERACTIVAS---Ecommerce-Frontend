@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { http, setToken, errorConCampos } from "../../api/client";
+import { http, setToken } from "../../api/client";
 import { adaptarUsuario } from "../../api/auth";
 
 // Con el token ya guardado, trae los datos del usuario logueado.
@@ -8,37 +8,25 @@ const traerUsuarioActual = async () => {
   return adaptarUsuario(data);
 };
 
-export const login = createAsyncThunk("usuario/login", async ({ mail, contrasena }, { rejectWithValue }) => {
-  try {
-    const { data } = await http.post("/auth/login", { mail, contrasena });
-    setToken(data.access_token);
-    return await traerUsuarioActual();
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const login = createAsyncThunk("usuario/login", async ({ mail, contrasena }) => {
+  const { data } = await http.post("/auth/login", { mail, contrasena });
+  setToken(data.access_token);
+  return await traerUsuarioActual();
 });
 
-export const registrar = createAsyncThunk("usuario/registrar", async (datos, { rejectWithValue }) => {
-  try {
-    const { data } = await http.post("/auth/registro", datos);
-    setToken(data.access_token);
-    return await traerUsuarioActual();
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const registrar = createAsyncThunk("usuario/registrar", async (datos) => {
+  const { data } = await http.post("/auth/registro", datos);
+  setToken(data.access_token);
+  return await traerUsuarioActual();
 });
 
 // PUT /usuarios/me pide el usuario completo, contrasena incluida, y devuelve
 // un token nuevo: el token lleva el mail adentro, asi que si el mail cambia
 // el anterior deja de servir.
-export const actualizarPerfil = createAsyncThunk("usuario/actualizarPerfil", async (datos, { rejectWithValue }) => {
-  try {
-    const { data } = await http.put("/usuarios/me", datos);
-    setToken(data.access_token);
-    return await traerUsuarioActual();
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const actualizarPerfil = createAsyncThunk("usuario/actualizarPerfil", async (datos) => {
+  const { data } = await http.put("/usuarios/me", datos);
+  setToken(data.access_token);
+  return await traerUsuarioActual();
 });
 
 // Baja logica de la cuenta propia: arrastra sus publicaciones.
@@ -58,7 +46,7 @@ const handleFulfilled = (state) => {
 
 const handleRejected = (state, action) => {
   state.loading = false;
-  state.error = action.payload?.message || action.error.message;
+  state.error = action.error.message;
 };
 
 const usuarioSlice = createSlice({

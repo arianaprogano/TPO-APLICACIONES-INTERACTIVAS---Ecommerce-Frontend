@@ -52,19 +52,14 @@ function AdminPanel({ user }) {
   const categorias = categoriasObj?.activas || []
   const categoriasInactivas = categoriasObj?.inactivas || []
 
-  // FILTRO INTELIGENTE Y REAL: Cruzamos con los productos reales para descartar los que ya no están destacados
   const destacadosUnicos = (destacados ?? []).reduce((acc, curr) => {
     const idProd = curr.idProducto || curr.producto?.id || curr.id;
-    
-    // Buscamos el producto en la lista general para ver su estado ACTUAL real
     const productoReal = (productos ?? []).find(p => p.id === idProd);
     
-    // Si el producto no existe o su nivel actual es NINGUNO (o nulo), lo ignoramos por completo
     if (!productoReal || !productoReal.nivelDestacado || productoReal.nivelDestacado === 'NINGUNO') {
       return acc;
     }
 
-    // Evitamos duplicados en el historial mostrando una única línea limpia del producto activo
     const existe = acc.find(item => {
       const existingId = item.idProducto || item.producto?.id || item.id;
       return existingId === idProd;
@@ -117,13 +112,11 @@ function AdminPanel({ user }) {
     else if (activeTab === 'categorias') cargar.categorias()
   }, [activeTab, dispatch])
 
-  // --- Ordenes ---
   const marcarPagada = async (orden) => {
     if (!(await confirmar(`¿Confirmás que se acreditó el pago de la orden #${orden.id} (${formatMoney(orden.total)})?`))) return
     dispatch(pagarOrdenAdmin(orden.id)).unwrap().catch(err => avisar(err.message))
   }
 
-  // --- Fotos y productos ---
   const resolverFoto = async (foto, aprobada) => {
     if (!aprobada && !(await confirmar(`¿Rechazar la foto de "${foto.nombreProducto}"? Se elimina.`))) return
     dispatch(resolverFotoAdmin({ idFoto: foto.id, aprobada }))
@@ -162,61 +155,47 @@ function AdminPanel({ user }) {
       .catch(err => avisar(err.message))
   }
 
-  // --- Usuarios ---
-  const confirmarCambioRol = async () => {
-    try {
-      await dispatch(cambiarRolAdmin({ id: roleChange.usuario.id, rol: roleChange.nuevoRol })).unwrap()
-      dispatch(fetchUsuarios())
-    } catch (err) {
-      avisar(err.message)
-    } finally {
-      setRoleChange(null)
-    }
+  const confirmarCambioRol = () => {
+    dispatch(cambiarRolAdmin({ id: roleChange.usuario.id, rol: roleChange.nuevoRol })).unwrap()
+      .then(() => dispatch(fetchUsuarios()))
+      .catch((err) => avisar(err.message))
+      .finally(() => setRoleChange(null))
   }
 
-  const confirmarEliminarUsuario = async () => {
-    try {
-      await dispatch(bajaUsuarioAdmin(userToDelete.id)).unwrap()
-      dispatch(fetchUsuarios())
-    } catch (err) {
-      avisar(err.message)
-    } finally {
-      setUserToDelete(null)
-    }
+  const confirmarEliminarUsuario = () => {
+    dispatch(bajaUsuarioAdmin(userToDelete.id)).unwrap()
+      .then(() => dispatch(fetchUsuarios()))
+      .catch((err) => avisar(err.message))
+      .finally(() => setUserToDelete(null))
   }
 
-  const reactivarUnUsuario = async (usuario) => {
-    try {
-      await dispatch(reactivarUsuarioAdmin(usuario.id)).unwrap()
-      dispatch(fetchUsuarios())
-      exito(`${usuario.nombreUsuario} puede volver a iniciar sesión. Sus publicaciones siguen dadas de baja: las reactiva cada una desde Productos.`, { titulo: 'Usuario reactivado' })
-    } catch (err) {
-      avisar(err.message)
-    }
+  const reactivarUnUsuario = (usuario) => {
+    dispatch(reactivarUsuarioAdmin(usuario.id)).unwrap()
+      .then(() => {
+        dispatch(fetchUsuarios())
+        exito(`${usuario.nombreUsuario} puede volver a iniciar sesión. Sus publicaciones siguen dadas de baja: las reactiva cada una desde Productos.`, { titulo: 'Usuario reactivado' })
+      })
+      .catch((err) => avisar(err.message))
   }
 
-  // --- Categorias ---
-  const reactivarUnaCategoria = async (categoria) => {
-    try {
-      await dispatch(reactivarCategoriaAdmin(categoria.id)).unwrap()
-      dispatch(fetchCategorias())
-      window.dispatchEvent(new Event('categoriasCambiadas'))
-      exito(`"${categoria.nombre}" vuelve a estar disponible para publicar.`, { titulo: 'Categoría reactivada' })
-    } catch (err) {
-      avisar(err.message)
-    }
+  const reactivarUnaCategoria = (categoria) => {
+    dispatch(reactivarCategoriaAdmin(categoria.id)).unwrap()
+      .then(() => {
+        dispatch(fetchCategorias())
+        window.dispatchEvent(new Event('categoriasCambiadas'))
+        exito(`"${categoria.nombre}" vuelve a estar disponible para publicar.`, { titulo: 'Categoría reactivada' })
+      })
+      .catch((err) => avisar(err.message))
   }
 
-  const confirmarEliminarCategoria = async () => {
-    try {
-      await dispatch(bajaCategoriaAdmin(categoryToDelete.id)).unwrap()
-      dispatch(fetchCategorias())
-      window.dispatchEvent(new Event('categoriasCambiadas'))
-    } catch (err) {
-      avisar(err.message)
-    } finally {
-      setCategoryToDelete(null)
-    }
+  const confirmarEliminarCategoria = () => {
+    dispatch(bajaCategoriaAdmin(categoryToDelete.id)).unwrap()
+      .then(() => {
+        dispatch(fetchCategorias())
+        window.dispatchEvent(new Event('categoriasCambiadas'))
+      })
+      .catch((err) => avisar(err.message))
+      .finally(() => setCategoryToDelete(null))
   }
 
   const raices = (categorias ?? []).filter(c => c.idCategoriaPadre == null)

@@ -13,9 +13,6 @@ const desdeUsuario = (user) => ({
   contrasena: '',
 })
 
-// Los datos salen del usuario logueado (GET /usuarios/me). El backend pide el
-// usuario completo para guardar, contrasena incluida: se puede poner la
-// actual para no cambiarla, o una nueva.
 function MisDatos({ user, setUser }) {
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -39,7 +36,7 @@ function MisDatos({ user, setUser }) {
     setIsEditing(false)
   }
 
-  const handleSave = async (e) => {
+  const handleSave = (e) => {
     e.preventDefault()
     setError('')
     setMensaje('')
@@ -48,30 +45,31 @@ function MisDatos({ user, setUser }) {
       return
     }
     setGuardando(true)
-    try {
-      // Si cambio el mail, el backend manda un token nuevo; actualizarPerfil lo guarda.
-      const actualizado = await dispatch(actualizarPerfil(formData)).unwrap()
-      setUser(actualizado)
-      setFormData(desdeUsuario(actualizado))
-      setIsEditing(false)
-      setMensaje('Tus datos se guardaron correctamente.')
-    } catch (err) {
-      setError(err.message)
-      setErrores(err.campos || {})
-    } finally {
-      setGuardando(false)
-    }
+    
+    dispatch(actualizarPerfil(formData)).unwrap()
+      .then((actualizado) => {
+        setUser(actualizado)
+        setFormData(desdeUsuario(actualizado))
+        setIsEditing(false)
+        setMensaje('Tus datos se guardaron correctamente.')
+      })
+      .catch((err) => {
+        setError(err.message)
+        setErrores(err.campos || {})
+      })
+      .finally(() => setGuardando(false))
   }
 
-  const handleBaja = async () => {
-    try {
-      await dispatch(darmeDeBaja()).unwrap()
-      setUser(null)
-      navigate('/home')
-    } catch (err) {
-      setConfirmandoBaja(false)
-      setError(err.message)
-    }
+  const handleBaja = () => {
+    dispatch(darmeDeBaja()).unwrap()
+      .then(() => {
+        setUser(null)
+        navigate('/home')
+      })
+      .catch((err) => {
+        setConfirmandoBaja(false)
+        setError(err.message)
+      })
   }
 
   const campo = (name, label, type = 'text', extra = {}) => (

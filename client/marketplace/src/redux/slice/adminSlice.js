@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { http, getLista, errorConCampos } from "../../api/client";
+import { http, getLista } from "../../api/client";
 import { adaptarOrden } from "../../api/ordenes";
 import { adaptarDetalle, adaptarFoto } from "../../api/productos";
 import { adaptarDestacado } from "../../api/admin";
@@ -85,16 +85,12 @@ export const reactivarUsuarioAdmin = createAsyncThunk("admin/reactivarUsuario", 
 // El registro siempre crea un CLIENTE. Para otro rol se crea y despues se le
 // cambia. El token que devuelve el registro es el de la cuenta nueva: se
 // descarta, el admin sigue con su sesion.
-export const crearNuevoUsuario = createAsyncThunk("admin/crearUsuario", async ({ rol, ...datos }, { rejectWithValue }) => {
-  try {
-    await http.post("/auth/registro", datos);
-    if (rol === "CLIENTE") return;
-    const usuarios = await getLista("/usuarios", { tamanio: 100 });
-    const creado = usuarios.find((u) => u.mail === datos.mail);
-    if (creado) await http.put(`/usuarios/${creado.id}/rol`, null, { params: { rol } });
-  } catch (error) {
-    return rejectWithValue(errorConCampos(error));
-  }
+export const crearNuevoUsuario = createAsyncThunk("admin/crearUsuario", async ({ rol, ...datos }) => {
+  await http.post("/auth/registro", datos);
+  if (rol === "CLIENTE") return;
+  const usuarios = await getLista("/usuarios", { tamanio: 100 });
+  const creado = usuarios.find((u) => u.mail === datos.mail);
+  if (creado) await http.put(`/usuarios/${creado.id}/rol`, null, { params: { rol } });
 });
 
 // Categorías

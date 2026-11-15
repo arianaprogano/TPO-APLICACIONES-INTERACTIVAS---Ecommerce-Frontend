@@ -23,22 +23,23 @@ function Login({ setUser }) {
     else navigate(desde && desde !== '/login' ? desde : '/home', { replace: true })
   }
 
-  const enviar = async (e) => {
+  const enviar = (e) => {
     e.preventDefault()
     setError('')
     setErroresCampos({})
     setCargando(true)
-    try {
-      const usuario = modo === 'login'
-        ? await dispatch(login({ mail: credenciales.mail, contrasena: credenciales.contrasena })).unwrap()
-        : await dispatch(registrar(registro)).unwrap()
-      entrar(usuario)
-    } catch (err) {
-      setError(err.message)
-      setErroresCampos(err.campos || {})
-    } finally {
-      setCargando(false)
-    }
+    
+    const accion = modo === 'login'
+      ? dispatch(login({ mail: credenciales.mail, contrasena: credenciales.contrasena })).unwrap()
+      : dispatch(registrar(registro)).unwrap()
+
+    accion
+      .then((usuario) => entrar(usuario))
+      .catch((err) => {
+        setError(err.message)
+        setErroresCampos(err.campos || {})
+      })
+      .finally(() => setCargando(false))
   }
 
   const cambiarModo = () => {
