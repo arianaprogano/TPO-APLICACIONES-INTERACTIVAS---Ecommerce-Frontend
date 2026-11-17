@@ -11,230 +11,233 @@ import './PanelStyles.css'
 import { useAvisos } from '../components/avisosContext'
 
 const ESTADOS = {
-  PENDIENTE: { texto: 'Pendiente de pago', color: '#f59e0b', icono: 'fa-clock' },
-  PAGADA: { texto: 'Pagada', color: '#16a34a', icono: 'fa-check' },
-  CANCELADA: { texto: 'Cancelada', color: '#ef4444', icono: 'fa-xmark' },
+    PENDIENTE: { texto: 'Pendiente de pago', color: '#f59e0b', icono: 'fa-clock' },
+    PAGADA: { texto: 'Pagada', color: '#16a34a', icono: 'fa-check' },
+    CANCELADA: { texto: 'Cancelada', color: '#ef4444', icono: 'fa-xmark' },
 }
 
 function MisCompras({ user }) {
-  const { error: avisarError, exito, confirmar } = useAvisos()
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
+    const { error: avisarError, exito, confirmar } = useAvisos()
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
 
-  const { compras, loading: cargandoCompras, error } = useSelector(state => state.ordenes)
-  const { enCurso } = useSelector(state => state.envios)
-  
-  const envios = Object.fromEntries(enCurso.map(e => [e.idOrden, e]))
+    const { compras, loading: cargandoCompras, error } = useSelector(state => state.ordenes)
+    const { enCurso } = useSelector(state => state.envios)
 
-  const [productoAReseñar, setProductoAReseñar] = useState(null)
-  const [reseñados, setReseñados] = useState(new Set())
+    const envios = Object.fromEntries(enCurso.map(e => [e.idOrden, e]))
 
-  useEffect(() => {
-    dispatch(fetchMisCompras())
-    dispatch(fetchMisEnvios())
-  }, [dispatch])
+    const [productoAReseñar, setProductoAReseñar] = useState(null)
+    const [reseñados, setReseñados] = useState(new Set())
 
-  useEffect(() => {
-    if (compras.length > 0 && enCurso.length > 0) {
-      const entregadas = compras.filter(o => envios[o.id]?.estado === 'ENTREGADO')
-      const productos = [...new Set(entregadas.flatMap(o => o.items.map(i => i.idProducto)))]
-      const propias = new Set()
-      
-      Promise.all(productos.map(async (idProducto) => {
-        const resenas = await dispatch(fetchResenasDeProducto(idProducto)).unwrap().catch(() => [])
-        if (resenas.some(r => r.autor === user?.username)) {
-          entregadas.filter(o => o.items.some(i => i.idProducto === idProducto))
-            .forEach(o => propias.add(`${o.id}-${idProducto}`))
+    useEffect(() => {
+        dispatch(fetchMisCompras())
+        dispatch(fetchMisEnvios())
+    }, [dispatch])
+
+    useEffect(() => {
+        if (compras.length > 0 && enCurso.length > 0) {
+            const entregadas = compras.filter(o => envios[o.id]?.estado === 'ENTREGADO')
+            const productos = [...new Set(entregadas.flatMap(o => o.items.map(i => i.idProducto)))]
+            const propias = new Set()
+
+            Promise.all(productos.map(async (idProducto) => {
+                const resenas = await dispatch(fetchResenasDeProducto(idProducto)).unwrap().catch(() => [])
+                if (resenas.some(r => r.autor === user?.username)) {
+                    entregadas.filter(o => o.items.some(i => i.idProducto === idProducto))
+                        .forEach(o => propias.add(`${o.id}-${idProducto}`))
+                }
+            })).then(() => setReseñados(propias))
         }
-      })).then(() => setReseñados(propias))
+        // Quitamos 'envios' de las dependencias para evitar bucles infinitos de renderizado
+    }, [compras.length, enCurso.length, user?.username, dispatch])
+
+    const confirmarRecepcion = async (envio) => {
+        if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
+        try {
+            await dispatch(cambiarEstadoEnvioThunk({ id: envio.id, estado: 'ENTREGADO' })).unwrap()
+        } catch (err) {
+            avisarError(err.message)
+        }
     }
-  }, [compras, enCurso, user?.username, envios, dispatch])
 
-  const confirmarRecepcion = async (envio) => {
-    if (!(await confirmar('¿Confirmás que ya recibiste esta compra? Después vas a poder dejar tu opinión.'))) return
-    dispatch(cambiarEstadoEnvioThunk({ id: envio.id, estado: 'ENTREGADO' }))
-      .unwrap()
-      .catch(err => avisarError(err.message))
-  }
+    const handleCancelar = async (orden) => {
+        if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
+        dispatch(cancelarMiOrden(orden.id))
+            .unwrap()
+            .catch(err => avisarError(err.message))
+    }
 
-  const handleCancelar = async (orden) => {
-    if (!(await confirmar(`¿Cancelar la orden #${orden.id}? El stock vuelve a quedar disponible.`))) return
-    dispatch(cancelarMiOrden(orden.id))
-      .unwrap()
-      .catch(err => avisarError(err.message))
-  }
+    const handleReviewSaved = (ordenId, reseñaData) => {
+        dispatch(crearResena({
+            idOrden: ordenId,
+            idProducto: reseñaData.productoId,
+            puntaje: reseñaData.estrellas,
+            comentario: reseñaData.texto,
+        })).unwrap().then(() => {
+            setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
+            setProductoAReseñar(null)
+            exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })
+        }).catch(err => {
+            setProductoAReseñar(null)
+            avisarError(err.message)
+        })
+    }
 
-  const handleReviewSaved = (ordenId, reseñaData) => {
-    dispatch(crearResena({
-      idOrden: ordenId,
-      idProducto: reseñaData.productoId,
-      puntaje: reseñaData.estrellas,
-      comentario: reseñaData.texto,
-    })).unwrap().then(() => {
-      setReseñados(prev => new Set(prev).add(`${ordenId}-${reseñaData.productoId}`))
-      setProductoAReseñar(null)
-      exito('Tu opinión ya se publicó en la ficha del producto.', { titulo: '¡Gracias por opinar!' })
-    }).catch(err => {
-      setProductoAReseñar(null)
-      avisarError(err.message)
-    })
-  }
+    if (!user) {
+        return (
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+                <h2>Debes iniciar sesión para ver tus compras.</h2>
+                <button onClick={() => navigate('/login')} style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    Ir a Iniciar Sesión
+                </button>
+            </div>
+        )
+    }
 
-  if (!user) {
+    const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
+
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Debes iniciar sesión para ver tus compras.</h2>
-        <button onClick={() => navigate('/login')} style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Ir a Iniciar Sesión
-        </button>
-      </div>
-    )
-  }
+        <div className="panel-container">
+            <nav className="panel-tabs">
+                <button className="active">Mis Compras Realizadas</button>
+            </nav>
 
-  const formatMoney = (amount) => '$ ' + new Intl.NumberFormat('es-AR').format(amount)
+            <main className="panel-content" style={{ minHeight: '400px', width: '100%' }}>
+                <table className="panel-table">
+                    <thead>
+                    <tr>
+                        <th>FECHA / ORDEN</th>
+                        <th>PRODUCTOS</th>
+                        <th>ENTREGA</th>
+                        <th>ESTADO</th>
+                        <th className="text-right">ACCIÓN</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {cargandoCompras ? (
+                        <tr><td colSpan="5" className="empty-state">Cargando tus compras...</td></tr>
+                    ) : error ? (
+                        <tr><td colSpan="5" className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
+                    ) : compras.length === 0 ? (
+                        <tr>
+                            <td colSpan="5" className="empty-state">No has realizado ninguna compra aún.</td>
+                        </tr>
+                    ) : (
+                        compras.map(compra => {
+                            const estado = ESTADOS[compra.estado] ?? { texto: compra.estado, color: '#6b7280', icono: 'fa-circle' }
+                            const envio = envios[compra.id]
+                            const estadoEnvio = envio && ESTADOS_ENVIO[envio.estado]
+                            const puedeOpinar = envio?.estado === 'ENTREGADO'
+                            return (
+                                <tr key={compra.id}>
+                                    <td>
+                                        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{compra.fecha}</div>
+                                        <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${compra.id}`)}>
+                                            <i className="fa-solid fa-eye"></i> Orden #{compra.id}
+                                        </button>
+                                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Vendedor: {compra.vendedor?.nombreUsuario}</div>
+                                    </td>
+                                    <td>
+                                        {compra.items.map(item => {
+                                            const clave = `${compra.id}-${item.idProducto}`
+                                            return (
+                                                <div key={item.id} style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                    <div>
+                                                        <strong style={{ cursor: 'pointer', color: '#16a34a' }} onClick={() => navigate(`/product/${item.idProducto}`)}>
+                                                            {item.nombre}
+                                                        </strong>
+                                                        <span style={{ fontSize: '13px', color: '#4b5563' }}> × {item.cantidad} · {formatMoney(item.total)}</span>
+                                                    </div>
 
-  return (
-    <div className="panel-container">
-      <nav className="panel-tabs">
-        <button className="active">Mis Compras Realizadas</button>
-      </nav>
-
-      <main className="panel-content" style={{ minHeight: '400px', width: '100%' }}>
-        <table className="panel-table">
-          <thead>
-            <tr>
-              <th>FECHA / ORDEN</th>
-              <th>PRODUCTOS</th>
-              <th>ENTREGA</th>
-              <th>ESTADO</th>
-              <th className="text-right">ACCIÓN</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cargandoCompras ? (
-              <tr><td colSpan="5" className="empty-state">Cargando tus compras...</td></tr>
-            ) : error ? (
-              <tr><td colSpan="5" className="empty-state" style={{ color: '#b91c1c' }}>{error}</td></tr>
-            ) : compras.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="empty-state">No has realizado ninguna compra aún.</td>
-              </tr>
-            ) : (
-              compras.map(compra => {
-                const estado = ESTADOS[compra.estado] ?? { texto: compra.estado, color: '#6b7280', icono: 'fa-circle' }
-                const envio = envios[compra.id]
-                const estadoEnvio = envio && ESTADOS_ENVIO[envio.estado]
-                const puedeOpinar = envio?.estado === 'ENTREGADO'
-                return (
-                  <tr key={compra.id}>
-                    <td>
-                      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{compra.fecha}</div>
-                      <button className="btn-ver-detalle" onClick={() => navigate(`/orden/${compra.id}`)}>
-                        <i className="fa-solid fa-eye"></i> Orden #{compra.id}
-                      </button>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Vendedor: {compra.vendedor?.nombreUsuario}</div>
-                    </td>
-                    <td>
-                      {compra.items.map(item => {
-                        const clave = `${compra.id}-${item.idProducto}`
-                        return (
-                          <div key={item.id} style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <div>
-                              <strong style={{ cursor: 'pointer', color: '#16a34a' }} onClick={() => navigate(`/product/${item.idProducto}`)}>
-                                {item.nombre}
-                              </strong>
-                              <span style={{ fontSize: '13px', color: '#4b5563' }}> × {item.cantidad} · {formatMoney(item.total)}</span>
-                            </div>
-                            
-                            {puedeOpinar && (
-                              reseñados.has(clave) ? (
-                                <span style={{ marginLeft: '12px', color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}>Ya opinaste</span>
-                              ) : (
-                                <button
-                                  onClick={() => setProductoAReseñar({ id: compra.id, productoId: item.idProducto, productoTitulo: item.nombre })}
-                                  style={{ 
-                                    marginLeft: '16px', 
-                                    backgroundColor: '#f97316', 
-                                    color: '#ffffff', 
-                                    border: 'none', 
-                                    padding: '6px 12px', 
-                                    borderRadius: '6px', 
-                                    fontWeight: 'bold', 
-                                    cursor: 'pointer', 
-                                    fontSize: '12px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}
-                                >
-                                  <i className="fa-solid fa-star" style={{ color: '#ffffff' }}></i> Opinar
-                                </button>
-                              )
-                            )}
-                          </div>
-                        )
-                      })}
-                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827', marginTop: '4px' }}>Total: {formatMoney(compra.total)}</div>
-                    </td>
-                    <td style={{ fontSize: '13px', color: '#4b5563' }}>
-                      {compra.metodoEntrega === 'DESPACHO' ? (
-                        <>
-                          <div><i className="fa-solid fa-truck"></i> Envío a domicilio</div>
-                          {compra.entrega?.calle && (
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                              {compra.entrega.calle}, {compra.entrega.localidad}, {nombreProvincia(compra.entrega.provincia)}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div><i className="fa-solid fa-handshake"></i> A coordinar con el vendedor</div>
-                      )}
-                    </td>
-                    <td>
+                                                    {puedeOpinar && (
+                                                        reseñados.has(clave) ? (
+                                                            <span style={{ marginLeft: '12px', color: '#9ca3af', fontSize: '12px', fontStyle: 'italic' }}>Ya opinaste</span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setProductoAReseñar({ id: compra.id, productoId: item.idProducto, productoTitulo: item.nombre })}
+                                                                style={{
+                                                                    marginLeft: '16px',
+                                                                    backgroundColor: '#f97316',
+                                                                    color: '#ffffff',
+                                                                    border: 'none',
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: '6px',
+                                                                    fontWeight: 'bold',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: '12px',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '6px'
+                                                                }}
+                                                            >
+                                                                <i className="fa-solid fa-star" style={{ color: '#ffffff' }}></i> Opinar
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827', marginTop: '4px' }}>Total: {formatMoney(compra.total)}</div>
+                                    </td>
+                                    <td style={{ fontSize: '13px', color: '#4b5563' }}>
+                                        {compra.metodoEntrega === 'DESPACHO' ? (
+                                            <>
+                                                <div><i className="fa-solid fa-truck"></i> Envío a domicilio</div>
+                                                {compra.entrega?.calle && (
+                                                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                                                        {compra.entrega.calle}, {compra.entrega.localidad}, {nombreProvincia(compra.entrega.provincia)}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div><i className="fa-solid fa-handshake"></i> A coordinar con el vendedor</div>
+                                        )}
+                                    </td>
+                                    <td>
                       <span style={{ color: estado.color, fontWeight: 'bold' }}>
                         <i className={`fa-solid ${estado.icono}`}></i> {estado.texto}
                       </span>
-                      {estadoEnvio && (
-                        <div style={{ color: estadoEnvio.color, fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>
-                          <i className={`fa-solid ${estadoEnvio.icono}`}></i> {estadoEnvio.texto}
-                          {envio.numeroSeguimiento && <div className="panel-producto-meta">Seguimiento: {envio.numeroSeguimiento}</div>}
-                        </div>
-                      )}
-                    </td>
-                    <td className="text-right">
-                      {envio?.metodoEntrega === 'COORDINAR' && envio.estado === 'PENDIENTE' && (
-                        <button className="btn-new-user" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={() => confirmarRecepcion(envio)}>
-                          <i className="fa-solid fa-check"></i> Ya lo recibí
-                        </button>
-                      )}
-                      {compra.estado === 'PENDIENTE' && (
-                        <button
-                          onClick={() => handleCancelar(compra)}
-                          style={{ backgroundColor: 'white', color: '#ef4444', border: '1px solid #ef4444', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                        >
-                          Cancelar
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </main>
+                                        {estadoEnvio && (
+                                            <div style={{ color: estadoEnvio.color, fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>
+                                                <i className={`fa-solid ${estadoEnvio.icono}`}></i> {estadoEnvio.texto}
+                                                {envio.numeroSeguimiento && <div className="panel-producto-meta">Seguimiento: {envio.numeroSeguimiento}</div>}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="text-right">
+                                        {envio?.metodoEntrega === 'COORDINAR' && envio.estado === 'PENDIENTE' && (
+                                            <button className="btn-new-user" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={() => confirmarRecepcion(envio)}>
+                                                <i className="fa-solid fa-check"></i> Ya lo recibí
+                                            </button>
+                                        )}
+                                        {compra.estado === 'PENDIENTE' && (
+                                            <button
+                                                onClick={() => handleCancelar(compra)}
+                                                style={{ backgroundColor: 'white', color: '#ef4444', border: '1px solid #ef4444', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                                            >
+                                                Cancelar
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            )
+                        })
+                    )}
+                    </tbody>
+                </table>
+            </main>
 
-      {productoAReseñar && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <Reviews
-            orden={productoAReseñar}
-            onClose={() => setProductoAReseñar(null)}
-            onSave={handleReviewSaved}
-          />
+            {productoAReseñar && (
+                <div className="modal-overlay" style={{ zIndex: 10000 }}>
+                    <Reviews
+                        orden={productoAReseñar}
+                        onClose={() => setProductoAReseñar(null)}
+                        onSave={handleReviewSaved}
+                    />
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  )
+    )
 }
 
 export default MisCompras
